@@ -12,15 +12,15 @@ use {
         error::Error,
         fs::File,
         io::BufReader,
+        path::Path,
         sync::Arc,
     },
+    url::Url,
 };
 
 pub type Result<T=()> = std::result::Result<T, Box<dyn Error>>;
 
 fn main() -> Result {
-    env_logger::init();
-
     let certs = certs(&mut BufReader::new(File::open("tests/cert.pem")?))
         .expect("Error reading certificate file");
     let mut keys = rsa_private_keys(&mut BufReader::new(File::open("tests/key.rsa")?))
@@ -54,14 +54,15 @@ async fn connection(acceptor: TlsAcceptor, stream: TcpStream) -> Result {
     let stream = acceptor.accept(stream).await?;
 
     let mut stream = async_std::io::BufReader::new(stream);
-    let mut body = String::new();
-    stream.read_line(&mut body).await?;
-    eprintln!("Got request: {:?}", body);
+    let mut request = String::new();
+    stream.read_line(&mut request).await?;
+    let url = Url::parse(request.trim())?;
+    eprintln!("Got request: {:?}", url);
 
     let mut stream = stream.into_inner();
     stream.write_all(b"20 text/gemini\r\n").await?;
     stream.write_all(b"=> ").await?;
-    stream.write_all(body.trim().as_bytes()).await?;
+    stream.write_all(url.as_str().as_bytes()).await?;
     stream.write_all(b" Reload\r\n").await?;
     Ok(())
 }

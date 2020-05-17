@@ -14,7 +14,7 @@ edition = "2018"
 async-tls = "0.7.0"
 async-std = "1.5"
 rustls = "0.17.0"
-env_logger = "0.7.1"
+url = "2.1"
 
 [profile.release]
 lto = true
