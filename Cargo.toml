@@ -10,9 +10,9 @@ readme = "README.md"
 license = "MIT/Apache-2.0"
 edition = "2018"
 
-[dependencies.rustls]
-version = "0.17.0"
-default-features = false
+[dependencies]
+async-tls = "0.7.0"
+async-std = "1.5"
 
 [profile.release]
 lto = true
