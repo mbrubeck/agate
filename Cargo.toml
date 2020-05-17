@@ -1,0 +1,15 @@
+[package]
+name = "agate"
+version = "1.0.0"
+authors = ["Matt Brubeck <mbrubeck@limpet.net>"]
+description = "Very simple server for the Gemini hypertext protocol"
+keywords = ["server", "gemini", "hypertext", "internet", "protocol"]
+categories = ["network-programming"]
+repository = "https://github.com/mbrubeck/agate"
+readme = "README.md"
+license = "MIT/Apache-2.0"
+edition = "2018"
+
+[dependencies.rustls]
+version = "0.17.0"
+default-features = false
