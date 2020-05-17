@@ -5,14 +5,12 @@ use {
         task,
     },
     async_tls::TlsAcceptor,
-    rustls::{
-        internal::pemfile::{certs, rsa_private_keys},
-    },
+    rustls::internal::pemfile::{certs, rsa_private_keys},
     std::{
         error::Error,
         fs::File,
         io::BufReader,
-        path::Path,
+        path::{Path, PathBuf},
         sync::Arc,
     },
     url::Url,
@@ -58,6 +56,14 @@ async fn connection(acceptor: TlsAcceptor, stream: TcpStream) -> Result {
     stream.read_line(&mut request).await?;
     let url = Url::parse(request.trim())?;
     eprintln!("Got request: {:?}", url);
+
+    let path: PathBuf = url.path_segments().unwrap().collect();
+    eprintln!("Path: {:?}", path);
+    let path = Path::new(".").join(path).canonicalize()?;
+    eprintln!("Path: {:?}", path);
+
+    // TODO: Return a not found error
+    assert!(path.starts_with(std::env::current_dir()?));
 
     let mut stream = stream.into_inner();
     stream.write_all(b"20 text/gemini\r\n").await?;
