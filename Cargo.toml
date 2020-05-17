@@ -13,3 +13,7 @@ edition = "2018"
 [dependencies.rustls]
 version = "0.17.0"
 default-features = false
+
+[profile.release]
+lto = true
+codegen-units = 1
