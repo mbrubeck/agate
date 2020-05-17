@@ -11,7 +11,7 @@ use {
     std::{
         error::Error,
         fs::File,
-        io::{BufReader, self},
+        io::BufReader,
         sync::Arc,
     },
 };
@@ -50,7 +50,7 @@ fn main() -> Result {
     })
 }
 
-async fn connection(acceptor: TlsAcceptor, stream: TcpStream) -> io::Result<()> {
+async fn connection(acceptor: TlsAcceptor, stream: TcpStream) -> Result {
     let stream = acceptor.accept(stream).await?;
 
     let mut stream = async_std::io::BufReader::new(stream);
