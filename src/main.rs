@@ -59,10 +59,9 @@ async fn connection(acceptor: TlsAcceptor, stream: TcpStream) -> Result {
     eprintln!("Got request: {:?}", body);
 
     let mut stream = stream.into_inner();
-    stream.write_all(b"20 text/plain\r\n").await?;
+    stream.write_all(b"20 text/gemini\r\n").await?;
     stream.write_all(b"=> ").await?;
     stream.write_all(body.trim().as_bytes()).await?;
-    stream.write_all(b" Go to ").await?;
-    stream.write_all(body.as_bytes()).await?;
+    stream.write_all(b" Reload\r\n").await?;
     Ok(())
 }
