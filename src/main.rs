@@ -18,17 +18,6 @@ use {
 
 pub type Result<T=()> = std::result::Result<T, Box<dyn Error>>;
 
-async fn connection(acceptor: TlsAcceptor, stream: TcpStream) -> io::Result<()> {
-    let stream = acceptor.accept(stream).await?;
-    let mut stream = async_std::io::BufReader::new(stream);
-    let mut body = String::new();
-    stream.read_line(&mut body).await?;
-    let mut stream = stream.into_inner();
-    stream.write_all(b"20 text/plain\r\n").await?;
-    stream.write_all(body.as_bytes()).await?;
-    Ok(())
-}
-
 fn main() -> Result {
     env_logger::init();
 
@@ -59,4 +48,21 @@ fn main() -> Result {
 
         Ok(())
     })
+}
+
+async fn connection(acceptor: TlsAcceptor, stream: TcpStream) -> io::Result<()> {
+    let stream = acceptor.accept(stream).await?;
+
+    let mut stream = async_std::io::BufReader::new(stream);
+    let mut body = String::new();
+    stream.read_line(&mut body).await?;
+    eprintln!("Got request: {:?}", body);
+
+    let mut stream = stream.into_inner();
+    stream.write_all(b"20 text/plain\r\n").await?;
+    stream.write_all(b"=> ").await?;
+    stream.write_all(body.trim().as_bytes()).await?;
+    stream.write_all(b" Go to ").await?;
+    stream.write_all(body.as_bytes()).await?;
+    Ok(())
 }
