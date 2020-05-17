@@ -29,14 +29,14 @@ async fn connection(acceptor: TlsAcceptor, stream: TcpStream) -> io::Result<()> 
 fn main() -> Result {
     let certs = certs(&mut BufReader::new(File::open("tests/cert.pem")?))
         .expect("Error reading certificate file");
-    let mut keys = rsa_private_keys(&mut BufReader::new(File::open("tests/key.pem")?))
+    let mut keys = rsa_private_keys(&mut BufReader::new(File::open("tests/key.rsa")?))
         .expect("Error reading private key file");
 
     let mut config = rustls::ServerConfig::new(rustls::NoClientAuth::new());
     config.set_single_cert(certs, keys.remove(0))?;
     let acceptor = TlsAcceptor::from(Arc::new(config));
 
-    let addr = "0.0.0.0:1965";
+    let addr = "127.0.0.1:1965";
 
     task::block_on(async {
         let listener = TcpListener::bind(addr).await?;
