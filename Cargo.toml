@@ -13,6 +13,7 @@ edition = "2018"
 [dependencies]
 async-tls = "0.7.0"
 async-std = "1.5"
+rustls = "0.17.0"
 
 [profile.release]
 lto = true
