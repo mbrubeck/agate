@@ -11,14 +11,19 @@ use {
     std::{
         error::Error,
         fs::File,
-        io::BufReader,
+        io::{BufReader, self},
         sync::Arc,
     },
 };
 
 pub type Result<T=()> = std::result::Result<T, Box<dyn Error>>;
 
-async fn handle_connection(_: TlsAcceptor, _: TcpStream) {
+async fn connection(acceptor: TlsAcceptor, stream: TcpStream) -> io::Result<()> {
+    let mut stream = acceptor.accept(stream).await?;
+    let mut body = Vec::new();
+    stream.read_to_end(&mut body).await?;
+    stream.write_all(&body).await?;
+    Ok(())
 }
 
 fn main() -> Result {
@@ -41,7 +46,9 @@ fn main() -> Result {
             let acceptor = acceptor.clone();
             let stream = stream?;
             task::spawn(async {
-                handle_connection(acceptor, stream).await;
+                if let Err(e) = connection(acceptor, stream).await {
+                    eprintln!("Error: {:?}", e);
+                }
             });
         }
 
