@@ -5,7 +5,7 @@ use {
         task,
     },
     async_tls::TlsAcceptor,
-    rustls::internal::pemfile::{certs, rsa_private_keys},
+    rustls::internal::pemfile::{certs, pkcs8_private_keys},
     std::{
         error::Error,
         fs::{File, read},
@@ -21,7 +21,7 @@ pub type Result<T=()> = std::result::Result<T, Box<dyn Error + Send + Sync>>;
 fn main() -> Result {
     let certs = certs(&mut BufReader::new(File::open("tests/cert.pem")?))
         .expect("Error reading certificate file");
-    let mut keys = rsa_private_keys(&mut BufReader::new(File::open("tests/key.rsa")?))
+    let mut keys = pkcs8_private_keys(&mut BufReader::new(File::open("tests/key.rsa")?))
         .expect("Error reading private key file");
 
     let mut config = rustls::ServerConfig::new(rustls::NoClientAuth::new());
