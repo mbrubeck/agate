@@ -8,7 +8,7 @@ use {
     rustls::internal::pemfile::{certs, rsa_private_keys},
     std::{
         error::Error,
-        fs::File,
+        fs::{File, read},
         io::BufReader,
         path::{Path, PathBuf},
         sync::Arc,
@@ -16,7 +16,7 @@ use {
     url::Url,
 };
 
-pub type Result<T=()> = std::result::Result<T, Box<dyn Error>>;
+pub type Result<T=()> = std::result::Result<T, Box<dyn Error + Send + Sync>>;
 
 fn main() -> Result {
     let certs = certs(&mut BufReader::new(File::open("tests/cert.pem")?))
@@ -57,18 +57,25 @@ async fn connection(acceptor: TlsAcceptor, stream: TcpStream) -> Result {
     let url = Url::parse(request.trim())?;
     eprintln!("Got request: {:?}", url);
 
-    let path: PathBuf = url.path_segments().unwrap().collect();
-    eprintln!("Path: {:?}", path);
-    let path = Path::new(".").join(path).canonicalize()?;
-    eprintln!("Path: {:?}", path);
-
-    // TODO: Return a not found error
-    assert!(path.starts_with(std::env::current_dir()?));
-
     let mut stream = stream.into_inner();
-    stream.write_all(b"20 text/gemini\r\n").await?;
-    stream.write_all(b"=> ").await?;
-    stream.write_all(url.as_str().as_bytes()).await?;
-    stream.write_all(b" Reload\r\n").await?;
+    match get(&url) {
+        Ok(response) => {
+            stream.write_all(b"20 text/gemini\r\n").await?;
+            stream.write_all(&response).await?;
+        }
+        Err(_) => {
+            stream.write_all(b"40 Not found, sorry.\r\n").await?;
+        }
+    }
     Ok(())
+}
+
+fn get(url: &Url) -> Result<Vec<u8>> {
+    let path: PathBuf = url.path_segments().unwrap().collect();
+    let path = Path::new(".").join(path).canonicalize()?;
+    if !path.starts_with(std::env::current_dir()?) {
+        Err("invalid path")?
+    }
+    let response = read(path)?;
+    Ok(response)
 }
