@@ -5,6 +5,7 @@ use {
         task,
     },
     async_tls::{TlsAcceptor, server::TlsStream},
+    lazy_static::lazy_static,
     rustls::internal::pemfile::{certs, pkcs8_private_keys},
     std::{
         error::Error,
@@ -19,37 +20,25 @@ use {
 pub type Result<T=()> = std::result::Result<T, Box<dyn Error + Send + Sync>>;
 
 fn main() -> Result {
-    let certs = certs(&mut BufReader::new(File::open("tests/cert.pem")?))
-        .expect("Error reading certificate file");
-    let mut keys = pkcs8_private_keys(&mut BufReader::new(File::open("tests/key.rsa")?))
-        .expect("Error reading private key file");
-
-    let mut config = rustls::ServerConfig::new(rustls::NoClientAuth::new());
-    config.set_single_cert(certs, keys.remove(0))?;
-    let acceptor = TlsAcceptor::from(Arc::new(config));
-
     let addr = "localhost:1965";
 
     task::block_on(async {
         let listener = TcpListener::bind(addr).await?;
         let mut incoming = listener.incoming();
 
-        while let Some(stream) = incoming.next().await {
-            let acceptor = acceptor.clone();
-            let stream = stream?;
+        while let Some(Ok(stream)) = incoming.next().await {
             task::spawn(async {
-                if let Err(e) = connection(acceptor, stream).await {
+                if let Err(e) = connection(stream).await {
                     eprintln!("Error: {:?}", e);
                 }
             });
         }
-
         Ok(())
     })
 }
 
-async fn connection(acceptor: TlsAcceptor, stream: TcpStream) -> Result {
-    let mut stream = acceptor.accept(stream).await?;
+async fn connection(stream: TcpStream) -> Result {
+    let mut stream = TLS_ACCEPTOR.accept(stream).await?;
     let url = match parse_request(&mut stream).await {
         Ok(url) => url,
         Err(e) => {
@@ -68,6 +57,20 @@ async fn connection(acceptor: TlsAcceptor, stream: TcpStream) -> Result {
         }
     }
     Ok(())
+}
+
+lazy_static! {
+    static ref TLS_ACCEPTOR: TlsAcceptor = {
+        let cert_file = File::open("tests/cert.pem").unwrap();
+        let certs = certs(&mut BufReader::new(cert_file)).unwrap();
+
+        let key_file = File::open("tests/key.rsa").unwrap();
+        let mut keys = pkcs8_private_keys(&mut BufReader::new(key_file)).unwrap();
+
+        let mut config = rustls::ServerConfig::new(rustls::NoClientAuth::new());
+        config.set_single_cert(certs, keys.remove(0)).unwrap();
+        TlsAcceptor::from(Arc::new(config))
+    };
 }
 
 async fn parse_request(stream: &mut TlsStream<TcpStream>) -> Result<Url> {

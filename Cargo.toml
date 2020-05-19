@@ -13,6 +13,7 @@ edition = "2018"
 [dependencies]
 async-tls = "0.7.0"
 async-std = "1.5"
+lazy_static = "1.4"
 rustls = "0.17.0"
 url = "2.1"
 
