@@ -106,7 +106,7 @@ async fn parse_request(stream: &mut TlsStream<TcpStream>) -> Result<Url> {
 
 fn get(url: &Url) -> Result<Vec<u8>> {
     let mut path = PathBuf::from(&ARGS.content_dir);
-    path.extend(url.path_segments().unwrap());
+    path.extend(url.path_segments().ok_or("invalid url")?);
     if path.is_dir() {
         path.push("index.gemini");
     }
