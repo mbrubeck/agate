@@ -6,7 +6,6 @@ use {
     },
     async_tls::{TlsAcceptor, server::TlsStream},
     lazy_static::lazy_static,
-    rustls::internal::pemfile::{certs, pkcs8_private_keys},
     std::{
         error::Error,
         fs::{File, read},
@@ -18,11 +17,6 @@ use {
 };
 
 pub type Result<T=()> = std::result::Result<T, Box<dyn Error + Send + Sync>>;
-
-lazy_static! {
-    static ref ARGS: Args = args().expect("usage: agate <addr:port> <dir> <cert> <key>");
-    static ref ACCEPTOR: TlsAcceptor = acceptor().unwrap();
-}
 
 struct Args {
     sock_addr: String,
@@ -46,6 +40,12 @@ fn main() -> Result {
     })
 }
 
+lazy_static! {
+    static ref ARGS: Args = args()
+        .expect("usage: agate <addr:port> <dir> <cert> <key>");
+    static ref ACCEPTOR: TlsAcceptor = acceptor().unwrap();
+}
+
 fn args() -> Option<Args> {
     let mut args = std::env::args().skip(1);
     Some(Args {
@@ -57,11 +57,15 @@ fn args() -> Option<Args> {
 }
 
 fn acceptor() -> Result<TlsAcceptor> {
-    let cert_file = File::open(&ARGS.cert_file)?;
-    let key_file = File::open(&ARGS.key_file)?;
+    use rustls::internal::pemfile::{certs, pkcs8_private_keys};
 
+    let cert_file = File::open(&ARGS.cert_file)?;
     let certs = certs(&mut BufReader::new(cert_file)).or(Err("bad cert"))?;
-    let mut keys = pkcs8_private_keys(&mut BufReader::new(key_file)).or(Err("bad key"))?;
+
+    let key_file = File::open(&ARGS.key_file)?;
+    let mut keys = pkcs8_private_keys(&mut BufReader::new(key_file))
+        .or(Err("bad key"))?;
+
     let mut config = rustls::ServerConfig::new(rustls::NoClientAuth::new());
     config.set_single_cert(certs, keys.remove(0))?;
     Ok(TlsAcceptor::from(Arc::new(config)))
