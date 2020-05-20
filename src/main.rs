@@ -100,16 +100,13 @@ async fn parse_request(stream: &mut TlsStream<TcpStream>) -> Result<Url> {
     let mut request = String::new();
     stream.read_line(&mut request).await?;
     let url = Url::parse(request.trim())?;
+    eprintln!("Got request for {:?}", url);
     Ok(url)
 }
 
 fn get(url: &Url) -> Result<Vec<u8>> {
     let mut path = PathBuf::from(&ARGS.content_dir);
     path.extend(url.path_segments().unwrap());
-    if !path.starts_with(&ARGS.content_dir) {
-        Err("invalid path")?
-    }
-    eprintln!("Got request for {:?}", path);
     if path.is_dir() {
         path.push("index.gemini");
     }
