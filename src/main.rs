@@ -2,6 +2,7 @@ use {
     async_std::{
         io::prelude::*,
         net::{TcpListener, TcpStream},
+        path::PathBuf,
         stream::StreamExt,
         task,
     },
@@ -9,9 +10,8 @@ use {
     lazy_static::lazy_static,
     std::{
         error::Error,
-        fs::{File, read},
+        fs::File,
         io::BufReader,
-        path::PathBuf,
         sync::Arc,
     },
     url::Url,
@@ -79,7 +79,7 @@ async fn connection(stream: TcpStream) -> Result {
             stream.write_all(b"50 Invalid request.\r\n").await?;
             Err(e)
         }
-        Ok(url) => match get(&url) {
+        Ok(url) => match get(&url).await {
             Err(e) => {
                 stream.write_all(b"40 Not found, sorry.\r\n").await?;
                 Err(e)
@@ -102,12 +102,12 @@ async fn parse_request(stream: &mut TlsStream<TcpStream>) -> Result<Url> {
     Ok(url)
 }
 
-fn get(url: &Url) -> Result<Vec<u8>> {
+async fn get(url: &Url) -> Result<Vec<u8>> {
     let mut path = PathBuf::from(&ARGS.content_dir);
     path.extend(url.path_segments().ok_or("invalid url")?);
-    if path.is_dir() {
+    if path.is_dir().await {
         path.push("index.gemini");
     }
-    let response = read(&path)?;
+    let response = async_std::fs::read(&path).await?;
     Ok(response)
 }
