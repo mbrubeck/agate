@@ -1,7 +1,7 @@
 use {
     async_std::{
         net::{TcpListener, TcpStream},
-        prelude::*,
+        stream::StreamExt,
         task,
     },
     async_tls::{TlsAcceptor, server::TlsStream},
@@ -11,7 +11,7 @@ use {
         error::Error,
         fs::{File, read},
         io::BufReader,
-        path::PathBuf,
+        path::{Path, PathBuf},
         sync::Arc,
     },
     url::Url,
@@ -68,6 +68,7 @@ fn acceptor() -> Result<TlsAcceptor> {
 }
 
 async fn connection(stream: TcpStream) -> Result {
+    use async_std::io::prelude::*;
     let mut stream = ACCEPTOR.accept(stream).await?;
     let url = match parse_request(&mut stream).await {
         Ok(url) => url,
@@ -90,6 +91,7 @@ async fn connection(stream: TcpStream) -> Result {
 }
 
 async fn parse_request(stream: &mut TlsStream<TcpStream>) -> Result<Url> {
+    use async_std::io::prelude::*;
     let mut stream = async_std::io::BufReader::new(stream);
     let mut request = String::new();
     stream.read_line(&mut request).await?;
@@ -103,6 +105,27 @@ fn get(url: &Url) -> Result<Vec<u8>> {
     if !path.starts_with(&ARGS.content_dir) {
         Err("invalid path")?
     }
-    let response = read(path)?;
+    eprintln!("Got request for {:?}", path);
+    let response = if path.is_dir() {
+        list(&path)?
+    } else {
+        read(&path)?
+    };
     Ok(response)
+}
+
+fn list(path: &Path) -> Result<Vec<u8>> {
+    use std::io::Write;
+    let mut result = vec![];
+    for entry in path.read_dir()? {
+        let entry = entry?;
+        let file_name = entry.file_name().into_string()
+            .or(Err("non-Unicode path"))?;
+        let path = entry.path();
+        let url = path.strip_prefix(&ARGS.content_dir)?.to_str()
+            .ok_or("non-Unicode path")?;
+        // TODO: Escape whitespace
+        writeln!(&mut result, "=> {} {}", url, file_name)?;
+    }
+    Ok(result)
 }
