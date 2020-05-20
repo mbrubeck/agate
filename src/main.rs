@@ -1,5 +1,6 @@
 use {
     async_std::{
+        io::prelude::*,
         net::{TcpListener, TcpStream},
         stream::StreamExt,
         task,
@@ -57,16 +58,15 @@ fn args() -> Option<Args> {
 }
 
 fn acceptor() -> Result<TlsAcceptor> {
-    use rustls::internal::pemfile::{certs, pkcs8_private_keys};
+    use rustls::{ServerConfig, NoClientAuth, internal::pemfile::{certs, pkcs8_private_keys}};
 
     let cert_file = File::open(&ARGS.cert_file)?;
     let certs = certs(&mut BufReader::new(cert_file)).or(Err("bad cert"))?;
 
     let key_file = File::open(&ARGS.key_file)?;
-    let mut keys = pkcs8_private_keys(&mut BufReader::new(key_file))
-        .or(Err("bad key"))?;
+    let mut keys = pkcs8_private_keys(&mut BufReader::new(key_file)).or(Err("bad key"))?;
 
-    let mut config = rustls::ServerConfig::new(rustls::NoClientAuth::new());
+    let mut config = ServerConfig::new(NoClientAuth::new());
     config.set_single_cert(certs, keys.remove(0))?;
     Ok(TlsAcceptor::from(Arc::new(config)))
 }
@@ -74,28 +74,26 @@ fn acceptor() -> Result<TlsAcceptor> {
 async fn connection(stream: TcpStream) -> Result {
     use async_std::io::prelude::*;
     let mut stream = ACCEPTOR.accept(stream).await?;
-    let url = match parse_request(&mut stream).await {
-        Ok(url) => url,
+    match parse_request(&mut stream).await {
         Err(e) => {
             stream.write_all(b"50 Invalid request.\r\n").await?;
-            return Err(e)
+            Err(e)
         }
-    };
-    match get(&url) {
-        Ok(response) => {
-            stream.write_all(b"20 text/gemini\r\n").await?;
-            stream.write_all(&response).await?;
-        }
-        Err(e) => {
-            stream.write_all(b"40 Not found, sorry.\r\n").await?;
-            return Err(e)
+        Ok(url) => match get(&url) {
+            Err(e) => {
+                stream.write_all(b"40 Not found, sorry.\r\n").await?;
+                Err(e)
+            }
+            Ok(response) => {
+                stream.write_all(b"20 text/gemini\r\n").await?;
+                stream.write_all(&response).await?;
+                Ok(())
+            }
         }
     }
-    Ok(())
 }
 
 async fn parse_request(stream: &mut TlsStream<TcpStream>) -> Result<Url> {
-    use async_std::io::prelude::*;
     let mut stream = async_std::io::BufReader::new(stream);
     let mut request = String::new();
     stream.read_line(&mut request).await?;
