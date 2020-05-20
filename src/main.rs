@@ -11,7 +11,7 @@ use {
         error::Error,
         fs::{File, read},
         io::BufReader,
-        path::{Path, PathBuf},
+        path::PathBuf,
         sync::Arc,
     },
     url::Url,
@@ -106,26 +106,9 @@ fn get(url: &Url) -> Result<Vec<u8>> {
         Err("invalid path")?
     }
     eprintln!("Got request for {:?}", path);
-    let response = if path.is_dir() {
-        list(&path)?
-    } else {
-        read(&path)?
-    };
-    Ok(response)
-}
-
-fn list(path: &Path) -> Result<Vec<u8>> {
-    use std::io::Write;
-    let mut result = vec![];
-    for entry in path.read_dir()? {
-        let entry = entry?;
-        let file_name = entry.file_name().into_string()
-            .or(Err("non-Unicode path"))?;
-        let path = entry.path();
-        let url = path.strip_prefix(&ARGS.content_dir)?.to_str()
-            .ok_or("non-Unicode path")?;
-        // TODO: Escape whitespace
-        writeln!(&mut result, "=> {} {}", url, file_name)?;
+    if path.is_dir() {
+        path.push("index.gemini");
     }
-    Ok(result)
+    let response = read(&path)?;
+    Ok(response)
 }
