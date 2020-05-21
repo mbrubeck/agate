@@ -8,12 +8,7 @@ use {
     },
     async_tls::{TlsAcceptor, server::TlsStream},
     lazy_static::lazy_static,
-    std::{
-        error::Error,
-        fs::File,
-        io::BufReader,
-        sync::Arc,
-    },
+    std::{error::Error, ffi::OsStr, fs::File, io::BufReader, sync::Arc},
     url::Url,
 };
 
@@ -118,7 +113,13 @@ async fn get(url: &Url, stream: &mut TlsStream<TcpStream>) -> Result {
     }
     match async_std::fs::read(&path).await {
         Ok(body) => {
-            stream.write_all(b"20 text/gemini\r\n").await?;
+            if path.extension() == Some(OsStr::new("gemini")) {
+                stream.write_all(b"20 text/gemini\r\n").await?;
+            } else {
+                let mime = tree_magic::from_u8(&body);
+                let header = format!("20 {}\r\n", mime);
+                stream.write_all(header.as_bytes()).await?;
+            }
             stream.write_all(&body).await?;
         }
         Err(e) => {

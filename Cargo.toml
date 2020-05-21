@@ -1,6 +1,6 @@
 [package]
 name = "agate"
-version = "1.0.1"
+version = "1.1.0"
 authors = ["Matt Brubeck <mbrubeck@limpet.net>"]
 description = "Very simple server for the Gemini hypertext protocol"
 keywords = ["server", "gemini", "hypertext", "internet", "protocol"]
@@ -15,6 +15,7 @@ async-tls = "0.7.0"
 async-std = "1.5"
 lazy_static = "1.4"
 rustls = "0.17.0"
+tree_magic = "0.2.3"
 url = "2.1"
 
 [profile.release]
