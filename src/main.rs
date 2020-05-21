@@ -45,6 +45,7 @@ lazy_static! {
     static ref ARGS: Args = args()
         .expect("usage: agate <addr:port> <dir> <cert> <key>");
     static ref ACCEPTOR: TlsAcceptor = acceptor().unwrap();
+    static ref BASE: Url = Url::parse(&format!("gemini://{}", ARGS.sock_addr)).unwrap();
 }
 
 fn args() -> Option<Args> {
@@ -87,8 +88,17 @@ async fn parse_request(stream: &mut TlsStream<TcpStream>) -> Result<Url> {
     let mut stream = async_std::io::BufReader::new(stream);
     let mut request = String::new();
     stream.read_line(&mut request).await?;
-    let url = Url::parse(request.trim())?;
-    eprintln!("Got request for {:?}", url);
+    let request = request.trim();
+    eprintln!("Got request for {:?}", request);
+
+    let url = if request.starts_with("//") {
+        BASE.join(request.trim())?
+    } else {
+        Url::parse(request)?
+    };
+    if url.scheme() != "gemini" {
+        Err("unsupported URL scheme")?
+    }
     Ok(url)
 }
 
