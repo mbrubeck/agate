@@ -76,12 +76,12 @@ async fn connection(stream: TcpStream) -> Result {
     let mut stream = ACCEPTOR.accept(stream).await?;
     match parse_request(&mut stream).await {
         Err(e) => {
-            stream.write_all(b"50 Invalid request.\r\n").await?;
+            stream.write_all(b"59 Invalid request.\r\n").await?;
             Err(e)
         }
         Ok(url) => match get(&url).await {
             Err(e) => {
-                stream.write_all(b"40 Not found, sorry.\r\n").await?;
+                stream.write_all(b"51 Not found, sorry.\r\n").await?;
                 Err(e)
             }
             Ok(response) => {
