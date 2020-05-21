@@ -75,20 +75,10 @@ async fn connection(stream: TcpStream) -> Result {
     use async_std::io::prelude::*;
     let mut stream = ACCEPTOR.accept(stream).await?;
     match parse_request(&mut stream).await {
+        Ok(url) => get(&url, &mut stream).await,
         Err(e) => {
             stream.write_all(b"59 Invalid request.\r\n").await?;
             Err(e)
-        }
-        Ok(url) => match get(&url).await {
-            Err(e) => {
-                stream.write_all(b"51 Not found, sorry.\r\n").await?;
-                Err(e)
-            }
-            Ok(response) => {
-                stream.write_all(b"20 text/gemini\r\n").await?;
-                stream.write_all(&response).await?;
-                Ok(())
-            }
         }
     }
 }
@@ -102,12 +92,36 @@ async fn parse_request(stream: &mut TlsStream<TcpStream>) -> Result<Url> {
     Ok(url)
 }
 
-async fn get(url: &Url) -> Result<Vec<u8>> {
+async fn get(url: &Url, stream: &mut TlsStream<TcpStream>) -> Result {
     let mut path = PathBuf::from(&ARGS.content_dir);
-    path.extend(url.path_segments().ok_or("invalid url")?);
-    if path.is_dir().await {
-        path.push("index.gemini");
+    if let Some(segments) = url.path_segments() {
+        path.extend(segments);
+    } else {
+        return redirect_slash(url, stream).await;
     }
-    let response = async_std::fs::read(&path).await?;
-    Ok(response)
+    if path.is_dir().await {
+        if url.as_str().ends_with('/') {
+            path.push("index.gemini");
+        } else {
+            return redirect_slash(url, stream).await;
+        }
+    }
+    match async_std::fs::read(&path).await {
+        Ok(body) => {
+            stream.write_all(b"20 text/gemini\r\n").await?;
+            stream.write_all(&body).await?;
+        }
+        Err(e) => {
+            stream.write_all(b"51 Not found, sorry.\r\n").await?;
+            Err(e)?
+        }
+    }
+    Ok(())
+}
+
+async fn redirect_slash(url: &Url, stream: &mut TlsStream<TcpStream>) -> Result {
+    stream.write_all(b"31 ").await?;
+    stream.write_all(url.as_str().as_bytes()).await?;
+    stream.write_all(b"/\r\n").await?;
+    return Ok(())
 }
