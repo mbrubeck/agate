@@ -89,13 +89,12 @@ async fn parse_request(stream: &mut TlsStream<TcpStream>) -> Result<Url> {
     while !buf.is_empty() {
         let n = stream.read(buf).await?;
         len += n;
-        if n == 0 || request[..len].ends_with(b"\r\n") {
+        if request[..len].ends_with(b"\r\n") {
             break;
+        } else if n == 0 {
+            Err("Request ended unexpectedly")?
         }
         buf = &mut request[len..];
-    }
-    if !request[..len].ends_with(b"\r\n") {
-        Err("Missing CRLF")?
     }
     let request = str::from_utf8(&request[..len - 2])?;
 
