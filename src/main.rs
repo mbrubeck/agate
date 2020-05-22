@@ -8,7 +8,7 @@ use {
     },
     async_tls::{TlsAcceptor, server::TlsStream},
     lazy_static::lazy_static,
-    std::{error::Error, ffi::OsStr, fs::File, io::BufReader, sync::Arc},
+    std::{error::Error, ffi::OsStr, fs::File, io::BufReader, str, sync::Arc},
     url::Url,
 };
 
@@ -40,7 +40,6 @@ lazy_static! {
     static ref ARGS: Args = args()
         .expect("usage: agate <addr:port> <dir> <cert> <key>");
     static ref ACCEPTOR: TlsAcceptor = acceptor().unwrap();
-    static ref BASE: Url = Url::parse(&format!("gemini://{}", ARGS.sock_addr)).unwrap();
 }
 
 fn args() -> Option<Args> {
@@ -71,7 +70,10 @@ async fn connection(stream: TcpStream) -> Result {
     use async_std::io::prelude::*;
     let mut stream = ACCEPTOR.accept(stream).await?;
     match parse_request(&mut stream).await {
-        Ok(url) => get(&url, &mut stream).await,
+        Ok(url) => {
+            eprintln!("Got request for {:?}", url);
+            get(&url, &mut stream).await
+        }
         Err(e) => {
             stream.write_all(b"59 Invalid request.\r\n").await?;
             Err(e)
@@ -81,19 +83,29 @@ async fn connection(stream: TcpStream) -> Result {
 
 async fn parse_request(stream: &mut TlsStream<TcpStream>) -> Result<Url> {
     let mut stream = async_std::io::BufReader::new(stream);
-    let mut request = String::new();
-    stream.read_line(&mut request).await?;
-    let request = request.trim();
-    eprintln!("Got request for {:?}", request);
+    let mut request = Vec::new();
+    stream.read_until(b'\r', &mut request).await?;
 
-    let url = if request.starts_with("//") {
-        BASE.join(request.trim())?
-    } else {
-        Url::parse(request)?
-    };
+    // Check line ending.
+    let eol = &mut [0];
+    stream.read_exact(eol).await?;
+    if eol != b"\n" {
+        Err("CR without LF")?
+    }
+    // Check request length.
+    if request.len() > 1026 {
+        Err("Too long")?
+    }
+    // Handle scheme-relative URLs.
+    if request.starts_with(b"//") {
+        request.splice(..0, "gemini:".bytes());
+    }
+    // Parse URL.
+    let url = Url::parse(str::from_utf8(&request)?.trim_end())?;
     if url.scheme() != "gemini" {
         Err("unsupported URL scheme")?
     }
+    // TODO: Validate hostname and port.
     Ok(url)
 }
 

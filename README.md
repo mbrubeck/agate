@@ -23,10 +23,10 @@ openssl req -x509 -newkey rsa:4096 -keyout key.rsa -out cert.pem \
     -days 3650 -nodes -subj "/CN=example.com"
 ```
 
-4. Run the server. The command line arguments are `agate <host:port> <content_dir> <cert_file> <key_file>`.  For example, to listen on the standard Gemini port (1965) on localhost:
+4. Run the server. The command line arguments are `agate <addr:port> <content_dir> <cert_file> <key_file>`.  For example, to listen on the standard Gemini port (1965) on all interfaces:
 
 ```
-agate localhost:1965 path/to/content/ cert.pem key.rsa
+agate 0.0.0.0:1965 path/to/content/ cert.pem key.rsa
 ```
 
 When a client requests the URL `gemini://example.com/foo/bar`, Agate will respond with the file at `path/to/content/foo/bar`.  If there is a directory at that path, Agate will look for a file named `index.gemini` inside that directory.
