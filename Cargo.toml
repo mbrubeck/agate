@@ -22,3 +22,7 @@ url = "2.1"
 lto = true
 codegen-units = 1
 panic = "abort"
+
+[patch.crates-io.tree_magic]
+git = "https://github.com/mbrubeck/tree_magic"
+branch = "override"
