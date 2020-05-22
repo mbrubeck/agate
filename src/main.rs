@@ -82,30 +82,31 @@ async fn connection(stream: TcpStream) -> Result {
 }
 
 async fn parse_request(stream: &mut TlsStream<TcpStream>) -> Result<Url> {
-    let mut stream = async_std::io::BufReader::new(stream);
-    let mut request = Vec::new();
-    stream.read_until(b'\r', &mut request).await?;
+    // Read one line up to 1024 bytes, plus 2 bytes for CRLF.
+    let mut request = [0; 1026];
+    let mut buf = &mut request[..];
+    let mut len = 0;
+    while !buf.is_empty() {
+        let n = stream.read(buf).await?;
+        len += n;
+        if n == 0 || request[..len].ends_with(b"\r\n") {
+            break;
+        }
+        buf = &mut request[len..];
+    }
+    if !request[..len].ends_with(b"\r\n") {
+        Err("Missing CRLF")?
+    }
+    let request = str::from_utf8(&request[..len - 2])?;
 
-    // Check line ending.
-    let eol = &mut [0];
-    stream.read_exact(eol).await?;
-    if eol != b"\n" {
-        Err("CR without LF")?
-    }
-    // Check request length.
-    if request.len() > 1026 {
-        Err("Too long")?
-    }
-    // Handle scheme-relative URLs.
-    if request.starts_with(b"//") {
-        request.splice(..0, "gemini:".bytes());
-    }
-    // Parse URL.
-    let url = Url::parse(str::from_utf8(&request)?.trim_end())?;
+    let url = if request.starts_with("//") {
+        Url::parse(&format!("gemini:{}", request))?
+    } else {
+        Url::parse(request)?
+    };
     if url.scheme() != "gemini" {
         Err("unsupported URL scheme")?
     }
-    // TODO: Validate hostname and port.
     Ok(url)
 }
 
