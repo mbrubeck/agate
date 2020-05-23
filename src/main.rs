@@ -91,7 +91,7 @@ async fn parse_request<R: Read + Unpin>(mut stream: R) -> Result<Url> {
     let mut len = 0;
 
     // Read until CRLF, end-of-stream, or there's no buffer space left.
-    while !buf.is_empty() {
+    loop {
         let bytes_read = stream.read(buf).await?;
         len += bytes_read;
         if request[..len].ends_with(b"\r\n") {
