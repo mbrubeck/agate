@@ -7,7 +7,7 @@ use {
         task,
     },
     async_tls::TlsAcceptor,
-    lazy_static::lazy_static,
+    once_cell::sync::Lazy,
     std::{error::Error, ffi::OsStr, marker::Unpin, str, sync::Arc},
     url::Url,
 };
@@ -36,12 +36,6 @@ fn main() -> Result {
     })
 }
 
-lazy_static! {
-    static ref ARGS: Args = args()
-        .expect("usage: agate <addr:port> <dir> <cert> <key>");
-    static ref ACCEPTOR: TlsAcceptor = acceptor().unwrap();
-}
-
 fn args() -> Option<Args> {
     let mut args = std::env::args().skip(1);
     Some(Args {
@@ -51,6 +45,9 @@ fn args() -> Option<Args> {
         key_file: args.next()?,
     })
 }
+
+static ARGS: Lazy<Args> =
+    Lazy::new(|| args().expect("usage: agate <addr:port> <dir> <cert> <key>"));
 
 fn acceptor() -> Result<TlsAcceptor> {
     use rustls::{ServerConfig, NoClientAuth, internal::pemfile::{certs, pkcs8_private_keys}};
@@ -69,7 +66,8 @@ fn acceptor() -> Result<TlsAcceptor> {
 
 /// Handle a single client session (request + response).
 async fn connection(stream: TcpStream) -> Result {
-    use async_std::io::prelude::*;
+    static ACCEPTOR: Lazy<TlsAcceptor> = Lazy::new(|| acceptor().unwrap());
+
     let mut stream = ACCEPTOR.accept(stream).await?;
     match parse_request(&mut stream).await {
         Ok(url) => {

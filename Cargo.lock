@@ -6,7 +6,7 @@ version = "1.1.0"
 dependencies = [
  "async-std",
  "async-tls",
- "lazy_static",
+ "once_cell",
  "rustls",
  "tree_magic",
  "url",
