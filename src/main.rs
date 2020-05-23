@@ -6,9 +6,9 @@ use {
         stream::StreamExt,
         task,
     },
-    async_tls::{TlsAcceptor, server::TlsStream},
+    async_tls::TlsAcceptor,
     lazy_static::lazy_static,
-    std::{error::Error, ffi::OsStr, fs::File, io::BufReader, str, sync::Arc},
+    std::{error::Error, ffi::OsStr, marker::Unpin, str, sync::Arc},
     url::Url,
 };
 
@@ -54,6 +54,7 @@ fn args() -> Option<Args> {
 
 fn acceptor() -> Result<TlsAcceptor> {
     use rustls::{ServerConfig, NoClientAuth, internal::pemfile::{certs, pkcs8_private_keys}};
+    use std::{io::BufReader, fs::File};
 
     let cert_file = File::open(&ARGS.cert_file)?;
     let certs = certs(&mut BufReader::new(cert_file)).or(Err("bad cert"))?;
@@ -66,13 +67,14 @@ fn acceptor() -> Result<TlsAcceptor> {
     Ok(TlsAcceptor::from(Arc::new(config)))
 }
 
+/// Handle a single client session (request + response).
 async fn connection(stream: TcpStream) -> Result {
     use async_std::io::prelude::*;
     let mut stream = ACCEPTOR.accept(stream).await?;
     match parse_request(&mut stream).await {
         Ok(url) => {
             eprintln!("Got request for {:?}", url);
-            get(&url, &mut stream).await
+            send_response(&url, &mut stream).await
         }
         Err(e) => {
             stream.write_all(b"59 Invalid request.\r\n").await?;
@@ -81,40 +83,47 @@ async fn connection(stream: TcpStream) -> Result {
     }
 }
 
-async fn parse_request(stream: &mut TlsStream<TcpStream>) -> Result<Url> {
-    // Read one line up to 1024 bytes, plus 2 bytes for CRLF.
+/// Return the URL requested by the client.
+async fn parse_request<R: Read + Unpin>(mut stream: R) -> Result<Url> {
+    // Because requests are limited to 1024 bytes (plus 2 bytes for CRLF), we
+    // can use a fixed-sized buffer on the stack, avoiding allocations and
+    // copying, and stopping bad clients from making us use too much memory.
     let mut request = [0; 1026];
     let mut buf = &mut request[..];
     let mut len = 0;
+
+    // Read until CRLF, end-of-stream, or there's no buffer space left.
     while !buf.is_empty() {
-        let n = stream.read(buf).await?;
-        len += n;
+        let bytes_read = stream.read(buf).await?;
+        len += bytes_read;
         if request[..len].ends_with(b"\r\n") {
             break;
-        } else if n == 0 {
+        } else if bytes_read == 0 {
             Err("Request ended unexpectedly")?
         }
         buf = &mut request[len..];
     }
     let request = str::from_utf8(&request[..len - 2])?;
 
+    // Handle scheme-relative URLs.
     let url = if request.starts_with("//") {
         Url::parse(&format!("gemini:{}", request))?
     } else {
         Url::parse(request)?
     };
+
+    // Validate the URL. TODO: Check the hostname and port.
     if url.scheme() != "gemini" {
         Err("unsupported URL scheme")?
     }
     Ok(url)
 }
 
-async fn get(url: &Url, stream: &mut TlsStream<TcpStream>) -> Result {
+/// Send the client the file located at the requested URL.
+async fn send_response<W: Write + Unpin>(url: &Url, mut stream: W) -> Result {
     let mut path = PathBuf::from(&ARGS.content_dir);
     if let Some(segments) = url.path_segments() {
         path.extend(segments);
-    } else {
-        return redirect_slash(url, stream).await;
     }
     if path.is_dir().await {
         if url.as_str().ends_with('/') {
@@ -142,7 +151,8 @@ async fn get(url: &Url, stream: &mut TlsStream<TcpStream>) -> Result {
     Ok(())
 }
 
-async fn redirect_slash(url: &Url, stream: &mut TlsStream<TcpStream>) -> Result {
+/// Send a redirect when the URL for a directory is missing a trailing slash.
+async fn redirect_slash<W: Write + Unpin>(url: &Url, mut stream: W) -> Result {
     stream.write_all(b"31 ").await?;
     stream.write_all(url.as_str().as_bytes()).await?;
     stream.write_all(b"/\r\n").await?;
