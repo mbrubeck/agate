@@ -4,7 +4,7 @@ use {
         net::{TcpListener, TcpStream},
         path::PathBuf,
         stream::StreamExt,
-        task,
+        task::{block_on, spawn},
     },
     async_tls::TlsAcceptor,
     once_cell::sync::Lazy,
@@ -22,11 +22,11 @@ struct Args {
 }
 
 fn main() -> Result {
-    task::block_on(async {
+    block_on(async {
         let listener = TcpListener::bind(&ARGS.sock_addr).await?;
         let mut incoming = listener.incoming();
         while let Some(Ok(stream)) = incoming.next().await {
-            task::spawn(async {
+            spawn(async {
                 if let Err(e) = connection(stream).await {
                     eprintln!("Error: {:?}", e);
                 }
