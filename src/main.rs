@@ -125,14 +125,14 @@ async fn send_response<W: Write + Unpin>(url: &Url, mut stream: W) -> Result {
     }
     if path.is_dir().await {
         if url.as_str().ends_with('/') {
-            path.push("index.gemini");
+            path.push("index.gmi");
         } else {
             return redirect_slash(url, stream).await;
         }
     }
     match async_std::fs::read(&path).await {
         Ok(body) => {
-            if path.extension() == Some(OsStr::new("gemini")) {
+            if path.extension() == Some(OsStr::new("gmi")) {
                 stream.write_all(b"20 text/gemini\r\n").await?;
             } else {
                 let mime = tree_magic::from_u8(&body);

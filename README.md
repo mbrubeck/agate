@@ -29,7 +29,7 @@ openssl req -x509 -newkey rsa:4096 -keyout key.rsa -out cert.pem \
 agate 0.0.0.0:1965 path/to/content/ cert.pem key.rsa
 ```
 
-When a client requests the URL `gemini://example.com/foo/bar`, Agate will respond with the file at `path/to/content/foo/bar`.  If there is a directory at that path, Agate will look for a file named `index.gemini` inside that directory.
+When a client requests the URL `gemini://example.com/foo/bar`, Agate will respond with the file at `path/to/content/foo/bar`.  If there is a directory at that path, Agate will look for a file named `index.gmi` inside that directory.
 
 [Gemini]: https://gemini.circumlunar.space/
 [Rust]: https://www.rust-lang.org/
