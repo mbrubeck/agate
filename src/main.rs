@@ -135,7 +135,7 @@ async fn send_response<W: Write + Unpin>(url: &Url, mut stream: W) -> Result {
             if path.extension() == Some(OsStr::new("gmi")) {
                 stream.write_all(b"20 text/gemini\r\n").await?;
             } else {
-                let mime = tree_magic::from_u8(&body);
+                let mime = tree_magic_mini::from_u8(&body);
                 let header = format!("20 {}\r\n", mime);
                 stream.write_all(header.as_bytes()).await?;
             }
