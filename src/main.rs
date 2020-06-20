@@ -1,22 +1,16 @@
-use {
-    async_std::{
-        io::prelude::*,
-        net::{TcpListener, TcpStream},
-        stream::StreamExt,
-        task::{block_on, spawn},
-    },
-    async_tls::TlsAcceptor,
-    once_cell::sync::Lazy,
-    std::{error::Error, ffi::OsStr, fs::File, io::BufReader, marker::Unpin, sync::Arc},
-    url::Url,
-};
+use async_std::{io::prelude::*, net::{TcpListener, TcpStream}, stream::StreamExt, task};
+use async_tls::TlsAcceptor;
+use once_cell::sync::Lazy;
+use rustls::{ServerConfig, NoClientAuth, internal::pemfile::{certs, pkcs8_private_keys}};
+use std::{error::Error, ffi::OsStr, fs::File, io::BufReader, marker::Unpin, sync::Arc};
+use url::Url;
 
 fn main() -> Result {
-    block_on(async {
+    task::block_on(async {
         let listener = TcpListener::bind(&ARGS.sock_addr).await?;
         let mut incoming = listener.incoming();
         while let Some(Ok(stream)) = incoming.next().await {
-            spawn(async {
+            task::spawn(async {
                 if let Err(e) = handle_request(stream).await {
                     eprintln!("Error: {:?}", e);
                 }
@@ -28,8 +22,10 @@ fn main() -> Result {
 
 type Result<T=()> = std::result::Result<T, Box<dyn Error + Send + Sync>>;
 
-static ARGS: Lazy<Args> =
-    Lazy::new(|| args().expect("usage: agate <addr:port> <dir> <cert> <key>"));
+static ARGS: Lazy<Args> = Lazy::new(|| args().unwrap_or_else(|| {
+    eprintln!("usage: agate <addr:port> <dir> <cert> <key>");
+    std::process::exit(1);
+}));
 
 struct Args {
     sock_addr: String,
@@ -72,8 +68,6 @@ async fn handle_request(stream: TcpStream) -> Result {
 
 /// TLS configuration.
 fn acceptor() -> Result<TlsAcceptor> {
-    use rustls::{ServerConfig, NoClientAuth, internal::pemfile::{certs, pkcs8_private_keys}};
-
     let cert_file = File::open(&ARGS.cert_file)?;
     let certs = certs(&mut BufReader::new(cert_file)).or(Err("bad cert"))?;
 
