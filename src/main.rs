@@ -151,5 +151,5 @@ async fn redirect_slash<W: Write + Unpin>(url: &Url, mut stream: W) -> Result {
     stream.write_all(b"31 ").await?;
     stream.write_all(url.as_str().as_bytes()).await?;
     stream.write_all(b"/\r\n").await?;
-    return Ok(())
+    Ok(())
 }
