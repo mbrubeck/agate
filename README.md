@@ -12,7 +12,13 @@ Agate is a server for the [Gemini] network protocol, built with the [Rust] progr
 
 ## Installation and setup
 
-1. [Install the Rust toolchain][rustup].
+1. Download and unpack the [pre-compiled binary](https://github.com/mbrubeck/agate/releases).
+
+   Or, if you have the Rust toolchain installed, run `cargo install agate` to
+   install agate from crates.io.
+
+   Or download the source code and run `cargo build --release` inside the
+   source repository, then find the binary at `target/release/agate`.
 
 2. Run `cargo install agate` to install agate from crates.io, or clone the [source], run `cargo build --release`, and then copy the compiled binary from `target/release/agate` to any location you want.  (You can also use `cargo run --release <args>` to run Agate from within the source directory.)
 
