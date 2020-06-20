@@ -8,18 +8,9 @@ use {
     },
     async_tls::TlsAcceptor,
     once_cell::sync::Lazy,
-    std::{error::Error, ffi::OsStr, marker::Unpin, str, sync::Arc},
+    std::{error::Error, ffi::OsStr, fs::File, io::BufReader, marker::Unpin, sync::Arc},
     url::Url,
 };
-
-pub type Result<T=()> = std::result::Result<T, Box<dyn Error + Send + Sync>>;
-
-struct Args {
-    sock_addr: String,
-    content_dir: String,
-    cert_file: String,
-    key_file: String,
-}
 
 fn main() -> Result {
     block_on(async {
@@ -27,13 +18,25 @@ fn main() -> Result {
         let mut incoming = listener.incoming();
         while let Some(Ok(stream)) = incoming.next().await {
             spawn(async {
-                if let Err(e) = connection(stream).await {
+                if let Err(e) = handle_request(stream).await {
                     eprintln!("Error: {:?}", e);
                 }
             });
         }
         Ok(())
     })
+}
+
+type Result<T=()> = std::result::Result<T, Box<dyn Error + Send + Sync>>;
+
+static ARGS: Lazy<Args> =
+    Lazy::new(|| args().expect("usage: agate <addr:port> <dir> <cert> <key>"));
+
+struct Args {
+    sock_addr: String,
+    content_dir: String,
+    cert_file: String,
+    key_file: String,
 }
 
 fn args() -> Option<Args> {
@@ -46,29 +49,12 @@ fn args() -> Option<Args> {
     })
 }
 
-static ARGS: Lazy<Args> =
-    Lazy::new(|| args().expect("usage: agate <addr:port> <dir> <cert> <key>"));
-
-fn acceptor() -> Result<TlsAcceptor> {
-    use rustls::{ServerConfig, NoClientAuth, internal::pemfile::{certs, pkcs8_private_keys}};
-    use std::{io::BufReader, fs::File};
-
-    let cert_file = File::open(&ARGS.cert_file)?;
-    let certs = certs(&mut BufReader::new(cert_file)).or(Err("bad cert"))?;
-
-    let key_file = File::open(&ARGS.key_file)?;
-    let mut keys = pkcs8_private_keys(&mut BufReader::new(key_file)).or(Err("bad key"))?;
-
-    let mut config = ServerConfig::new(NoClientAuth::new());
-    config.set_single_cert(certs, keys.remove(0))?;
-    Ok(TlsAcceptor::from(Arc::new(config)))
-}
-
 /// Handle a single client session (request + response).
-async fn connection(stream: TcpStream) -> Result {
-    static ACCEPTOR: Lazy<TlsAcceptor> = Lazy::new(|| acceptor().unwrap());
+async fn handle_request(stream: TcpStream) -> Result {
+    // Perform handshake.
+    static TLS: Lazy<TlsAcceptor> = Lazy::new(|| acceptor().unwrap());
+    let mut stream = TLS.accept(stream).await?;
 
-    let mut stream = ACCEPTOR.accept(stream).await?;
     match parse_request(&mut stream).await {
         Ok(url) => {
             eprintln!("Got request for {:?}", url);
@@ -79,6 +65,21 @@ async fn connection(stream: TcpStream) -> Result {
             Err(e)
         }
     }
+}
+
+/// TLS configuration.
+fn acceptor() -> Result<TlsAcceptor> {
+    use rustls::{ServerConfig, NoClientAuth, internal::pemfile::{certs, pkcs8_private_keys}};
+
+    let cert_file = File::open(&ARGS.cert_file)?;
+    let certs = certs(&mut BufReader::new(cert_file)).or(Err("bad cert"))?;
+
+    let key_file = File::open(&ARGS.key_file)?;
+    let mut keys = pkcs8_private_keys(&mut BufReader::new(key_file)).or(Err("bad key"))?;
+
+    let mut config = ServerConfig::new(NoClientAuth::new());
+    config.set_single_cert(certs, keys.remove(0))?;
+    Ok(TlsAcceptor::from(Arc::new(config)))
 }
 
 /// Return the URL requested by the client.
@@ -101,7 +102,7 @@ async fn parse_request<R: Read + Unpin>(mut stream: R) -> Result<Url> {
         }
         buf = &mut request[len..];
     }
-    let request = str::from_utf8(&request[..len - 2])?;
+    let request = std::str::from_utf8(&request[..len - 2])?;
 
     // Handle scheme-relative URLs.
     let url = if request.starts_with("//") {
