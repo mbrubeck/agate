@@ -2,7 +2,6 @@ use {
     async_std::{
         io::prelude::*,
         net::{TcpListener, TcpStream},
-        path::PathBuf,
         stream::StreamExt,
         task::{block_on, spawn},
     },
@@ -58,13 +57,17 @@ async fn handle_request(stream: TcpStream) -> Result {
     match parse_request(&mut stream).await {
         Ok(url) => {
             eprintln!("Got request for {:?}", url);
-            send_response(&url, &mut stream).await
+            if let Err(e) = send_response(&url, &mut stream).await {
+                stream.write_all(b"51 Not found, sorry.\r\n").await?;
+                return Err(e)
+            }
         }
         Err(e) => {
             stream.write_all(b"59 Invalid request.\r\n").await?;
-            Err(e)
+            return Err(e)
         }
     }
+    Ok(())
 }
 
 /// TLS configuration.
@@ -120,33 +123,32 @@ async fn parse_request<R: Read + Unpin>(mut stream: R) -> Result<Url> {
 
 /// Send the client the file located at the requested URL.
 async fn send_response<W: Write + Unpin>(url: &Url, mut stream: W) -> Result {
-    let mut path = PathBuf::from(&ARGS.content_dir);
+    let mut path = std::path::PathBuf::from(&ARGS.content_dir);
     if let Some(segments) = url.path_segments() {
         path.extend(segments);
     }
-    if path.is_dir().await {
+    if async_std::fs::metadata(&path).await?.is_dir() {
         if url.as_str().ends_with('/') {
             path.push("index.gmi");
         } else {
             return redirect_slash(url, stream).await;
         }
     }
-    match async_std::fs::read(&path).await {
-        Ok(body) => {
-            if path.extension() == Some(OsStr::new("gmi")) {
-                stream.write_all(b"20 text/gemini\r\n").await?;
-            } else {
-                let mime = tree_magic_mini::from_u8(&body);
-                let header = format!("20 {}\r\n", mime);
-                stream.write_all(header.as_bytes()).await?;
-            }
-            stream.write_all(&body).await?;
-        }
-        Err(e) => {
-            stream.write_all(b"51 Not found, sorry.\r\n").await?;
-            Err(e)?
-        }
+
+    let mut file = async_std::fs::File::open(&path).await?;
+    
+    // Send header.
+    if path.extension() == Some(OsStr::new("gmi")) {
+        stream.write_all(b"20 text/gemini\r\n").await?;
+    } else {
+        let mime = tree_magic_mini::from_filepath(&path).ok_or("Can't read file")?;
+        stream.write_all(b"20 ").await?;
+        stream.write_all(mime.as_bytes()).await?;
+        stream.write_all(b"\r\n").await?;
     }
+    
+    // Send body.
+    async_std::io::copy(&mut file, &mut stream).await?;
     Ok(())
 }
 
