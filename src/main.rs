@@ -54,12 +54,12 @@ async fn handle_request(stream: TcpStream) -> Result {
         Ok(url) => {
             eprintln!("Got request for {:?}", url);
             if let Err(e) = send_response(&url, &mut stream).await {
-                stream.write_all(b"51 Not found, sorry.\r\n").await?;
+                respond(&mut stream, "51", &["Not found, sorry."]).await?;
                 return Err(e)
             }
         }
         Err(e) => {
-            stream.write_all(b"59 Invalid request.\r\n").await?;
+            respond(&mut stream, "59", &["Invalid request."]).await?;
             return Err(e)
         }
     }
@@ -125,7 +125,8 @@ async fn send_response<W: Write + Unpin>(url: &Url, mut stream: W) -> Result {
         if url.as_str().ends_with('/') {
             path.push("index.gmi");
         } else {
-            return redirect_slash(url, stream).await;
+            // Send a redirect when the URL for a directory has no trailing slash.
+            return respond(&mut stream, "31", &[url.as_str(), "/"]).await;
         }
     }
 
@@ -136,9 +137,7 @@ async fn send_response<W: Write + Unpin>(url: &Url, mut stream: W) -> Result {
         stream.write_all(b"20 text/gemini\r\n").await?;
     } else {
         let mime = tree_magic_mini::from_filepath(&path).ok_or("Can't read file")?;
-        stream.write_all(b"20 ").await?;
-        stream.write_all(mime.as_bytes()).await?;
-        stream.write_all(b"\r\n").await?;
+        respond(&mut stream, "20", &[mime]).await?;
     }
     
     // Send body.
@@ -146,10 +145,12 @@ async fn send_response<W: Write + Unpin>(url: &Url, mut stream: W) -> Result {
     Ok(())
 }
 
-/// Send a redirect when the URL for a directory is missing a trailing slash.
-async fn redirect_slash<W: Write + Unpin>(url: &Url, mut stream: W) -> Result {
-    stream.write_all(b"31 ").await?;
-    stream.write_all(url.as_str().as_bytes()).await?;
-    stream.write_all(b"/\r\n").await?;
+async fn respond<W: Write + Unpin>(mut stream: W, status: &str, meta: &[&str]) -> Result {
+    stream.write_all(status.as_bytes()).await?;
+    stream.write_all(b" ").await?;
+    for m in meta {
+        stream.write_all(m.as_bytes()).await?;
+    }
+    stream.write_all(b"\r\n").await?;
     Ok(())
 }
