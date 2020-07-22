@@ -132,15 +132,15 @@ async fn send_response<W: Write + Unpin>(url: &Url, mut stream: W) -> Result {
 
     // Make sure the file opens successfully before sending the success header.
     let mut file = async_std::fs::File::open(&path).await?;
-    
+
     // Send header.
     if path.extension() == Some(OsStr::new("gmi")) {
         respond(&mut stream, "20", &["text/gemini"]).await?;
     } else {
-        let mime = tree_magic_mini::from_filepath(&path).ok_or("Can't read file")?;
-        respond(&mut stream, "20", &[mime]).await?;
+        let mime = mime_guess::from_path(&path).first_or_octet_stream();
+        respond(&mut stream, "20", &[mime.essence_str()]).await?;
     }
-    
+
     // Send body.
     async_std::io::copy(&mut file, &mut stream).await?;
     Ok(())
