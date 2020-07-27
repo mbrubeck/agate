@@ -48,20 +48,18 @@ fn args() -> Option<Args> {
 async fn handle_request(stream: TcpStream) -> Result {
     // Perform handshake.
     static TLS: Lazy<TlsAcceptor> = Lazy::new(|| acceptor().unwrap());
-    let mut stream = TLS.accept(stream).await?;
+    let stream = &mut TLS.accept(stream).await?;
 
-    match parse_request(&mut stream).await {
-        Ok(url) => {
-            eprintln!("Got request for {:?}", url);
-            if let Err(e) = send_response(&url, &mut stream).await {
-                respond(&mut stream, "51", &["Not found, sorry."]).await?;
-                return Err(e)
-            }
-        }
+    let url = match parse_request(stream).await {
+        Ok(url) => url,
         Err(e) => {
-            respond(&mut stream, "59", &["Invalid request."]).await?;
+            respond(stream, "59", &["Invalid request."]).await?;
             return Err(e)
         }
+    };
+    if let Err(e) = send_response(url, stream).await {
+        respond(stream, "51", &["Not found, sorry."]).await?;
+        return Err(e)
     }
     Ok(())
 }
@@ -80,7 +78,7 @@ fn acceptor() -> Result<TlsAcceptor> {
 }
 
 /// Return the URL requested by the client.
-async fn parse_request<R: Read + Unpin>(mut stream: R) -> Result<Url> {
+async fn parse_request<R: Read + Unpin>(stream: &mut R) -> Result<Url> {
     // Because requests are limited to 1024 bytes (plus 2 bytes for CRLF), we
     // can use a fixed-sized buffer on the stack, avoiding allocations and
     // copying, and stopping bad clients from making us use too much memory.
@@ -112,11 +110,12 @@ async fn parse_request<R: Read + Unpin>(mut stream: R) -> Result<Url> {
     if url.scheme() != "gemini" {
         Err("unsupported URL scheme")?
     }
+    eprintln!("Got request for {:?}", url);
     Ok(url)
 }
 
 /// Send the client the file located at the requested URL.
-async fn send_response<W: Write + Unpin>(url: &Url, mut stream: W) -> Result {
+async fn send_response<W: Write + Unpin>(url: Url, stream: &mut W) -> Result {
     let mut path = std::path::PathBuf::from(&ARGS.content_dir);
     if let Some(segments) = url.path_segments() {
         path.extend(segments);
@@ -126,7 +125,7 @@ async fn send_response<W: Write + Unpin>(url: &Url, mut stream: W) -> Result {
             path.push("index.gmi");
         } else {
             // Send a redirect when the URL for a directory has no trailing slash.
-            return respond(&mut stream, "31", &[url.as_str(), "/"]).await;
+            return respond(stream, "31", &[url.as_str(), "/"]).await;
         }
     }
 
@@ -135,18 +134,18 @@ async fn send_response<W: Write + Unpin>(url: &Url, mut stream: W) -> Result {
 
     // Send header.
     if path.extension() == Some(OsStr::new("gmi")) {
-        respond(&mut stream, "20", &["text/gemini"]).await?;
+        respond(stream, "20", &["text/gemini"]).await?;
     } else {
         let mime = mime_guess::from_path(&path).first_or_octet_stream();
-        respond(&mut stream, "20", &[mime.essence_str()]).await?;
+        respond(stream, "20", &[mime.essence_str()]).await?;
     }
 
     // Send body.
-    async_std::io::copy(&mut file, &mut stream).await?;
+    async_std::io::copy(&mut file, stream).await?;
     Ok(())
 }
 
-async fn respond<W: Write + Unpin>(mut stream: W, status: &str, meta: &[&str]) -> Result {
+async fn respond<W: Write + Unpin>(stream: &mut W, status: &str, meta: &[&str]) -> Result {
     stream.write_all(status.as_bytes()).await?;
     stream.write_all(b" ").await?;
     for m in meta {
