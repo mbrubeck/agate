@@ -20,16 +20,14 @@ Agate is a server for the [Gemini] network protocol, built with the [Rust] progr
    Or download the source code and run `cargo build --release` inside the
    source repository, then find the binary at `target/release/agate`.
 
-2. Run `cargo install agate` to install agate from crates.io, or clone the [source], run `cargo build --release`, and then copy the compiled binary from `target/release/agate` to any location you want.  (You can also use `cargo run --release <args>` to run Agate from within the source directory.)
-
-3. Generate a self-signed TLS certificate and private key.  For example, if you have OpenSSL 1.1 installed, you can use a command like the following.  (Replace the hostname with the address of your Gemini server.)
+2. Generate a self-signed TLS certificate and private key.  For example, if you have OpenSSL 1.1 installed, you can use a command like the following.  (Replace the hostname with the address of your Gemini server.)
 
 ```
 openssl req -x509 -newkey rsa:4096 -keyout key.rsa -out cert.pem \
     -days 3650 -nodes -subj "/CN=example.com"
 ```
 
-4. Run the server. The command line arguments are `agate <addr:port> <content_dir> <cert_file> <key_file>`.  For example, to listen on the standard Gemini port (1965) on all interfaces:
+3. Run the server. The command line arguments are `agate <addr:port> <content_dir> <cert_file> <key_file>`.  For example, to listen on the standard Gemini port (1965) on all interfaces:
 
 ```
 agate 0.0.0.0:1965 path/to/content/ cert.pem key.rsa
