@@ -6,13 +6,15 @@ use std::{error::Error, ffi::OsStr, fs::File, io::BufReader, marker::Unpin, sync
 use url::Url;
 
 fn main() -> Result {
+    env_logger::Builder::from_env("AGATE_LOG").init();
     task::block_on(async {
         let listener = TcpListener::bind(&ARGS.sock_addr).await?;
         let mut incoming = listener.incoming();
+        log::info!("Listening on {}...", ARGS.sock_addr);
         while let Some(Ok(stream)) = incoming.next().await {
             task::spawn(async {
                 if let Err(e) = handle_request(stream).await {
-                    eprintln!("Error: {:?}", e);
+                    log::error!("{:?}", e);
                 }
             });
         }
@@ -110,7 +112,7 @@ async fn parse_request<R: Read + Unpin>(stream: &mut R) -> Result<Url> {
     if url.scheme() != "gemini" {
         Err("unsupported URL scheme")?
     }
-    eprintln!("Got request for {:?}", url);
+    log::info!("Got request for {:?}", url);
     Ok(url)
 }
 
@@ -146,6 +148,7 @@ async fn send_response<W: Write + Unpin>(url: Url, stream: &mut W) -> Result {
 }
 
 async fn respond<W: Write + Unpin>(stream: &mut W, status: &str, meta: &[&str]) -> Result {
+    log::info!("Responding with status {} and meta {:?}", status, meta);
     stream.write_all(status.as_bytes()).await?;
     stream.write_all(b" ").await?;
     for m in meta {
