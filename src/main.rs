@@ -25,7 +25,7 @@ fn main() -> Result {
 type Result<T=()> = std::result::Result<T, Box<dyn Error + Send + Sync>>;
 
 static ARGS: Lazy<Args> = Lazy::new(|| args().unwrap_or_else(|| {
-    eprintln!("usage: agate <addr:port> <dir> <cert> <key>");
+    eprintln!("usage: agate <addr:port> <dir> <cert> <key> [<domain to check>]");
     std::process::exit(1);
 }));
 
@@ -34,6 +34,7 @@ struct Args {
     content_dir: String,
     cert_file: String,
     key_file: String,
+    domain: Option<String>,
 }
 
 fn args() -> Option<Args> {
@@ -43,6 +44,7 @@ fn args() -> Option<Args> {
         content_dir: args.next()?,
         cert_file: args.next()?,
         key_file: args.next()?,
+        domain: args.next(),
     })
 }
 
@@ -108,9 +110,15 @@ async fn parse_request<R: Read + Unpin>(stream: &mut R) -> Result<Url> {
         Url::parse(request)?
     };
 
-    // Validate the URL. TODO: Check the hostname and port.
+    // Validate the URL, host and port.
     if url.scheme() != "gemini" {
+        // FIXME: This should return a 53 status code.
         Err("unsupported URL scheme")?
+    } else if ARGS.domain.as_ref().map_or(false, |domain| url.host().map_or(false, |host| &host.to_string() != domain)) {
+        // FIXME: This should return a 53 status code.
+        Err("proxy request refused")?
+    } else if url.port().map_or(false, |port| port != ARGS.sock_addr.rsplitn(2, ':').next().unwrap().parse().unwrap()) {
+        Err("port did not match")?
     }
     log::info!("Got request for {:?}", url);
     Ok(url)
