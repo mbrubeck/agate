@@ -156,10 +156,12 @@ async fn send_response<W: Write + Unpin>(url: Url, stream: &mut W) -> Result {
         path.extend(segments);
     }
     if async_std::fs::metadata(&path).await?.is_dir() {
-        if url.as_str().ends_with('/') {
+        if url.path().ends_with('/') || url.path().is_empty() {
+            // if the path ends with a slash or the path is empty, the links will work the same
+            // without a redirect
             path.push("index.gmi");
         } else {
-            // Send a redirect when the URL for a directory has no trailing slash.
+            // if client is not redirected, links may not work as expected without trailing slash
             return respond(stream, "31", &[url.as_str(), "/"]).await;
         }
     }
