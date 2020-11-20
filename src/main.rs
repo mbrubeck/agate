@@ -144,7 +144,7 @@ async fn parse_request<R: Read + Unpin>(
     }) {
         Err((59, "port did not match"))
     } else {
-        log::info!("Got request for {:?}", url);
+        log::info!("Got request for {:?}", url.as_str());
         Ok(url)
     }
 }
