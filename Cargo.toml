@@ -18,7 +18,7 @@ once_cell = "1.4"
 rustls = "0.18.0"
 url = "2.1"
 log = "0.4"
-env_logger = "0.8"
+env_logger = { version = "0.8", default-features = false, features = ["atty", "humantime", "termcolor"] }
 
 [profile.release]
 lto = true
