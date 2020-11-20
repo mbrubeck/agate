@@ -41,7 +41,7 @@ When a client requests the URL `gemini://example.com/foo/bar`, Agate will respon
 Optionally, set a log level via the `AGATE_LOG` environment variable. Logging is powered by the [env_logger crate](https://crates.io/crates/env_logger):
 
 ```
-AGATE_LOG=info 0.0.0.0:1965 path/to.content/ cert.pem key.rsa
+AGATE_LOG=info 0.0.0.0:1965 path/to/content/ cert.pem key.rsa
 ```
 
 [Gemini]: https://gemini.circumlunar.space/
