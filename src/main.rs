@@ -118,6 +118,7 @@ async fn parse_request<R: Read + Unpin>(
         buf = &mut request[len..];
     }
     let request = std::str::from_utf8(&request[..len - 2]).map_err(|_| (59, "Invalid URL"))?;
+    log::info!("Got request for {:?}", request);
 
     // Handle scheme-relative URLs.
     let url = if request.starts_with("//") {
@@ -144,7 +145,6 @@ async fn parse_request<R: Read + Unpin>(
     }) {
         Err((53, "proxy request refused"))
     } else {
-        log::info!("Got request for {:?}", url.as_str());
         Ok(url)
     }
 }
