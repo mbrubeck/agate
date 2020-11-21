@@ -142,7 +142,7 @@ async fn parse_request<R: Read + Unpin>(
             .parse()
             .unwrap()
     }) {
-        Err((59, "port did not match"))
+        Err((53, "proxy request refused"))
     } else {
         log::info!("Got request for {:?}", url.as_str());
         Ok(url)
