@@ -11,7 +11,7 @@ use rustls::{
     NoClientAuth, ServerConfig,
 };
 use std::{error::Error, ffi::OsStr, fs::File, io::BufReader, marker::Unpin, sync::Arc};
-use url::Url;
+use url::{Host, Url};
 
 fn main() -> Result {
     env_logger::Builder::from_env("AGATE_LOG").init();
@@ -44,7 +44,7 @@ struct Args {
     content_dir: String,
     cert_file: String,
     key_file: String,
-    domain: Option<String>,
+    domain: Option<Host>,
 }
 
 fn args() -> Option<Args> {
@@ -54,7 +54,7 @@ fn args() -> Option<Args> {
         content_dir: args.next()?,
         cert_file: args.next()?,
         key_file: args.next()?,
-        domain: args.next(),
+        domain: args.next().and_then(|s| Host::parse(&s).ok()),
     })
 }
 
@@ -73,10 +73,9 @@ async fn handle_request(stream: TcpStream) -> Result {
     };
     if let Err(e) = send_response(url, stream).await {
         respond(stream, "51", &["Not found, sorry."]).await?;
-        Err(e)
-    } else {
-        Ok(())
+        Err(e)?
     }
+    Ok(())
 }
 
 /// TLS configuration.
@@ -129,24 +128,20 @@ async fn parse_request<R: Read + Unpin>(
 
     // Validate the URL, host and port.
     if url.scheme() != "gemini" {
-        Err((53, "unsupported URL scheme"))
-    } else if ARGS.domain.as_ref().map_or(false, |domain| {
-        url.host().map_or(false, |host| &host.to_string() != domain)
-    }) {
-        Err((53, "proxy request refused"))
-    } else if url.port().map_or(false, |port| {
-        port != ARGS
-            .sock_addr
-            .rsplitn(2, ':')
-            .next()
-            .unwrap()
-            .parse()
-            .unwrap()
-    }) {
-        Err((53, "proxy request refused"))
-    } else {
-        Ok(url)
+        return Err((53, "unsupported URL scheme"));
     }
+    // TODO: Can be simplified by https://github.com/servo/rust-url/pull/651
+    if let (Some(Host::Domain(domain)), Some(Host::Domain(host))) = (&ARGS.domain, url.host()) {
+        if domain != host {
+            return Err((53, "proxy request refused"));
+        }
+    }
+    if let Some(port) = url.port() {
+        if !ARGS.sock_addr.ends_with(&format!(":{}", port)) {
+            return Err((53, "proxy request refused"));
+        }
+    }
+    Ok(url)
 }
 
 /// Send the client the file located at the requested URL.
