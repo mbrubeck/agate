@@ -27,21 +27,24 @@ openssl req -x509 -newkey rsa:4096 -keyout key.rsa -out cert.pem \
     -days 3650 -nodes -subj "/CN=example.com"
 ```
 
-3. Run the server. The command line arguments are `agate <addr:port> <content_dir> <cert_file> <key_file> [<domain>]`.  For example, to listen on the standard Gemini port (1965) on all interfaces:
+3. Run the server. You can use the following arguments to specify the locations of the content directory, certificate and key files, IP address and port to listen on, and (optionally) a domain that will be used to validate request URLs:
 
 ```
-agate 0.0.0.0:1965 path/to/content/ cert.pem key.rsa
+agate --content path/to/content/ \
+      --key key.rsa \
+      --cert cert.pem \
+      --addr 0.0.0.0:1965 \
+      --hostname example.com
 ```
 
-Agate will check that the port part of the requested URL matches the port specified in the 1st argument.
-If `<domain>` is specified, agate will also check that the host part of the requested URL matches this domain.
+All of the command-line arguments are optional.  Run `agate --help` to see the default values used when arguments are omitted.
 
 When a client requests the URL `gemini://example.com/foo/bar`, Agate will respond with the file at `path/to/content/foo/bar`.  If there is a directory at that path, Agate will look for a file named `index.gmi` inside that directory.
 
-Optionally, set a log level via the `AGATE_LOG` environment variable. Logging is powered by the [env_logger crate](https://crates.io/crates/env_logger):
+To enable console logging, set a log level via the `AGATE_LOG` environment variable. Logging is powered by the [env_logger crate](https://crates.io/crates/env_logger):
 
 ```
-AGATE_LOG=info 0.0.0.0:1965 path/to/content/ cert.pem key.rsa
+AGATE_LOG=info agate --content path/to/content/
 ```
 
 [Gemini]: https://gemini.circumlunar.space/

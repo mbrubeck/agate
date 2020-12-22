@@ -10,7 +10,7 @@ use rustls::{
     internal::pemfile::{certs, pkcs8_private_keys},
     NoClientAuth, ServerConfig,
 };
-use std::{error::Error, ffi::OsStr, fs::File, io::BufReader, marker::Unpin, sync::Arc};
+use std::{error::Error, ffi::OsStr, fs::File, io::BufReader, marker::Unpin, path::Path, sync::Arc};
 use url::{Host, Url};
 
 fn main() -> Result {
@@ -30,11 +30,11 @@ fn main() -> Result {
     })
 }
 
-type Result<T = ()> = std::result::Result<T, Box<dyn Error + Send + Sync>>;
+type Result<T = (), E = Box<dyn Error + Send + Sync>> = std::result::Result<T, E>;
 
 static ARGS: Lazy<Args> = Lazy::new(|| {
-    args().unwrap_or_else(|| {
-        eprintln!("usage: agate <addr:port> <dir> <cert> <key> [<domain to check>]");
+    args().unwrap_or_else(|s| {
+        eprintln!("{}", s);
         std::process::exit(1);
     })
 });
@@ -44,18 +44,43 @@ struct Args {
     content_dir: String,
     cert_file: String,
     key_file: String,
-    domain: Option<Host>,
+    hostname: Option<Host>,
 }
 
-fn args() -> Option<Args> {
-    let mut args = std::env::args().skip(1);
-    Some(Args {
-        sock_addr: args.next()?,
-        content_dir: args.next()?,
-        cert_file: args.next()?,
-        key_file: args.next()?,
-        domain: args.next().and_then(|s| Host::parse(&s).ok()),
+fn args() -> Result<Args> {
+    let args: Vec<String> = std::env::args().collect();
+    let mut opts = getopts::Options::new();
+    opts.optopt("", "content", "Root of the content directory (default ./content)", "DIR");
+    opts.optopt("", "cert", "TLS certificate PEM file (default ./cert.pem)", "FILE");
+    opts.optopt("", "key", "PKCS8 private key file (default ./key.rsa)", "FILE");
+    opts.optopt("", "addr", "Address to listen on (default 0.0.0.0:1965)", "IP:PORT");
+    opts.optopt("", "hostname", "Domain name of this Gemini server (optional)", "NAME");
+    opts.optflag("h", "help", "print this help menu");
+
+    let usage = opts.usage(&format!("Usage: {} FILE [options]", &args[0]));
+    let matches = opts.parse(&args[1..]).map_err(|f| f.to_string())?;
+    if matches.opt_present("h") {
+        Err(usage)?;
+    }
+    let hostname = match matches.opt_str("hostname") {
+        Some(s) => Some(Host::parse(&s)?),
+        None => None,
+    };
+    Ok(Args {
+        sock_addr: matches.opt_get_default("addr", "0.0.0.0:1965".into())?,
+        content_dir: check_path(matches.opt_get_default("content", "content".into())?)?,
+        cert_file: check_path(matches.opt_get_default("cert", "cert.pem".into())?)?,
+        key_file: check_path(matches.opt_get_default("key", "key.rsa".into())?)?,
+        hostname,
     })
+}
+
+fn check_path(s: String) -> Result<String, String> {
+    if Path::new(&s).exists() {
+        Ok(s)
+    } else {
+        Err(format!("No such file: {}", s))
+    }
 }
 
 /// Handle a single client session (request + response).
@@ -131,8 +156,8 @@ async fn parse_request<R: Read + Unpin>(
         return Err((53, "unsupported URL scheme"));
     }
     // TODO: Can be simplified by https://github.com/servo/rust-url/pull/651
-    if let (Some(Host::Domain(domain)), Some(Host::Domain(host))) = (&ARGS.domain, url.host()) {
-        if domain != host {
+    if let (Some(Host::Domain(expected)), Some(Host::Domain(host))) = (url.host(), &ARGS.hostname) {
+        if host != expected {
             return Err((53, "proxy request refused"));
         }
     }
