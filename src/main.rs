@@ -14,7 +14,9 @@ use std::{error::Error, ffi::OsStr, fs::File, io::BufReader, marker::Unpin, path
 use url::{Host, Url};
 
 fn main() -> Result {
-    env_logger::Builder::from_env("AGATE_LOG").init();
+    if !ARGS.silent {
+        env_logger::Builder::new().parse_filters("info").init();
+    }
     task::block_on(async {
         let listener = TcpListener::bind(&ARGS.sock_addr).await?;
         let mut incoming = listener.incoming();
@@ -46,6 +48,7 @@ struct Args {
     key_file: String,
     hostname: Option<Host>,
     language: Option<String>,
+    silent: bool,
 }
 
 fn args() -> Result<Args> {
@@ -57,7 +60,8 @@ fn args() -> Result<Args> {
     opts.optopt("", "addr", "Address to listen on (default 0.0.0.0:1965)", "IP:PORT");
     opts.optopt("", "hostname", "Domain name of this Gemini server (optional)", "NAME");
     opts.optopt("", "lang", "RFC 4646 Language code(s) for text/gemini documents", "LANG");
-    opts.optflag("h", "help", "print this help menu");
+    opts.optflag("s", "silent", "Disable logging output");
+    opts.optflag("h", "help", "Print this help menu");
 
     let usage = opts.usage(&format!("Usage: {} FILE [options]", &args[0]));
     let matches = opts.parse(&args[1..]).map_err(|f| f.to_string())?;
@@ -74,6 +78,7 @@ fn args() -> Result<Args> {
         cert_file: check_path(matches.opt_get_default("cert", "cert.pem".into())?)?,
         key_file: check_path(matches.opt_get_default("key", "key.rsa".into())?)?,
         language: matches.opt_str("lang"),
+        silent: matches.opt_present("s"),
         hostname,
     })
 }
