@@ -34,7 +34,7 @@ agate --content path/to/content/ \
       --key key.rsa \
       --cert cert.pem \
       --addr 0.0.0.0:1965 \
-      --hostname example.com
+      --hostname example.com \
       --lang en-US
 ```
 
