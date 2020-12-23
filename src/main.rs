@@ -45,6 +45,7 @@ struct Args {
     cert_file: String,
     key_file: String,
     hostname: Option<Host>,
+    language: Option<String>,
 }
 
 fn args() -> Result<Args> {
@@ -55,6 +56,7 @@ fn args() -> Result<Args> {
     opts.optopt("", "key", "PKCS8 private key file (default ./key.rsa)", "FILE");
     opts.optopt("", "addr", "Address to listen on (default 0.0.0.0:1965)", "IP:PORT");
     opts.optopt("", "hostname", "Domain name of this Gemini server (optional)", "NAME");
+    opts.optopt("", "lang", "RFC 4646 Language code(s) for text/gemini documents", "LANG");
     opts.optflag("h", "help", "print this help menu");
 
     let usage = opts.usage(&format!("Usage: {} FILE [options]", &args[0]));
@@ -71,6 +73,7 @@ fn args() -> Result<Args> {
         content_dir: check_path(matches.opt_get_default("content", "content".into())?)?,
         cert_file: check_path(matches.opt_get_default("cert", "cert.pem".into())?)?,
         key_file: check_path(matches.opt_get_default("key", "key.rsa".into())?)?,
+        language: matches.opt_str("lang"),
         hostname,
     })
 }
@@ -191,7 +194,11 @@ async fn send_response<W: Write + Unpin>(url: Url, stream: &mut W) -> Result {
 
     // Send header.
     if path.extension() == Some(OsStr::new("gmi")) {
-        respond(stream, "20", &["text/gemini"]).await?;
+        if let Some(lang) = ARGS.language.as_deref() {
+            respond(stream, "20", &["text/gemini;lang=", lang]).await?;
+        } else {
+            respond(stream, "20", &["text/gemini"]).await?;
+        }
     } else {
         let mime = mime_guess::from_path(&path).first_or_octet_stream();
         respond(stream, "20", &[mime.essence_str()]).await?;

@@ -27,7 +27,7 @@ openssl req -x509 -newkey rsa:4096 -keyout key.rsa -out cert.pem \
     -days 3650 -nodes -subj "/CN=example.com"
 ```
 
-3. Run the server. You can use the following arguments to specify the locations of the content directory, certificate and key files, IP address and port to listen on, and (optionally) a domain that will be used to validate request URLs:
+3. Run the server. You can use the following arguments to specify the locations of the content directory, certificate and key files, IP address and port to listen on, host name to expect in request URLs, and default language code(s) to include in the MIME type for for text/gemini files:
 
 ```
 agate --content path/to/content/ \
@@ -35,6 +35,7 @@ agate --content path/to/content/ \
       --cert cert.pem \
       --addr 0.0.0.0:1965 \
       --hostname example.com
+      --lang en-US
 ```
 
 All of the command-line arguments are optional.  Run `agate --help` to see the default values used when arguments are omitted.
