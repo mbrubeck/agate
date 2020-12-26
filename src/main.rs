@@ -188,6 +188,34 @@ async fn send_response<W: Write + Unpin>(url: Url, stream: &mut W) -> Result {
             // if the path ends with a slash or the path is empty, the links will work the same
             // without a redirect
             path.push("index.gmi");
+            if path.exists() {
+                // index file exists
+            } else if path.with_file_name(".directory-listing-ok").exists() {
+                // no index file, but directory listing allowed
+                path.pop();
+                log::info!("Listing directory {:?}", path);
+                let entries = std::fs::read_dir(path)?;
+                let listing = entries
+                    .filter(Result::is_ok)
+                    .map(Result::unwrap)
+                    .map(|entry| {
+                        // transform filenames into gemini link lines
+                        let mut name = String::from("=> ");
+                        name += &entry.file_name().to_string_lossy();
+                        if entry.path().is_dir() {
+                            // to avoid redirects link to directories with a trailing slash
+                            name += "/";
+                        }
+                        name + "\n"
+                    })
+                    // filter out files starting with a dot
+                    .filter(|entry| !entry.starts_with("=> ."))
+                    .collect::<String>();
+
+                respond(stream, "20", &["text/gemini"]).await?;
+                stream.write_all(listing.as_bytes()).await?;
+                return Ok(());
+            }
         } else {
             // if client is not redirected, links may not work as expected without trailing slash
             return respond(stream, "31", &[url.as_str(), "/"]).await;

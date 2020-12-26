@@ -40,7 +40,7 @@ agate --content path/to/content/ \
 
 All of the command-line arguments are optional.  Run `agate --help` to see the default values used when arguments are omitted.
 
-When a client requests the URL `gemini://example.com/foo/bar`, Agate will respond with the file at `path/to/content/foo/bar`.  If there is a directory at that path, Agate will look for a file named `index.gmi` inside that directory.
+When a client requests the URL `gemini://example.com/foo/bar`, Agate will respond with the file at `path/to/content/foo/bar`.  If there is a directory at that path, Agate will look for a file named `index.gmi` inside that directory. If there is no such file, but a file named `.directory-listing-ok` exists inside that directory, a basic directory listing is displayed. Files whose name starts with a dot (e.g. `.hidden`) are omitted from the list.
 
 [Gemini]: https://gemini.circumlunar.space/
 [Rust]: https://www.rust-lang.org/
