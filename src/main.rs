@@ -100,12 +100,12 @@ async fn handle_request(stream: TcpStream) -> Result {
     let url = match parse_request(stream).await {
         Ok(url) => url,
         Err((status, msg)) => {
-            respond(stream, &status.to_string(), &[&msg]).await?;
+            send_header(stream, &status.to_string(), &[&msg]).await?;
             Err(msg)?
         }
     };
     if let Err(e) = send_response(url, stream).await {
-        respond(stream, "51", &["Not found, sorry."]).await?;
+        send_header(stream, "51", &["Not found, sorry."]).await?;
         Err(e)?
     }
     Ok(())
@@ -194,7 +194,7 @@ async fn send_response<W: Write + Unpin>(url: Url, stream: &mut W) -> Result {
             }
         } else {
             // if client is not redirected, links may not work as expected without trailing slash
-            return respond(stream, "31", &[url.as_str(), "/"]).await;
+            return send_header(stream, "31", &[url.as_str(), "/"]).await;
         }
     }
 
@@ -206,7 +206,7 @@ async fn send_response<W: Write + Unpin>(url: Url, stream: &mut W) -> Result {
         send_text_gemini_header(stream).await?;
     } else {
         let mime = mime_guess::from_path(&path).first_or_octet_stream();
-        respond(stream, "20", &[mime.essence_str()]).await?;
+        send_header(stream, "20", &[mime.essence_str()]).await?;
     }
 
     // Send body.
@@ -214,7 +214,7 @@ async fn send_response<W: Write + Unpin>(url: Url, stream: &mut W) -> Result {
     Ok(())
 }
 
-async fn respond<W: Write + Unpin>(stream: &mut W, status: &str, meta: &[&str]) -> Result {
+async fn send_header<W: Write + Unpin>(stream: &mut W, status: &str, meta: &[&str]) -> Result {
     log::info!("Responding with status {} and meta {:?}", status, meta);
     stream.write_all(status.as_bytes()).await?;
     stream.write_all(b" ").await?;
@@ -246,8 +246,8 @@ async fn list_directory<W: Write + Unpin>(stream: &mut W, path: &Path) -> Result
 
 async fn send_text_gemini_header<W: Write + Unpin>(stream: &mut W) -> Result {
     if let Some(lang) = ARGS.language.as_deref() {
-        respond(stream, "20", &["text/gemini;lang=", lang]).await
+        send_header(stream, "20", &["text/gemini;lang=", lang]).await
     } else {
-        respond(stream, "20", &["text/gemini"]).await
+        send_header(stream, "20", &["text/gemini"]).await
     }
 }
