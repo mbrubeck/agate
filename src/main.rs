@@ -188,33 +188,9 @@ async fn send_response<W: Write + Unpin>(url: Url, stream: &mut W) -> Result {
             // if the path ends with a slash or the path is empty, the links will work the same
             // without a redirect
             path.push("index.gmi");
-            if path.exists() {
-                // index file exists
-            } else if path.with_file_name(".directory-listing-ok").exists() {
-                // no index file, but directory listing allowed
+            if !path.exists() && path.with_file_name(".directory-listing-ok").exists() {
                 path.pop();
-                log::info!("Listing directory {:?}", path);
-                let entries = std::fs::read_dir(path)?;
-                let listing = entries
-                    .filter(Result::is_ok)
-                    .map(Result::unwrap)
-                    .map(|entry| {
-                        // transform filenames into gemini link lines
-                        let mut name = String::from("=> ");
-                        name += &entry.file_name().to_string_lossy();
-                        if entry.path().is_dir() {
-                            // to avoid redirects link to directories with a trailing slash
-                            name += "/";
-                        }
-                        name + "\n"
-                    })
-                    // filter out files starting with a dot
-                    .filter(|entry| !entry.starts_with("=> ."))
-                    .collect::<String>();
-
-                respond(stream, "20", &["text/gemini"]).await?;
-                stream.write_all(listing.as_bytes()).await?;
-                return Ok(());
+                return list_directory(stream, &path).await;
             }
         } else {
             // if client is not redirected, links may not work as expected without trailing slash
@@ -227,11 +203,7 @@ async fn send_response<W: Write + Unpin>(url: Url, stream: &mut W) -> Result {
 
     // Send header.
     if path.extension() == Some(OsStr::new("gmi")) {
-        if let Some(lang) = ARGS.language.as_deref() {
-            respond(stream, "20", &["text/gemini;lang=", lang]).await?;
-        } else {
-            respond(stream, "20", &["text/gemini"]).await?;
-        }
+        send_text_gemini_header(stream).await?;
     } else {
         let mime = mime_guess::from_path(&path).first_or_octet_stream();
         respond(stream, "20", &[mime.essence_str()]).await?;
@@ -251,4 +223,31 @@ async fn respond<W: Write + Unpin>(stream: &mut W, status: &str, meta: &[&str]) 
     }
     stream.write_all(b"\r\n").await?;
     Ok(())
+}
+
+async fn list_directory<W: Write + Unpin>(stream: &mut W, path: &Path) -> Result {
+    log::info!("Listing directory {:?}", path);
+    send_text_gemini_header(stream).await?;
+    for entry in std::fs::read_dir(path)? {
+        let entry = entry?;
+        let mut name = entry.file_name().into_string().or(Err("Non-Unicode filename"))?;
+        if name.starts_with('.') {
+            continue;
+        }
+        if entry.file_type()?.is_dir() {
+            name += "/";
+        }
+        stream.write_all(b"=> ").await?;
+        stream.write_all(name.as_bytes()).await?;
+        stream.write_all(b"\n").await?;
+    }
+    Ok(())
+}
+
+async fn send_text_gemini_header<W: Write + Unpin>(stream: &mut W) -> Result {
+    if let Some(lang) = ARGS.language.as_deref() {
+        respond(stream, "20", &["text/gemini;lang=", lang]).await
+    } else {
+        respond(stream, "20", &["text/gemini"]).await
+    }
 }
