@@ -229,6 +229,7 @@ async fn list_directory<W: Write + Unpin>(stream: &mut W, path: &Path) -> Result
     log::info!("Listing directory {:?}", path);
     send_text_gemini_header(stream).await?;
     let mut entries = async_std::fs::read_dir(path).await?;
+    let mut lines = vec![];
     while let Some(entry) = entries.next().await {
         let entry = entry?;
         let mut name = entry.file_name().into_string().or(Err("Non-Unicode filename"))?;
@@ -238,9 +239,11 @@ async fn list_directory<W: Write + Unpin>(stream: &mut W, path: &Path) -> Result
         if entry.file_type().await?.is_dir() {
             name += "/";
         }
-        stream.write_all(b"=> ").await?;
-        stream.write_all(name.as_bytes()).await?;
-        stream.write_all(b"\n").await?;
+        lines.push(format!("=> {}\n", name));
+    }
+    lines.sort();
+    for line in lines {
+        stream.write_all(line.as_bytes()).await?;
     }
     Ok(())
 }
