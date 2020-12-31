@@ -11,7 +11,16 @@ use rustls::{
     internal::pemfile::{certs, pkcs8_private_keys},
     NoClientAuth, ServerConfig,
 };
-use std::{error::Error, ffi::OsStr, fs::File, io::BufReader, marker::Unpin, path::Path, sync::Arc};
+use std::{
+    borrow::Cow,
+    error::Error,
+    ffi::OsStr,
+    fs::File,
+    io::BufReader,
+    marker::Unpin,
+    path::Path,
+    sync::Arc,
+};
 use url::{Host, Url};
 
 fn main() -> Result {
@@ -229,14 +238,10 @@ async fn send_header<W: Write + Unpin>(stream: &mut W, status: u8, meta: &[&str]
 }
 
 async fn list_directory<W: Write + Unpin>(stream: &mut W, path: &Path) -> Result {
+    // https://url.spec.whatwg.org/#path-percent-encode-set
     const ENCODE_SET: AsciiSet = CONTROLS.add(b' ')
-        // https://url.spec.whatwg.org/#path-percent-encode-set
         .add(b'"').add(b'#').add(b'<').add(b'>')
-        .add(b'?').add(b'`').add(b'{').add(b'}')
-        // https://tools.ietf.org/html/rfc3986#section-2.2
-        .add(b':').add(b'/').add(b'?').add(b'#').add(b'[').add(b']').add(b'@')
-        .add(b'!').add(b'$').add(b'&').add(b'\'').add(b'(').add(b')')
-        .add(b'*').add(b'+').add(b',').add(b';').add(b'=');
+        .add(b'?').add(b'`').add(b'{').add(b'}');
 
     log::info!("Listing directory {:?}", path);
     send_text_gemini_header(stream).await?;
@@ -251,12 +256,11 @@ async fn list_directory<W: Write + Unpin>(stream: &mut W, path: &Path) -> Result
         if entry.file_type().await?.is_dir() {
             name += "/";
         }
-        if name.contains(char::is_whitespace) {
-            let url = percent_encode(name.as_bytes(), &ENCODE_SET);
-            lines.push(format!("=> {} {}\n", url, name));
-        } else {
-            lines.push(format!("=> {}\n", name));
-        }
+        let line = match percent_encode(name.as_bytes(), &ENCODE_SET).into() {
+            Cow::Owned(url) => format!("=> {} {}\n", url, name),
+            Cow::Borrowed(url) => format!("=> {}\n", url), // url and name are identical
+        };
+        lines.push(line);
     }
     lines.sort();
     for line in lines {
