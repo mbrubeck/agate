@@ -229,7 +229,15 @@ async fn send_header<W: Write + Unpin>(stream: &mut W, status: &str, meta: &[&st
 }
 
 async fn list_directory<W: Write + Unpin>(stream: &mut W, path: &Path) -> Result {
-    const WHITESPACE: AsciiSet = CONTROLS.add(b' ');
+    const ENCODE_SET: AsciiSet = CONTROLS.add(b' ')
+        // https://url.spec.whatwg.org/#path-percent-encode-set
+        .add(b'"').add(b'#').add(b'<').add(b'>')
+        .add(b'?').add(b'`').add(b'{').add(b'}')
+        // https://tools.ietf.org/html/rfc3986#section-2.2
+        .add(b':').add(b'/').add(b'?').add(b'#').add(b'[').add(b']').add(b'@')
+        .add(b'!').add(b'$').add(b'&').add(b'\'').add(b'(').add(b')')
+        .add(b'*').add(b'+').add(b',').add(b';').add(b'=');
+
     log::info!("Listing directory {:?}", path);
     send_text_gemini_header(stream).await?;
     let mut entries = async_std::fs::read_dir(path).await?;
@@ -244,7 +252,7 @@ async fn list_directory<W: Write + Unpin>(stream: &mut W, path: &Path) -> Result
             name += "/";
         }
         if name.contains(char::is_whitespace) {
-            let url = percent_encode(name.as_bytes(), &WHITESPACE);
+            let url = percent_encode(name.as_bytes(), &ENCODE_SET);
             lines.push(format!("=> {} {}\n", url, name));
         } else {
             lines.push(format!("=> {}\n", name));
