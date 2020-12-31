@@ -101,12 +101,12 @@ async fn handle_request(stream: TcpStream) -> Result {
     let url = match parse_request(stream).await {
         Ok(url) => url,
         Err((status, msg)) => {
-            send_header(stream, &status.to_string(), &[&msg]).await?;
+            send_header(stream, status, &[&msg]).await?;
             Err(msg)?
         }
     };
     if let Err(e) = send_response(url, stream).await {
-        send_header(stream, "51", &["Not found, sorry."]).await?;
+        send_header(stream, 51, &["Not found, sorry."]).await?;
         Err(e)?
     }
     Ok(())
@@ -197,7 +197,7 @@ async fn send_response<W: Write + Unpin>(url: Url, stream: &mut W) -> Result {
             }
         } else {
             // if client is not redirected, links may not work as expected without trailing slash
-            return send_header(stream, "31", &[url.as_str(), "/"]).await;
+            return send_header(stream, 31, &[url.as_str(), "/"]).await;
         }
     }
 
@@ -209,7 +209,7 @@ async fn send_response<W: Write + Unpin>(url: Url, stream: &mut W) -> Result {
         send_text_gemini_header(stream).await?;
     } else {
         let mime = mime_guess::from_path(&path).first_or_octet_stream();
-        send_header(stream, "20", &[mime.essence_str()]).await?;
+        send_header(stream, 20, &[mime.essence_str()]).await?;
     }
 
     // Send body.
@@ -217,14 +217,14 @@ async fn send_response<W: Write + Unpin>(url: Url, stream: &mut W) -> Result {
     Ok(())
 }
 
-async fn send_header<W: Write + Unpin>(stream: &mut W, status: &str, meta: &[&str]) -> Result {
-    log::info!("Responding with status {} and meta {:?}", status, meta);
-    stream.write_all(status.as_bytes()).await?;
-    stream.write_all(b" ").await?;
-    for m in meta {
-        stream.write_all(m.as_bytes()).await?;
-    }
-    stream.write_all(b"\r\n").await?;
+async fn send_header<W: Write + Unpin>(stream: &mut W, status: u8, meta: &[&str]) -> Result {
+    use std::fmt::Write;
+    let mut response = String::with_capacity(64);
+    write!(response, "{} ", status)?;
+    response.extend(meta.iter().copied());
+    log::info!("Responding with status {:?}", response);
+    response.push_str("\r\n");
+    stream.write_all(response.as_bytes()).await?;
     Ok(())
 }
 
@@ -267,8 +267,8 @@ async fn list_directory<W: Write + Unpin>(stream: &mut W, path: &Path) -> Result
 
 async fn send_text_gemini_header<W: Write + Unpin>(stream: &mut W) -> Result {
     if let Some(lang) = ARGS.language.as_deref() {
-        send_header(stream, "20", &["text/gemini;lang=", lang]).await
+        send_header(stream, 20, &["text/gemini;lang=", lang]).await
     } else {
-        send_header(stream, "20", &["text/gemini"]).await
+        send_header(stream, 20, &["text/gemini"]).await
     }
 }
