@@ -6,6 +6,7 @@ use async_std::{
 };
 use async_tls::TlsAcceptor;
 use once_cell::sync::Lazy;
+use percent_encoding::{AsciiSet, CONTROLS, percent_decode_str, percent_encode};
 use rustls::{
     internal::pemfile::{certs, pkcs8_private_keys},
     NoClientAuth, ServerConfig,
@@ -181,7 +182,9 @@ async fn parse_request<R: Read + Unpin>(
 async fn send_response<W: Write + Unpin>(url: Url, stream: &mut W) -> Result {
     let mut path = std::path::PathBuf::from(&ARGS.content_dir);
     if let Some(segments) = url.path_segments() {
-        path.extend(segments);
+        for segment in segments {
+            path.push(&*percent_decode_str(segment).decode_utf8()?);
+        }
     }
     if async_std::fs::metadata(&path).await?.is_dir() {
         if url.path().ends_with('/') || url.path().is_empty() {
@@ -226,6 +229,7 @@ async fn send_header<W: Write + Unpin>(stream: &mut W, status: &str, meta: &[&st
 }
 
 async fn list_directory<W: Write + Unpin>(stream: &mut W, path: &Path) -> Result {
+    const WHITESPACE: AsciiSet = CONTROLS.add(b' ');
     log::info!("Listing directory {:?}", path);
     send_text_gemini_header(stream).await?;
     let mut entries = async_std::fs::read_dir(path).await?;
@@ -239,7 +243,12 @@ async fn list_directory<W: Write + Unpin>(stream: &mut W, path: &Path) -> Result
         if entry.file_type().await?.is_dir() {
             name += "/";
         }
-        lines.push(format!("=> {}\n", name));
+        if name.contains(char::is_whitespace) {
+            let url = percent_encode(name.as_bytes(), &WHITESPACE);
+            lines.push(format!("=> {} {}\n", url, name));
+        } else {
+            lines.push(format!("=> {}\n", name));
+        }
     }
     lines.sort();
     for line in lines {

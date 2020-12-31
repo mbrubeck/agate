@@ -11,6 +11,7 @@ dependencies = [
  "log",
  "mime_guess",
  "once_cell",
+ "percent-encoding",
  "rustls",
  "url",
 ]
