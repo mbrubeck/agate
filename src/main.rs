@@ -226,17 +226,6 @@ async fn send_response<W: Write + Unpin>(url: Url, stream: &mut W) -> Result {
     Ok(())
 }
 
-async fn send_header<W: Write + Unpin>(stream: &mut W, status: u8, meta: &[&str]) -> Result {
-    use std::fmt::Write;
-    let mut response = String::with_capacity(64);
-    write!(response, "{} ", status)?;
-    response.extend(meta.iter().copied());
-    log::info!("Responding with status {:?}", response);
-    response.push_str("\r\n");
-    stream.write_all(response.as_bytes()).await?;
-    Ok(())
-}
-
 async fn list_directory<W: Write + Unpin>(stream: &mut W, path: &Path) -> Result {
     // https://url.spec.whatwg.org/#path-percent-encode-set
     const ENCODE_SET: AsciiSet = CONTROLS.add(b' ')
@@ -266,6 +255,17 @@ async fn list_directory<W: Write + Unpin>(stream: &mut W, path: &Path) -> Result
     for line in lines {
         stream.write_all(line.as_bytes()).await?;
     }
+    Ok(())
+}
+
+async fn send_header<W: Write + Unpin>(stream: &mut W, status: u8, meta: &[&str]) -> Result {
+    use std::fmt::Write;
+    let mut response = String::with_capacity(64);
+    write!(response, "{} ", status)?;
+    response.extend(meta.iter().copied());
+    log::info!("Responding with status {:?}", response);
+    response.push_str("\r\n");
+    stream.write_all(response.as_bytes()).await?;
     Ok(())
 }
 
