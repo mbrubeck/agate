@@ -4,7 +4,7 @@ use async_std::{
     stream::StreamExt,
     task,
 };
-use async_tls::TlsAcceptor;
+use async_tls::{TlsAcceptor, server::TlsStream};
 use once_cell::sync::Lazy;
 use percent_encoding::{AsciiSet, CONTROLS, percent_decode_str, percent_encode};
 use rustls::{
@@ -17,7 +17,6 @@ use std::{
     ffi::OsStr,
     fs::File,
     io::BufReader,
-    marker::Unpin,
     path::Path,
     sync::Arc,
 };
@@ -127,9 +126,7 @@ fn acceptor() -> Result<TlsAcceptor> {
 }
 
 /// Return the URL requested by the client.
-async fn parse_request<R: Read + Unpin>(
-    stream: &mut R,
-) -> std::result::Result<Url, (u8, &'static str)> {
+async fn parse_request(stream: &mut TlsStream<TcpStream>) -> std::result::Result<Url, (u8, &'static str)> {
     // Because requests are limited to 1024 bytes (plus 2 bytes for CRLF), we
     // can use a fixed-sized buffer on the stack, avoiding allocations and
     // copying, and stopping bad clients from making us use too much memory.
@@ -177,7 +174,7 @@ async fn parse_request<R: Read + Unpin>(
 }
 
 /// Send the client the file located at the requested URL.
-async fn send_response<W: Write + Unpin>(url: Url, stream: &mut W) -> Result {
+async fn send_response(url: Url, stream: &mut TlsStream<TcpStream>) -> Result {
     let mut path = std::path::PathBuf::from(&ARGS.content_dir);
     if let Some(segments) = url.path_segments() {
         for segment in segments {
@@ -223,7 +220,7 @@ async fn send_response<W: Write + Unpin>(url: Url, stream: &mut W) -> Result {
     Ok(())
 }
 
-async fn list_directory<W: Write + Unpin>(stream: &mut W, path: &Path) -> Result {
+async fn list_directory(stream: &mut TlsStream<TcpStream>, path: &Path) -> Result {
     // https://url.spec.whatwg.org/#path-percent-encode-set
     const ENCODE_SET: AsciiSet = CONTROLS.add(b' ')
         .add(b'"').add(b'#').add(b'<').add(b'>')
@@ -255,7 +252,7 @@ async fn list_directory<W: Write + Unpin>(stream: &mut W, path: &Path) -> Result
     Ok(())
 }
 
-async fn send_header<W: Write + Unpin>(stream: &mut W, status: u8, meta: &[&str]) -> Result {
+async fn send_header(stream: &mut TlsStream<TcpStream>, status: u8, meta: &[&str]) -> Result {
     use std::fmt::Write;
     let mut response = String::with_capacity(64);
     write!(response, "{} ", status)?;
@@ -266,7 +263,7 @@ async fn send_header<W: Write + Unpin>(stream: &mut W, status: u8, meta: &[&str]
     Ok(())
 }
 
-async fn send_text_gemini_header<W: Write + Unpin>(stream: &mut W) -> Result {
+async fn send_text_gemini_header(stream: &mut TlsStream<TcpStream>) -> Result {
     if let Some(lang) = ARGS.language.as_deref() {
         send_header(stream, 20, &["text/gemini;lang=", lang]).await
     } else {
