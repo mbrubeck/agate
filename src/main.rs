@@ -1,10 +1,9 @@
-use async_std::{
-    io::prelude::*,
+use tokio::{
+    io::{AsyncReadExt, AsyncWriteExt},
     net::{TcpListener, TcpStream},
-    stream::StreamExt,
-    task,
+    runtime::Runtime,
 };
-use async_tls::{TlsAcceptor, server::TlsStream};
+use tokio_rustls::{TlsAcceptor, server::TlsStream};
 use once_cell::sync::Lazy;
 use percent_encoding::{AsciiSet, CONTROLS, percent_decode_str, percent_encode};
 use rustls::{
@@ -26,18 +25,17 @@ fn main() -> Result {
     if !ARGS.silent {
         env_logger::Builder::new().parse_filters("info").init();
     }
-    task::block_on(async {
+    Runtime::new()?.block_on(async {
         let listener = TcpListener::bind(&ARGS.sock_addr).await?;
-        let mut incoming = listener.incoming();
         log::info!("Listening on {}...", ARGS.sock_addr);
-        while let Some(Ok(stream)) = incoming.next().await {
-            task::spawn(async {
+        loop {
+            let (stream, _) = listener.accept().await?;
+            tokio::spawn(async {
                 if let Err(e) = handle_request(stream).await {
                     log::error!("{:?}", e);
                 }
             });
         }
-        Ok(())
     })
 }
 
@@ -181,7 +179,7 @@ async fn send_response(url: Url, stream: &mut TlsStream<TcpStream>) -> Result {
             path.push(&*percent_decode_str(segment).decode_utf8()?);
         }
     }
-    if let Ok(metadata) = async_std::fs::metadata(&path).await {
+    if let Ok(metadata) = tokio::fs::metadata(&path).await {
         if metadata.is_dir() {
             if url.path().ends_with('/') || url.path().is_empty() {
                 // if the path ends with a slash or the path is empty, the links will work the same
@@ -199,7 +197,7 @@ async fn send_response(url: Url, stream: &mut TlsStream<TcpStream>) -> Result {
     }
 
     // Make sure the file opens successfully before sending the success header.
-    let mut file = match async_std::fs::File::open(&path).await {
+    let mut file = match tokio::fs::File::open(&path).await {
         Ok(file) => file,
         Err(e) => {
             send_header(stream, 51, &["Not found, sorry."]).await?;
@@ -216,7 +214,7 @@ async fn send_response(url: Url, stream: &mut TlsStream<TcpStream>) -> Result {
     }
 
     // Send body.
-    async_std::io::copy(&mut file, stream).await?;
+    tokio::io::copy(&mut file, stream).await?;
     Ok(())
 }
 
@@ -228,10 +226,9 @@ async fn list_directory(stream: &mut TlsStream<TcpStream>, path: &Path) -> Resul
 
     log::info!("Listing directory {:?}", path);
     send_text_gemini_header(stream).await?;
-    let mut entries = async_std::fs::read_dir(path).await?;
+    let mut entries = tokio::fs::read_dir(path).await?;
     let mut lines = vec![];
-    while let Some(entry) = entries.next().await {
-        let entry = entry?;
+    while let Some(entry) = entries.next_entry().await? {
         let mut name = entry.file_name().into_string().or(Err("Non-Unicode filename"))?;
         if name.starts_with('.') {
             continue;

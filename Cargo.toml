@@ -11,8 +11,8 @@ license = "MIT/Apache-2.0"
 edition = "2018"
 
 [dependencies]
-async-tls = { version = "0.11.0", default-features = false, features = ["server"] }
-async-std = "1.5"
+tokio-rustls = "0.22.0"
+tokio = { version = "1.0", features = ["fs", "io-util", "net", "rt-multi-thread"] }
 env_logger = { version = "0.8", default-features = false, features = ["atty", "humantime", "termcolor"] }
 getopts = "0.2.21"
 log = "0.4"
