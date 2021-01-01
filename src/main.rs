@@ -1,25 +1,27 @@
-use tokio::{
-    io::{AsyncReadExt, AsyncWriteExt},
-    net::{TcpListener, TcpStream},
-    runtime::Runtime,
+use {
+    once_cell::sync::Lazy,
+    percent_encoding::{AsciiSet, CONTROLS, percent_decode_str, percent_encode},
+    rustls::{
+        internal::pemfile::{certs, pkcs8_private_keys},
+        NoClientAuth, ServerConfig,
+    },
+    std::{
+        borrow::Cow,
+        error::Error,
+        ffi::OsStr,
+        fs::File,
+        io::BufReader,
+        path::Path,
+        sync::Arc,
+    },
+    tokio::{
+        io::{AsyncReadExt, AsyncWriteExt},
+        net::{TcpListener, TcpStream},
+        runtime::Runtime,
+    },
+    tokio_rustls::{TlsAcceptor, server::TlsStream},
+    url::{Host, Url},
 };
-use tokio_rustls::{TlsAcceptor, server::TlsStream};
-use once_cell::sync::Lazy;
-use percent_encoding::{AsciiSet, CONTROLS, percent_decode_str, percent_encode};
-use rustls::{
-    internal::pemfile::{certs, pkcs8_private_keys},
-    NoClientAuth, ServerConfig,
-};
-use std::{
-    borrow::Cow,
-    error::Error,
-    ffi::OsStr,
-    fs::File,
-    io::BufReader,
-    path::Path,
-    sync::Arc,
-};
-use url::{Host, Url};
 
 fn main() -> Result {
     if !ARGS.silent {
