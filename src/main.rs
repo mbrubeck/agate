@@ -73,9 +73,9 @@ fn args() -> Result<Args> {
     opts.optflag("s", "silent", "Disable logging output");
     opts.optflag("h", "help", "Print this help menu");
 
-    let usage = opts.usage(&format!("Usage: {} FILE [options]", &args[0]));
     let matches = opts.parse(&args[1..]).map_err(|f| f.to_string())?;
     if matches.opt_present("h") {
+        let usage = opts.usage(&format!("Usage: {} [options]", &args[0]));
         Err(usage)?;
     }
     let hostname = match matches.opt_str("hostname") {
@@ -107,18 +107,10 @@ async fn handle_request(stream: TcpStream) -> Result {
     static TLS: Lazy<TlsAcceptor> = Lazy::new(|| acceptor().unwrap());
     let stream = &mut TLS.accept(stream).await?;
 
-    let url = match parse_request(stream).await {
-        Ok(url) => url,
-        Err((status, msg)) => {
-            send_header(stream, status, &[&msg]).await?;
-            Err(msg)?
-        }
-    };
-    if let Err(e) = send_response(url, stream).await {
-        send_header(stream, 51, &["Not found, sorry."]).await?;
-        Err(e)?
+    match parse_request(stream).await {
+        Ok(url) => send_response(url, stream).await,
+        Err((status, msg)) => send_header(stream, status, &[msg]).await,
     }
-    Ok(())
 }
 
 /// TLS configuration.
@@ -147,10 +139,7 @@ async fn parse_request<R: Read + Unpin>(
 
     // Read until CRLF, end-of-stream, or there's no buffer space left.
     loop {
-        let bytes_read = stream
-            .read(buf)
-            .await
-            .map_err(|_| (59, "Request ended unexpectedly"))?;
+        let bytes_read = stream.read(buf).await.or(Err((59, "Request ended unexpectedly")))?;
         len += bytes_read;
         if request[..len].ends_with(b"\r\n") {
             break;
@@ -159,24 +148,24 @@ async fn parse_request<R: Read + Unpin>(
         }
         buf = &mut request[len..];
     }
-    let request = std::str::from_utf8(&request[..len - 2]).map_err(|_| (59, "Invalid URL"))?;
+    let request = std::str::from_utf8(&request[..len - 2]).or(Err((59, "Invalid URL")))?;
     log::info!("Got request for {:?}", request);
 
     // Handle scheme-relative URLs.
     let url = if request.starts_with("//") {
-        Url::parse(&format!("gemini:{}", request)).map_err(|_| (59, "Invalid URL"))?
+        Url::parse(&format!("gemini:{}", request))
     } else {
-        Url::parse(request).map_err(|_| (59, "Invalid URL"))?
-    };
+        Url::parse(request)
+    }.or(Err((59, "Invalid URL")))?;
 
     // Validate the URL, host and port.
     if url.scheme() != "gemini" {
-        return Err((53, "unsupported URL scheme"));
+        return Err((53, "Unsupported URL scheme"));
     }
     // TODO: Can be simplified by https://github.com/servo/rust-url/pull/651
     if let (Some(Host::Domain(expected)), Some(Host::Domain(host))) = (url.host(), &ARGS.hostname) {
         if host != expected {
-            return Err((53, "proxy request refused"));
+            return Err((53, "Proxy request refused"));
         }
     }
     if let Some(port) = url.port() {
@@ -195,23 +184,31 @@ async fn send_response<W: Write + Unpin>(url: Url, stream: &mut W) -> Result {
             path.push(&*percent_decode_str(segment).decode_utf8()?);
         }
     }
-    if async_std::fs::metadata(&path).await?.is_dir() {
-        if url.path().ends_with('/') || url.path().is_empty() {
-            // if the path ends with a slash or the path is empty, the links will work the same
-            // without a redirect
-            path.push("index.gmi");
-            if !path.exists() && path.with_file_name(".directory-listing-ok").exists() {
-                path.pop();
-                return list_directory(stream, &path).await;
+    if let Ok(metadata) = async_std::fs::metadata(&path).await {
+        if metadata.is_dir() {
+            if url.path().ends_with('/') || url.path().is_empty() {
+                // if the path ends with a slash or the path is empty, the links will work the same
+                // without a redirect
+                path.push("index.gmi");
+                if !path.exists() && path.with_file_name(".directory-listing-ok").exists() {
+                    path.pop();
+                    return list_directory(stream, &path).await;
+                }
+            } else {
+                // if client is not redirected, links may not work as expected without trailing slash
+                return send_header(stream, 31, &[url.as_str(), "/"]).await;
             }
-        } else {
-            // if client is not redirected, links may not work as expected without trailing slash
-            return send_header(stream, 31, &[url.as_str(), "/"]).await;
         }
     }
 
     // Make sure the file opens successfully before sending the success header.
-    let mut file = async_std::fs::File::open(&path).await?;
+    let mut file = match async_std::fs::File::open(&path).await {
+        Ok(file) => file,
+        Err(e) => {
+            send_header(stream, 51, &["Not found, sorry."]).await?;
+            Err(e)?
+        }
+    };
 
     // Send header.
     if path.extension() == Some(OsStr::new("gmi")) {
