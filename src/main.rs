@@ -147,15 +147,10 @@ async fn parse_request(stream: &mut TlsStream<TcpStream>) -> std::result::Result
         }
         buf = &mut request[len..];
     }
-    let request = std::str::from_utf8(&request[..len - 2]).or(Err((59, "Invalid URL")))?;
+    let request = std::str::from_utf8(&request[..len - 2]).or(Err((59, "Non-UTF-8 request")))?;
     log::info!("Got request for {:?}", request);
 
-    // Handle scheme-relative URLs.
-    let url = if request.starts_with("//") {
-        Url::parse(&format!("gemini:{}", request))
-    } else {
-        Url::parse(request)
-    }.or(Err((59, "Invalid URL")))?;
+    let url = Url::parse(request).or(Err((59, "Invalid URL")))?;
 
     // Validate the URL, host and port.
     if url.scheme() != "gemini" {
