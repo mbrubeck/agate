@@ -102,17 +102,19 @@ fn check_path(s: String) -> Result<String, String> {
 
 /// Handle a single client session (request + response).
 async fn handle_request(stream: TcpStream) -> Result {
-    // Perform handshake.
-    static TLS: Lazy<TlsAcceptor> = Lazy::new(|| acceptor().unwrap());
     let stream = &mut TLS.accept(stream).await?;
 
     match parse_request(stream).await {
-        Ok(url) => send_response(url, stream).await,
-        Err((status, msg)) => send_header(stream, status, &[msg]).await,
+        Ok(url) => send_response(url, stream).await?,
+        Err((status, msg)) => send_header(stream, status, &[msg]).await?,
     }
+    stream.shutdown().await?;
+    Ok(())
 }
 
 /// TLS configuration.
+static TLS: Lazy<TlsAcceptor> = Lazy::new(|| acceptor().unwrap());
+
 fn acceptor() -> Result<TlsAcceptor> {
     let cert_file = File::open(&ARGS.cert_file)?;
     let certs = certs(&mut BufReader::new(cert_file)).or(Err("bad cert"))?;
