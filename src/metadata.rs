@@ -8,7 +8,7 @@ use std::time::SystemTime;
 ///
 /// These sidecar file's lines should have the format
 /// ```text
-/// <filename>:<metadata>\n
+/// <filename>:<metadata>
 /// ```
 /// where `<filename>` is only a filename (not a path) of a file that resides
 /// in the same directory and `<metadata>` is the metadata to be stored.
