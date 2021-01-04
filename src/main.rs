@@ -1,3 +1,5 @@
+mod metadata;
+
 use {
     once_cell::sync::Lazy,
     percent_encoding::{percent_decode_str, percent_encode, AsciiSet, CONTROLS},
