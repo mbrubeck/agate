@@ -1,6 +1,6 @@
 use {
     once_cell::sync::Lazy,
-    percent_encoding::{AsciiSet, CONTROLS, percent_decode_str, percent_encode},
+    percent_encoding::{percent_decode_str, percent_encode, AsciiSet, CONTROLS},
     rustls::{
         internal::pemfile::{certs, pkcs8_private_keys},
         NoClientAuth, ServerConfig,
@@ -20,7 +20,7 @@ use {
         net::{TcpListener, TcpStream},
         runtime::Runtime,
     },
-    tokio_rustls::{TlsAcceptor, server::TlsStream},
+    tokio_rustls::{server::TlsStream, TlsAcceptor},
     url::{Host, Url},
 };
 
@@ -65,12 +65,42 @@ struct Args {
 fn args() -> Result<Args> {
     let args: Vec<String> = std::env::args().collect();
     let mut opts = getopts::Options::new();
-    opts.optopt("", "content", "Root of the content directory (default ./content)", "DIR");
-    opts.optopt("", "cert", "TLS certificate PEM file (default ./cert.pem)", "FILE");
-    opts.optopt("", "key", "PKCS8 private key file (default ./key.rsa)", "FILE");
-    opts.optmulti("", "addr", "Address to listen on (multiple occurences possible, default 0.0.0.0:1965 and [::]:1965)", "IP:PORT");
-    opts.optopt("", "hostname", "Domain name of this Gemini server (optional)", "NAME");
-    opts.optopt("", "lang", "RFC 4646 Language code(s) for text/gemini documents", "LANG");
+    opts.optopt(
+        "",
+        "content",
+        "Root of the content directory (default ./content)",
+        "DIR",
+    );
+    opts.optopt(
+        "",
+        "cert",
+        "TLS certificate PEM file (default ./cert.pem)",
+        "FILE",
+    );
+    opts.optopt(
+        "",
+        "key",
+        "PKCS8 private key file (default ./key.rsa)",
+        "FILE",
+    );
+    opts.optopt(
+        "",
+        "addr",
+        "Address to listen on (multiple occurences possible, default 0.0.0.0:1965 and [::]:1965)",
+        "IP:PORT",
+    );
+    opts.optopt(
+        "",
+        "hostname",
+        "Domain name of this Gemini server (optional)",
+        "NAME",
+    );
+    opts.optopt(
+        "",
+        "lang",
+        "RFC 4646 Language code(s) for text/gemini documents",
+        "LANG",
+    );
     opts.optflag("s", "silent", "Disable logging output");
     opts.optflag("h", "help", "Print this help menu");
     opts.optflag("", "serve-secret", "Enable serving secret files (files/directories starting with a dot)");
@@ -142,7 +172,9 @@ fn acceptor() -> Result<TlsAcceptor> {
 }
 
 /// Return the URL requested by the client.
-async fn parse_request(stream: &mut TlsStream<TcpStream>) -> std::result::Result<Url, (u8, &'static str)> {
+async fn parse_request(
+    stream: &mut TlsStream<TcpStream>,
+) -> std::result::Result<Url, (u8, &'static str)> {
     // Because requests are limited to 1024 bytes (plus 2 bytes for CRLF), we
     // can use a fixed-sized buffer on the stack, avoiding allocations and
     // copying, and stopping bad clients from making us use too much memory.
@@ -152,7 +184,10 @@ async fn parse_request(stream: &mut TlsStream<TcpStream>) -> std::result::Result
 
     // Read until CRLF, end-of-stream, or there's no buffer space left.
     loop {
-        let bytes_read = stream.read(buf).await.or(Err((59, "Request ended unexpectedly")))?;
+        let bytes_read = stream
+            .read(buf)
+            .await
+            .or(Err((59, "Request ended unexpectedly")))?;
         len += bytes_read;
         if request[..len].ends_with(b"\r\n") {
             break;
@@ -251,7 +286,10 @@ async fn list_directory(stream: &mut TlsStream<TcpStream>, path: &Path) -> Resul
     let mut entries = tokio::fs::read_dir(path).await?;
     let mut lines = vec![];
     while let Some(entry) = entries.next_entry().await? {
-        let mut name = entry.file_name().into_string().or(Err("Non-Unicode filename"))?;
+        let mut name = entry
+            .file_name()
+            .into_string()
+            .or(Err("Non-Unicode filename"))?;
         if name.starts_with('.') {
             continue;
         }
