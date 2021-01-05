@@ -50,9 +50,8 @@ The lines of the file should have this format:
 <filename>:<metadata>
 ```
 
-Where `<filename>` is just a filename (not a path) of a file in the same directory, and `<metadata>` is the metadata to be stored.
-Lines that start with optional whitespace and `#` are ignored, as are lines that do not fit the above basic format.
-Both parts are stripped of any leading and/or trailing whitespace.
+Where `<filename>` is just a filename (not a path) of a file in the same directory, and `<metadata>` is the MIME type to be stored. If `<metadata>` starts with a semicolon, agate will use the usual mechanism to determine the mime type of the file and append the specified parameters.
+Lines that start with optional whitespace and `#` are ignored, as are lines that do not contain a `:`. Both parts are stripped of any leading and/or trailing whitespace.
 
 [Gemini]: https://gemini.circumlunar.space/
 [Rust]: https://www.rust-lang.org/

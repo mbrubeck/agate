@@ -1,4 +1,5 @@
 mod metadata;
+use metadata::FileOptions;
 
 use {
     once_cell::sync::Lazy,
@@ -21,6 +22,7 @@ use {
         io::{AsyncReadExt, AsyncWriteExt},
         net::{TcpListener, TcpStream},
         runtime::Runtime,
+        sync::RwLock,
     },
     tokio_rustls::{server::TlsStream, TlsAcceptor},
     url::{Host, Url},
@@ -31,12 +33,19 @@ fn main() -> Result {
         env_logger::Builder::new().parse_filters("info").init();
     }
     Runtime::new()?.block_on(async {
+        let mimetypes = Arc::new(RwLock::new(FileOptions::new(
+            &ARGS
+                .language
+                .as_ref()
+                .map_or(String::new(), |lang| format!(";lang={}", lang)),
+        )));
         let listener = TcpListener::bind(&ARGS.addrs[..]).await?;
         log::info!("Listening on {:?}...", ARGS.addrs);
         loop {
             let (stream, _) = listener.accept().await?;
+            let arc = mimetypes.clone();
             tokio::spawn(async {
-                if let Err(e) = handle_request(stream).await {
+                if let Err(e) = handle_request(stream, arc).await {
                     log::error!("{:?}", e);
                 }
             });
@@ -147,11 +156,11 @@ fn check_path(s: String) -> Result<String, String> {
 }
 
 /// Handle a single client session (request + response).
-async fn handle_request(stream: TcpStream) -> Result {
+async fn handle_request(stream: TcpStream, mimetypes: Arc<RwLock<FileOptions>>) -> Result {
     let stream = &mut TLS.accept(stream).await?;
 
     match parse_request(stream).await {
-        Ok(url) => send_response(url, stream).await?,
+        Ok(url) => send_response(url, stream, mimetypes).await?,
         Err((status, msg)) => send_header(stream, status, &[msg]).await?,
     }
     stream.shutdown().await?;
@@ -223,7 +232,11 @@ async fn parse_request(
 }
 
 /// Send the client the file located at the requested URL.
-async fn send_response(url: Url, stream: &mut TlsStream<TcpStream>) -> Result {
+async fn send_response(
+    url: Url,
+    stream: &mut TlsStream<TcpStream>,
+    mimetypes: Arc<RwLock<FileOptions>>,
+) -> Result {
     let mut path = std::path::PathBuf::from(&ARGS.content_dir);
     if let Some(segments) = url.path_segments() {
         for segment in segments {
@@ -265,12 +278,21 @@ async fn send_response(url: Url, stream: &mut TlsStream<TcpStream>) -> Result {
     };
 
     // Send header.
-    if path.extension() == Some(OsStr::new("gmi")) {
-        send_text_gemini_header(stream).await?;
+    let mut locked = mimetypes.write().await;
+    let data = locked.get(&path);
+    if data.is_empty() || data.starts_with(";") {
+        // guess MIME type
+        if path.extension() == Some(OsStr::new("gmi")) {
+            send_header(stream, 20, &["text/gemini", data]).await?;
+        } else {
+            let mime = mime_guess::from_path(&path).first_or_octet_stream();
+            send_header(stream, 20, &[mime.essence_str(), data]).await?;
+        };
     } else {
-        let mime = mime_guess::from_path(&path).first_or_octet_stream();
-        send_header(stream, 20, &[mime.essence_str()]).await?;
+        // this must be a full MIME type
+        send_header(stream, 20, &[data]).await?;
     }
+    drop(locked);
 
     // Send body.
     tokio::io::copy(&mut file, stream).await?;
@@ -284,7 +306,7 @@ async fn list_directory(stream: &mut TlsStream<TcpStream>, path: &Path) -> Resul
         .add(b'?').add(b'`').add(b'{').add(b'}');
 
     log::info!("Listing directory {:?}", path);
-    send_text_gemini_header(stream).await?;
+    send_header(stream, 20, &["text/gemini"]).await?;
     let mut entries = tokio::fs::read_dir(path).await?;
     let mut lines = vec![];
     while let Some(entry) = entries.next_entry().await? {
@@ -320,12 +342,4 @@ async fn send_header(stream: &mut TlsStream<TcpStream>, status: u8, meta: &[&str
     response.push_str("\r\n");
     stream.write_all(response.as_bytes()).await?;
     Ok(())
-}
-
-async fn send_text_gemini_header(stream: &mut TlsStream<TcpStream>) -> Result {
-    if let Some(lang) = ARGS.language.as_deref() {
-        send_header(stream, 20, &["text/gemini;lang=", lang]).await
-    } else {
-        send_header(stream, 20, &["text/gemini"]).await
-    }
 }
