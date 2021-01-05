@@ -178,6 +178,14 @@ async fn send_response(url: Url, stream: &mut TlsStream<TcpStream>) -> Result {
             path.push(&*percent_decode_str(segment).decode_utf8()?);
         }
     }
+
+    // Do not serve anything that looks like a hidden file.
+    if path.file_name().map_or(false, |name| {
+        name.to_str().map_or(false, |name| name.starts_with("."))
+    }) {
+        return send_header(stream, 52, &["If I told you, it would not be a secret."]).await;
+    }
+
     if let Ok(metadata) = tokio::fs::metadata(&path).await {
         if metadata.is_dir() {
             if url.path().ends_with('/') || url.path().is_empty() {
