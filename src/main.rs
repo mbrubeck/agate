@@ -183,9 +183,12 @@ async fn send_response(url: Url, stream: &mut TlsStream<TcpStream>) -> Result {
     }
 
     // Do not serve anything that looks like a hidden file.
-    if !ARGS.serve_secret && path.file_name().map_or(false, |name| {
-        name.to_str().map_or(false, |name| name.starts_with("."))
-    }) {
+    if !ARGS.serve_secret
+        && path
+            .iter()
+            .filter_map(|component| component.to_str())
+            .any(|component| component.starts_with("."))
+    {
         return send_header(stream, 52, &["If I told you, it would not be a secret."]).await;
     }
 
