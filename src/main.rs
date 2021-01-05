@@ -58,6 +58,7 @@ struct Args {
     hostname: Option<Host>,
     language: Option<String>,
     silent: bool,
+    serve_secret: bool,
 }
 
 fn args() -> Result<Args> {
@@ -71,6 +72,7 @@ fn args() -> Result<Args> {
     opts.optopt("", "lang", "RFC 4646 Language code(s) for text/gemini documents", "LANG");
     opts.optflag("s", "silent", "Disable logging output");
     opts.optflag("h", "help", "Print this help menu");
+    opts.optflag("", "serve-secret", "Enable serving secret files (files/directories starting with a dot)");
 
     let matches = opts.parse(&args[1..]).map_err(|f| f.to_string())?;
     if matches.opt_present("h") {
@@ -86,9 +88,10 @@ fn args() -> Result<Args> {
         content_dir: check_path(matches.opt_get_default("content", "content".into())?)?,
         cert_file: check_path(matches.opt_get_default("cert", "cert.pem".into())?)?,
         key_file: check_path(matches.opt_get_default("key", "key.rsa".into())?)?,
+        hostname,
         language: matches.opt_str("lang"),
         silent: matches.opt_present("s"),
-        hostname,
+        serve_secret: matches.opt_present("serve-secret"),
     })
 }
 
@@ -180,7 +183,7 @@ async fn send_response(url: Url, stream: &mut TlsStream<TcpStream>) -> Result {
     }
 
     // Do not serve anything that looks like a hidden file.
-    if path.file_name().map_or(false, |name| {
+    if !ARGS.serve_secret && path.file_name().map_or(false, |name| {
         name.to_str().map_or(false, |name| name.starts_with("."))
     }) {
         return send_header(stream, 52, &["If I told you, it would not be a secret."]).await;
