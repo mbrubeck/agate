@@ -26,12 +26,14 @@ pub(crate) struct FileOptions {
     default: String,
 }
 
+static SIDECAR_FILENAME: &str = ".mime";
+
 impl FileOptions {
-    pub(crate) fn new(default: &String) -> Self {
+    pub(crate) fn new(default: &str) -> Self {
         Self {
             databases_read: BTreeMap::new(),
             file_meta: BTreeMap::new(),
-            default: default.clone(),
+            default: default.to_string(),
         }
     }
 
@@ -41,7 +43,7 @@ impl FileOptions {
     /// return false if there is no database file in the specified directory.
     fn check_outdated(&self, db_dir: &PathBuf) -> bool {
         let mut db = db_dir.clone();
-        db.push(".lang");
+        db.push(SIDECAR_FILENAME);
         let db = db.as_path();
 
         if let Ok(metadata) = db.metadata() {
@@ -49,11 +51,11 @@ impl FileOptions {
                 // it exists, but it is a directory
                 false
             } else if let (Ok(modified), Some(last_read)) =
-                (metadata.modified(), self.databases_read.get(db))
+                (metadata.modified(), self.databases_read.get(db_dir))
             {
                 // check that it was last modified before the read
                 // if the times are the same, we might have read the old file
-                &modified < last_read
+                &modified >= last_read
             } else {
                 // either the filesystem does not support last modified
                 // metadata, so we have to read it again every time; or the
@@ -71,8 +73,9 @@ impl FileOptions {
     /// alterations "on the fly".
     /// This function will allways try to read the file, even if it is current.
     fn read_database(&mut self, db_dir: &PathBuf) {
+        log::trace!("reading database for {:?}", db_dir);
         let mut db = db_dir.clone();
-        db.push(".lang");
+        db.push(SIDECAR_FILENAME);
         let db = db.as_path();
 
         if let Ok(file) = std::fs::File::open(db) {
@@ -103,12 +106,12 @@ impl FileOptions {
     /// The file path should consistenly be either absolute or relative to the
     /// working/content directory. If inconsisten file paths are used, this can
     /// lead to loading and storing sidecar files multiple times.
-    pub fn get(&mut self, file: PathBuf) -> &str {
+    pub fn get(&mut self, file: &PathBuf) -> &str {
         let dir = file.parent().expect("no parent directory").to_path_buf();
         if self.check_outdated(&dir) {
             self.read_database(&dir);
         }
 
-        self.file_meta.get(&file).unwrap_or(&self.default)
+        self.file_meta.get(file).unwrap_or(&self.default)
     }
 }
