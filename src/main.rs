@@ -68,7 +68,7 @@ fn args() -> Result<Args> {
     opts.optopt("", "content", "Root of the content directory (default ./content)", "DIR");
     opts.optopt("", "cert", "TLS certificate PEM file (default ./cert.pem)", "FILE");
     opts.optopt("", "key", "PKCS8 private key file (default ./key.rsa)", "FILE");
-    opts.optmulti("", "addr", "Address to listen on (multiple occurences possible, default 0.0.0.0:1965 and [::]:1965)", "IP");
+    opts.optmulti("", "addr", "Address to listen on (multiple occurences possible, default 0.0.0.0:1965 and [::]:1965)", "IP:PORT");
     opts.optopt("", "hostname", "Domain name of this Gemini server (optional)", "NAME");
     opts.optopt("", "lang", "RFC 4646 Language code(s) for text/gemini documents", "LANG");
     opts.optflag("s", "silent", "Disable logging output");
