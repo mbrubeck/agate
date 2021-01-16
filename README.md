@@ -33,7 +33,9 @@ openssl req -x509 -newkey rsa:4096 -keyout key.rsa -out cert.pem \
 agate --content path/to/content/ \
       --key key.rsa \
       --cert cert.pem \
-      --addr [::]:1965 \
+      --addr :: \
+      --addr 0.0.0.0 \
+      --port 1965 \
       --hostname example.com \
       --lang en-US
 ```
