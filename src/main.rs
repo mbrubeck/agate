@@ -204,7 +204,9 @@ async fn send_response(url: Url, stream: &mut TlsStream<TcpStream>) -> Result {
                 }
             } else {
                 // if client is not redirected, links may not work as expected without trailing slash
-                return send_header(stream, 31, &[url.as_str(), "/"]).await;
+                let mut url = url;
+                url.set_path(&format!("{}/", url.path()));
+                return send_header(stream, 31, &[url.as_str()]).await;
             }
         }
     }
