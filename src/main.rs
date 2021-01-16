@@ -178,18 +178,13 @@ async fn send_response(url: Url, stream: &mut TlsStream<TcpStream>) -> Result {
     let mut path = std::path::PathBuf::from(&ARGS.content_dir);
     if let Some(segments) = url.path_segments() {
         for segment in segments {
+            if !ARGS.serve_secret && segment.starts_with('.') {
+                // Do not serve anything that looks like a hidden file.
+                return send_header(stream, 52, &["If I told you, it would not be a secret."])
+                    .await;
+            }
             path.push(&*percent_decode_str(segment).decode_utf8()?);
         }
-    }
-
-    // Do not serve anything that looks like a hidden file.
-    if !ARGS.serve_secret
-        && path
-            .iter()
-            .filter_map(|component| component.to_str())
-            .any(|component| component.starts_with("."))
-    {
-        return send_header(stream, 52, &["If I told you, it would not be a secret."]).await;
     }
 
     if let Ok(metadata) = tokio::fs::metadata(&path).await {
