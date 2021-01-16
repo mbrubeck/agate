@@ -11,7 +11,7 @@ use {
         ffi::OsStr,
         fs::File,
         io::BufReader,
-        net::{IpAddr, SocketAddr},
+        net::SocketAddr,
         path::Path,
         sync::Arc,
     },
@@ -29,11 +29,8 @@ fn main() -> Result {
         env_logger::Builder::new().parse_filters("info").init();
     }
     Runtime::new()?.block_on(async {
-        let port = ARGS.port;
-        let sock_addrs: Vec<_> = ARGS.addrs.iter().map(|addr| SocketAddr::new(*addr, port)).collect();
-
-        let listener = TcpListener::bind(&sock_addrs[..]).await?;
-        log::info!("Listening on {:?}...", sock_addrs);
+        let listener = TcpListener::bind(&ARGS.addrs[..]).await?;
+        log::info!("Listening on {:?}...", ARGS.addrs);
         loop {
             let (stream, _) = listener.accept().await?;
             tokio::spawn(async {
@@ -55,8 +52,7 @@ static ARGS: Lazy<Args> = Lazy::new(|| {
 });
 
 struct Args {
-    addrs: Vec<IpAddr>,
-    port: u16,
+    addrs: Vec<SocketAddr>,
     content_dir: String,
     cert_file: String,
     key_file: String,
@@ -72,8 +68,7 @@ fn args() -> Result<Args> {
     opts.optopt("", "content", "Root of the content directory (default ./content)", "DIR");
     opts.optopt("", "cert", "TLS certificate PEM file (default ./cert.pem)", "FILE");
     opts.optopt("", "key", "PKCS8 private key file (default ./key.rsa)", "FILE");
-    opts.optmulti("", "addr", "Address to listen on (default 0.0.0.0 and [::])", "IP");
-    opts.optopt("", "port", "Port to listen on (default 1965)", "PORT");
+    opts.optmulti("", "addr", "Address to listen on (multiple occurences possible, default 0.0.0.0:1965 and [::]:1965)", "IP");
     opts.optopt("", "hostname", "Domain name of this Gemini server (optional)", "NAME");
     opts.optopt("", "lang", "RFC 4646 Language code(s) for text/gemini documents", "LANG");
     opts.optflag("s", "silent", "Disable logging output");
@@ -94,11 +89,13 @@ fn args() -> Result<Args> {
         addrs.push(i.parse()?);
     }
     if addrs.is_empty() {
-        addrs = vec![ "::".parse().unwrap(), "0.0.0.0".parse().unwrap()];
+        addrs = vec![
+            "[::]:1965".parse().unwrap(),
+            "0.0.0.0:1965".parse().unwrap(),
+        ];
     }
     Ok(Args {
         addrs,
-        port: matches.opt_get_default("port", 1965)?,
         content_dir: check_path(matches.opt_get_default("content", "content".into())?)?,
         cert_file: check_path(matches.opt_get_default("cert", "cert.pem".into())?)?,
         key_file: check_path(matches.opt_get_default("key", "key.rsa".into())?)?,
@@ -180,7 +177,8 @@ async fn parse_request(stream: &mut TlsStream<TcpStream>) -> std::result::Result
         }
     }
     if let Some(port) = url.port() {
-        if port != ARGS.port {
+        // Validate that the port in the URL is the same as for the stream this request came in on.
+        if port != stream.get_ref().0.local_addr().unwrap().port() {
             return Err((53, "proxy request refused"));
         }
     }
