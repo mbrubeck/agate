@@ -9,6 +9,7 @@ use {
         borrow::Cow,
         error::Error,
         ffi::OsStr,
+        fmt::Write,
         fs::File,
         io::BufReader,
         net::SocketAddr,
@@ -119,19 +120,37 @@ fn check_path(s: String) -> Result<String, String> {
 
 struct RequestHandle {
     pub stream: TlsStream<TcpStream>,
+    pub log_line: String,
 }
 
 /// Handle a single client session (request + response).
 async fn handle_request(stream: TcpStream) -> Result {
+    let log_line = format!(
+        "{} {}",
+        stream.local_addr().unwrap(),
+        if ARGS.log_ips {
+            stream
+                .peer_addr()
+                .expect("could not get peer address")
+                .to_string()
+        } else {
+            // Do not log IP address, but something else so columns still line up.
+            "-".into()
+        }
+    );
+
     let stream = TLS.accept(stream).await?;
 
-    let mut handle = RequestHandle { stream };
+    let mut handle = RequestHandle { stream, log_line };
 
     match parse_request(&mut handle).await {
         Ok(url) => send_response(url, &mut handle).await?,
         Err((status, msg)) => send_header(&mut handle, status, msg).await?,
     }
     handle.stream.shutdown().await?;
+
+    log::info!("{}", handle.log_line);
+
     Ok(())
 }
 
@@ -171,20 +190,9 @@ async fn parse_request(handle: &mut RequestHandle) -> std::result::Result<Url, (
         buf = &mut request[len..];
     }
     let request = std::str::from_utf8(&request[..len - 2]).or(Err((59, "Non-UTF-8 request")))?;
-    if ARGS.log_ips {
-        log::info!(
-            "Got request for {:?} from {}",
-            request,
-            handle
-                .stream
-                .get_ref()
-                .0
-                .peer_addr()
-                .expect("could not get peer address")
-        );
-    } else {
-        log::info!("Got request for {:?}", request);
-    }
+
+    // log literal request (might be different from or not an actual URL)
+    write!(handle.log_line, " \"{}\"", request).unwrap();
 
     let url = Url::parse(request).or(Err((59, "Invalid URL")))?;
 
@@ -293,12 +301,13 @@ async fn list_directory(handle: &mut RequestHandle, path: &Path) -> Result {
 }
 
 async fn send_header(handle: &mut RequestHandle, status: u8, meta: &str) -> Result {
-    use std::fmt::Write;
-    let mut response = String::with_capacity(64);
-    write!(response, "{} {}", status, meta)?;
-    log::info!("Responding with status {:?}", response);
-    response.push_str("\r\n");
-    handle.stream.write_all(response.as_bytes()).await?;
+    // add response status and response meta
+    write!(handle.log_line, " {} \"{}\"", status, meta)?;
+
+    handle
+        .stream
+        .write_all(format!("{} {}\r\n", status, meta).as_bytes())
+        .await?;
     Ok(())
 }
 
