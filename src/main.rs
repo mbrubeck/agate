@@ -60,6 +60,7 @@ struct Args {
     language: Option<String>,
     silent: bool,
     serve_secret: bool,
+    log_ips: bool,
 }
 
 fn args() -> Result<Args> {
@@ -74,6 +75,7 @@ fn args() -> Result<Args> {
     opts.optflag("s", "silent", "Disable logging output");
     opts.optflag("h", "help", "Print this help menu");
     opts.optflag("", "serve-secret", "Enable serving secret files (files/directories starting with a dot)");
+    opts.optflag("", "ip", "Output IP addresses when logging");
 
     let matches = opts.parse(&args[1..]).map_err(|f| f.to_string())?;
     if matches.opt_present("h") {
@@ -103,6 +105,7 @@ fn args() -> Result<Args> {
         language: matches.opt_str("lang"),
         silent: matches.opt_present("s"),
         serve_secret: matches.opt_present("serve-secret"),
+        log_ips: matches.opt_present("ip"),
     })
 }
 
@@ -162,7 +165,19 @@ async fn parse_request(stream: &mut TlsStream<TcpStream>) -> std::result::Result
         buf = &mut request[len..];
     }
     let request = std::str::from_utf8(&request[..len - 2]).or(Err((59, "Non-UTF-8 request")))?;
-    log::info!("Got request for {:?}", request);
+    if ARGS.log_ips {
+        log::info!(
+            "Got request for {:?} from {}",
+            request,
+            stream
+                .get_ref()
+                .0
+                .peer_addr()
+                .expect("could not get peer address")
+        );
+    } else {
+        log::info!("Got request for {:?}", request);
+    }
 
     let url = Url::parse(request).or(Err((59, "Invalid URL")))?;
 
