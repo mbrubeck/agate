@@ -120,7 +120,7 @@ async fn handle_request(stream: TcpStream) -> Result {
 
     match parse_request(stream).await {
         Ok(url) => send_response(url, stream).await?,
-        Err((status, msg)) => send_header(stream, status, &[msg]).await?,
+        Err((status, msg)) => send_header(stream, status, msg).await?,
     }
     stream.shutdown().await?;
     Ok(())
@@ -192,8 +192,7 @@ async fn send_response(url: Url, stream: &mut TlsStream<TcpStream>) -> Result {
         for segment in segments {
             if !ARGS.serve_secret && segment.starts_with('.') {
                 // Do not serve anything that looks like a hidden file.
-                return send_header(stream, 52, &["If I told you, it would not be a secret."])
-                    .await;
+                return send_header(stream, 52, "If I told you, it would not be a secret.").await;
             }
             path.push(&*percent_decode_str(segment).decode_utf8()?);
         }
@@ -213,7 +212,7 @@ async fn send_response(url: Url, stream: &mut TlsStream<TcpStream>) -> Result {
                 // if client is not redirected, links may not work as expected without trailing slash
                 let mut url = url;
                 url.set_path(&format!("{}/", url.path()));
-                return send_header(stream, 31, &[url.as_str()]).await;
+                return send_header(stream, 31, url.as_str()).await;
             }
         }
     }
@@ -222,7 +221,7 @@ async fn send_response(url: Url, stream: &mut TlsStream<TcpStream>) -> Result {
     let mut file = match tokio::fs::File::open(&path).await {
         Ok(file) => file,
         Err(e) => {
-            send_header(stream, 51, &["Not found, sorry."]).await?;
+            send_header(stream, 51, "Not found, sorry.").await?;
             Err(e)?
         }
     };
@@ -232,7 +231,7 @@ async fn send_response(url: Url, stream: &mut TlsStream<TcpStream>) -> Result {
         send_text_gemini_header(stream).await?;
     } else {
         let mime = mime_guess::from_path(&path).first_or_octet_stream();
-        send_header(stream, 20, &[mime.essence_str()]).await?;
+        send_header(stream, 20, mime.essence_str()).await?;
     }
 
     // Send body.
@@ -271,11 +270,10 @@ async fn list_directory(stream: &mut TlsStream<TcpStream>, path: &Path) -> Resul
     Ok(())
 }
 
-async fn send_header(stream: &mut TlsStream<TcpStream>, status: u8, meta: &[&str]) -> Result {
+async fn send_header(stream: &mut TlsStream<TcpStream>, status: u8, meta: &str) -> Result {
     use std::fmt::Write;
     let mut response = String::with_capacity(64);
-    write!(response, "{} ", status)?;
-    response.extend(meta.iter().copied());
+    write!(response, "{} {}", status, meta)?;
     log::info!("Responding with status {:?}", response);
     response.push_str("\r\n");
     stream.write_all(response.as_bytes()).await?;
@@ -284,8 +282,8 @@ async fn send_header(stream: &mut TlsStream<TcpStream>, status: u8, meta: &[&str
 
 async fn send_text_gemini_header(stream: &mut TlsStream<TcpStream>) -> Result {
     if let Some(lang) = ARGS.language.as_deref() {
-        send_header(stream, 20, &["text/gemini;lang=", lang]).await
+        send_header(stream, 20, &format!("text/gemini;lang={}", lang)).await
     } else {
-        send_header(stream, 20, &["text/gemini"]).await
+        send_header(stream, 20, "text/gemini").await
     }
 }
