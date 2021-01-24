@@ -34,11 +34,7 @@ fn main() -> Result {
         log::info!("Listening on {:?}...", ARGS.addrs);
         loop {
             let (stream, _) = listener.accept().await?;
-            tokio::spawn(async {
-                if let Err(e) = handle_request(stream).await {
-                    log::error!("{:?}", e);
-                }
-            });
+            tokio::spawn(async { handle_request(stream).await });
         }
     })
 }
@@ -123,8 +119,9 @@ struct RequestHandle {
     pub log_line: String,
 }
 
-/// Handle a single client session (request + response).
-async fn handle_request(stream: TcpStream) -> Result {
+/// Handle a single client session (request + response) and any errors that
+/// may occur while processing it.
+async fn handle_request(stream: TcpStream) {
     let log_line = format!(
         "{} {}",
         stream.local_addr().unwrap(),
@@ -139,19 +136,28 @@ async fn handle_request(stream: TcpStream) -> Result {
         }
     );
 
-    let stream = TLS.accept(stream).await?;
+    let stream = match TLS.accept(stream).await {
+        Ok(stream) => stream,
+        Err(e) => {
+            log::warn!("{} error:{}", log_line, e);
+            return;
+        }
+    };
 
     let mut handle = RequestHandle { stream, log_line };
 
-    match parse_request(&mut handle).await {
-        Ok(url) => send_response(url, &mut handle).await?,
-        Err((status, msg)) => send_header(&mut handle, status, msg).await?,
+    let mut result = match parse_request(&mut handle).await {
+        Ok(url) => send_response(url, &mut handle).await,
+        Err((status, msg)) => send_header(&mut handle, status, msg).await,
+    };
+
+    if let Err(e) = result {
+        log::warn!("{} error:{}", handle.log_line, e);
+    } else if let Err(e) = handle.stream.shutdown().await {
+        log::warn!("{} error:{}", handle.log_line, e);
+    } else {
+        log::info!("{}", handle.log_line);
     }
-    handle.stream.shutdown().await?;
-
-    log::info!("{}", handle.log_line);
-
-    Ok(())
 }
 
 /// TLS configuration.
