@@ -168,10 +168,9 @@ impl RequestHandle {
         }
     }
 
-    /// Do the necessary actions to handle this request. If the handle is already
-    /// in an error state, does nothing.
-    /// Finally return the generated log line content. If this contains
-    /// the string ` error:`, the handle ended in an error state.
+    /// Do the necessary actions to handle this request. Returns a corresponding
+    /// log line as Err or Ok, depending on if the request finished with or
+    /// without errors.
     async fn handle(mut self) -> Result<String, String> {
         // not already in error condition
         let result = match self.parse_request().await {
