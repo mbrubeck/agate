@@ -72,7 +72,7 @@ fn args() -> Result<Args> {
     opts.optflag("s", "silent", "Disable logging output");
     opts.optflag("h", "help", "Print this help menu");
     opts.optflag("", "serve-secret", "Enable serving secret files (files/directories starting with a dot)");
-    opts.optflag("", "ip", "Output IP addresses when logging");
+    opts.optflag("", "log-ip", "Output IP addresses when logging");
 
     let matches = opts.parse(&args[1..]).map_err(|f| f.to_string())?;
     if matches.opt_present("h") {
