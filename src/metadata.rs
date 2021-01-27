@@ -84,7 +84,7 @@ impl FileOptions {
                 // discard any I/O errors
                 .filter_map(|line| line.ok())
                 // filter out comment lines
-                .filter(|line| !line.trim_start().starts_with("#"))
+                .filter(|line| !line.trim_start().starts_with('#'))
                 .for_each(|line| {
                     // split line at colon
                     let parts = line.splitn(2, ':').collect::<Vec<_>>();
