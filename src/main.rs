@@ -112,7 +112,7 @@ fn args() -> Result<Args> {
         language: matches.opt_str("lang"),
         silent: matches.opt_present("s"),
         serve_secret: matches.opt_present("serve-secret"),
-        log_ips: matches.opt_present("ip"),
+        log_ips: matches.opt_present("log-ip"),
     })
 }
 
