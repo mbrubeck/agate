@@ -16,7 +16,7 @@ use {
         io::{AsyncReadExt, AsyncWriteExt},
         net::{TcpListener, TcpStream},
         runtime::Runtime,
-        sync::RwLock,
+        sync::Mutex,
     },
     tokio_rustls::{server::TlsStream, TlsAcceptor},
     url::{Host, Url},
@@ -27,7 +27,7 @@ fn main() -> Result {
         env_logger::Builder::new().parse_filters("info").init();
     }
     Runtime::new()?.block_on(async {
-        let mimetypes = Arc::new(RwLock::new(FileOptions::new(PresetMeta::Parameters(
+        let mimetypes = Arc::new(Mutex::new(FileOptions::new(PresetMeta::Parameters(
             ARGS.language
                 .as_ref()
                 .map_or(String::new(), |lang| format!(";lang={}", lang)),
@@ -179,13 +179,13 @@ fn acceptor() -> Result<TlsAcceptor> {
 struct RequestHandle {
     stream: TlsStream<TcpStream>,
     log_line: String,
-    metadata: Arc<RwLock<FileOptions>>,
+    metadata: Arc<Mutex<FileOptions>>,
 }
 
 impl RequestHandle {
     /// Creates a new request handle for the given stream. If establishing the TLS
     /// session fails, returns a corresponding log line.
-    async fn new(stream: TcpStream, metadata: Arc<RwLock<FileOptions>>) -> Result<Self, String> {
+    async fn new(stream: TcpStream, metadata: Arc<Mutex<FileOptions>>) -> Result<Self, String> {
         let log_line = format!(
             "{} {}",
             stream.local_addr().unwrap(),
@@ -316,7 +316,7 @@ impl RequestHandle {
             }
         }
 
-        let data = self.metadata.write().await.get(&path);
+        let data = self.metadata.lock().await.get(&path);
 
         if let PresetMeta::FullHeader(status, meta) = data {
             self.send_header(status, &meta).await?;
