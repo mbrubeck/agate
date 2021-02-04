@@ -9,15 +9,8 @@ use {
         NoClientAuth, ServerConfig,
     },
     std::{
-        borrow::Cow,
-        error::Error,
-        ffi::OsStr,
-        fmt::Write,
-        fs::File,
-        io::BufReader,
-        net::SocketAddr,
-        path::Path,
-        sync::Arc,
+        borrow::Cow, error::Error, ffi::OsStr, fmt::Write, fs::File, io::BufReader,
+        net::SocketAddr, path::Path, sync::Arc,
     },
     tokio::{
         io::{AsyncReadExt, AsyncWriteExt},
@@ -122,7 +115,11 @@ fn args() -> Result<Args> {
     );
     opts.optflag("s", "silent", "Disable logging output");
     opts.optflag("h", "help", "Print this help menu");
-    opts.optflag("", "serve-secret", "Enable serving secret files (files/directories starting with a dot)");
+    opts.optflag(
+        "",
+        "serve-secret",
+        "Enable serving secret files (files/directories starting with a dot)",
+    );
     opts.optflag("", "log-ip", "Output IP addresses when logging");
 
     let matches = opts.parse(&args[1..]).map_err(|f| f.to_string())?;
@@ -153,7 +150,7 @@ fn args() -> Result<Args> {
         language: matches.opt_str("lang"),
         silent: matches.opt_present("s"),
         serve_secret: matches.opt_present("serve-secret"),
-    	log_ips: matches.opt_present("log-ip"),
+        log_ips: matches.opt_present("log-ip"),
     })
 }
 
@@ -205,7 +202,11 @@ impl RequestHandle {
         );
 
         match TLS.accept(stream).await {
-            Ok(stream) => Ok(Self { stream, log_line, metadata }),
+            Ok(stream) => Ok(Self {
+                stream,
+                log_line,
+                metadata,
+            }),
             Err(e) => Err(format!("{} error:{}", log_line, e)),
         }
     }
