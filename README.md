@@ -4,6 +4,8 @@
 
 Agate is a server for the [Gemini] network protocol, built with the [Rust] programming language. Agate has very few features, and can only serve static files. It uses async I/O, and should be quite efficient even when running on low-end hardware and serving many concurrent requests.
 
+Since Agate by default uses port 1965, you should be able to run other servers (like e.g. Apache or nginx) on the same device.
+
 ## Learn more
 
 * Home page: [gemini://gem.limpet.net/agate/][home]
@@ -20,14 +22,14 @@ Agate is a server for the [Gemini] network protocol, built with the [Rust] progr
    Or download the source code and run `cargo build --release` inside the
    source repository, then find the binary at `target/release/agate`.
 
-2. Generate a self-signed TLS certificate and private key.  For example, if you have OpenSSL 1.1 installed, you can use a command like the following.  (Replace the hostname with the address of your Gemini server.)
+2. Generate a self-signed TLS certificate and private key.  For example, if you have OpenSSL 1.1 installed, you can use a command like the following.  (Replace the hostname `example.com` with the address of your Gemini server.)
 
 ```
 openssl req -x509 -newkey rsa:4096 -keyout key.rsa -out cert.pem \
     -days 3650 -nodes -subj "/CN=example.com"
 ```
 
-3. Run the server. You can use the following arguments to specify the locations of the content directory, certificate and key files, IP address and port to listen on, host name to expect in request URLs, and default language code(s) to include in the MIME type for for text/gemini files:
+3. Run the server. You can use the following arguments to specify the locations of the content directory, certificate and key files, IP address and port to listen on, host name to expect in request URLs, and default language code(s) to include in the MIME type for for text/gemini files: (Again replace the hostname `example.com` with the address of your Gemini server.)
 
 ```
 agate --content path/to/content/ \
