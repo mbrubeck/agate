@@ -3,6 +3,8 @@ use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use std::time::SystemTime;
 
+static SIDECAR_FILENAME: &str = ".meta";
+
 /// A struct to store a string of metadata for each file retrieved from
 /// sidecar files called `.lang`.
 ///
@@ -21,19 +23,47 @@ pub(crate) struct FileOptions {
     /// has changed.
     databases_read: BTreeMap<PathBuf, SystemTime>,
     /// Stores the metadata for each file
-    file_meta: BTreeMap<PathBuf, String>,
+    file_meta: BTreeMap<PathBuf, PresetMeta>,
     /// The default value to return
-    default: String,
+    default: PresetMeta,
 }
 
-static SIDECAR_FILENAME: &str = ".mime";
+/// A struct to store the different alternatives that a line in the sidecar
+/// file can have.
+#[derive(Clone, Debug)]
+pub(crate) enum PresetMeta {
+    /// A line that starts with a semicolon in the sidecar file, or an
+    /// empty line (to overwrite the default language command line flag).
+    /// ```text
+    /// index.gmi: ;lang=en-GB
+    /// ```
+    /// The content is interpreted as MIME parameters and are appended to what
+    /// agate guesses as the MIME type if the respective file can be found.
+    Parameters(String),
+    /// A line that is neither a `Parameters` line nor a `FullHeader` line.
+    /// ```text
+    /// strange.file: text/plain; lang=ee
+    /// ```
+    /// Agate will send the complete line as the MIME type of the request if
+    /// the respective file can be found (i.e. a `20` status code).
+    FullMime(String),
+    /// A line that starts with a digit between 1 and 6 inclusive followed by
+    /// another digit and a space (U+0020). In the categories defined by the
+    /// Gemini specification you can pick a defined or non-defined status code.
+    /// ```text
+    /// gone.gmi: 52 This file is no longer available.
+    /// ```
+    /// Agate will send this header line, CR, LF, and nothing else. Agate will
+    /// not try to access the requested file.
+    FullHeader(u8, String),
+}
 
 impl FileOptions {
-    pub(crate) fn new(default: &str) -> Self {
+    pub(crate) fn new(default: PresetMeta) -> Self {
         Self {
             databases_read: BTreeMap::new(),
             file_meta: BTreeMap::new(),
-            default: default.to_string(),
+            default,
         }
     }
 
@@ -93,7 +123,41 @@ impl FileOptions {
                         // generate workspace-unique path
                         let mut path = db_dir.clone();
                         path.push(parts[0].trim());
-                        self.file_meta.insert(path, parts[1].trim().to_string());
+                        // parse the line
+                        let header = parts[1].trim();
+
+                        let preset = if header.is_empty() || header.starts_with(';') {
+                            PresetMeta::Parameters(header.to_string())
+                        } else if matches!(header.chars().next(), Some('1'..='6')) {
+                            if header.len() < 3
+                                || !header.chars().nth(1).unwrap().is_ascii_digit()
+                                || !header.chars().nth(2).unwrap().is_whitespace()
+                            {
+                                log::error!("Line for {:?} starts like a full header line, but it is incorrect; ignoring it.", path);
+                                return;
+                            }
+                            let separator = header.chars().nth(2).unwrap();
+                            if separator != ' ' {
+                                // the Gemini specification says that the third
+                                // character has to be a space, so correct any
+                                // other whitespace to it (e.g. tabs)
+                                log::warn!("Full Header line for {:?} has an invalid character, treating {:?} as a space.", path, separator);
+                            }
+                            let status = header.chars()
+                                .take(2)
+                                .collect::<String>()
+                                .parse::<u8>()
+                                // unwrap since we alread checked it's a number
+                                .unwrap();
+                            // not taking a slice here because the separator
+                            // might be a whitespace wider than a byte
+                            let meta = header.chars().skip(3).collect::<String>();
+                            PresetMeta::FullHeader(status, meta)
+                        } else {
+                            // must be a MIME type, but without status code
+                            PresetMeta::FullMime(header.to_string())
+                        };
+                        self.file_meta.insert(path, preset);
                     }
                 });
             self.databases_read
@@ -106,12 +170,12 @@ impl FileOptions {
     /// The file path should consistenly be either absolute or relative to the
     /// working/content directory. If inconsisten file paths are used, this can
     /// lead to loading and storing sidecar files multiple times.
-    pub fn get(&mut self, file: &PathBuf) -> &str {
+    pub fn get(&mut self, file: &PathBuf) -> PresetMeta {
         let dir = file.parent().expect("no parent directory").to_path_buf();
         if self.check_outdated(&dir) {
             self.read_database(&dir);
         }
 
-        self.file_meta.get(file).unwrap_or(&self.default)
+        self.file_meta.get(file).unwrap_or(&self.default).clone()
     }
 }

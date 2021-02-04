@@ -1,5 +1,5 @@
 mod metadata;
-use metadata::FileOptions;
+use metadata::{FileOptions, PresetMeta};
 
 use {
     once_cell::sync::Lazy,
@@ -27,12 +27,11 @@ fn main() -> Result {
         env_logger::Builder::new().parse_filters("info").init();
     }
     Runtime::new()?.block_on(async {
-        let mimetypes = Arc::new(RwLock::new(FileOptions::new(
-            &ARGS
-                .language
+        let mimetypes = Arc::new(RwLock::new(FileOptions::new(PresetMeta::Parameters(
+            ARGS.language
                 .as_ref()
                 .map_or(String::new(), |lang| format!(";lang={}", lang)),
-        )));
+        ))));
         let listener = TcpListener::bind(&ARGS.addrs[..]).await?;
         log::info!("Listening on {:?}...", ARGS.addrs);
         loop {
@@ -317,7 +316,15 @@ impl RequestHandle {
             }
         }
 
-        // Make sure the file opens successfully before sending the success header.
+        let data = self.metadata.write().await.get(&path);
+
+        if let PresetMeta::FullHeader(status, meta) = data {
+            self.send_header(status, &meta).await?;
+            // do not try to access the file
+            return Ok(());
+        }
+
+        // Make sure the file opens successfully before sending a success header.
         let mut file = match tokio::fs::File::open(&path).await {
             Ok(file) => file,
             Err(e) => {
@@ -327,21 +334,21 @@ impl RequestHandle {
         };
 
         // Send header.
-        let mut locked = self.metadata.write().await;
-        let data = locked.get(&path);
-        let mime = if data.is_empty() || data.starts_with(';') {
-            // guess MIME type
-            if path.extension() == Some(OsStr::new("gmi")) {
-            	format!("text/gemini{}", data)
-            } else {
-                let mime = mime_guess::from_path(&path).first_or_octet_stream();
-                format!("{}{}", mime.essence_str(), data)
+        let mime = match data {
+            // this was already handled before opening the file
+            PresetMeta::FullHeader(..) => unreachable!(),
+            // treat this as the full MIME type
+            PresetMeta::FullMime(mime) => mime.clone(),
+            // guess the MIME type and add the parameters
+            PresetMeta::Parameters(params) => {
+                if path.extension() == Some(OsStr::new("gmi")) {
+                    format!("text/gemini{}", params)
+                } else {
+                    let mime = mime_guess::from_path(&path).first_or_octet_stream();
+                    format!("{}{}", mime.essence_str(), params)
+                }
             }
-        } else {
-            // this must be a full MIME type
-        	data.to_owned()
         };
-        drop(locked);
         self.send_header(20, &mime).await?;
 
         // Send body.
