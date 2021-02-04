@@ -58,13 +58,13 @@ You can put a file called `.meta` in a directory that stores some metadata about
 Lines starting with a `#` are comments and will be ignored like empty lines. All other lines must start with a file name (not a path), followed by a colon and then the metadata.
 
 The metadata can take one of four possible forms:
-1. empty
+1. empty  
     Agate will not send a default language parameter, even if it was specified on the command line.
-2. starting with a semicolon followed by MIME parameters
+2. starting with a semicolon followed by MIME parameters  
     Agate will append the specified string onto the MIME type, if the file is found.
-3. starting with a gemini status code (i.e. a digit 1-6 inclusive followed by another digit) and a space
+3. starting with a gemini status code (i.e. a digit 1-6 inclusive followed by another digit) and a space  
     Agate will send the metadata wether the file exists or not. The file will not be sent or accessed.
-4. a MIME type, may include parameters
+4. a MIME type, may include parameters  
     Agate will use this MIME type instead of what it would guess, if the file is found.
     The default language parameter will not be used, even if it was specified on the command line.
 
