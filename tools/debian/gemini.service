@@ -1,0 +1,28 @@
+# This file is part of the Agate software and licensed under either the
+# MIT license or Apache license at your option.
+#
+# Please keep in mind that there is no warranty whatsoever provided for this
+# software as specified in the disclaimer in the MIT license or section 7 of
+# the Apache license respectively.
+
+[Unit]
+Description=Agate gemini server
+
+[Service]
+# you should place the certificate and key file in this directory
+# and place the contents to be displayed in /srv/gemini/content
+WorkingDirectory=/srv/gemini/
+# assumes the device hostname is set correctly
+ExecStart=agate --hostname $(uname -n) --lang en
+
+Restart=always
+RestartSec=1
+
+StandardOutput=syslog
+StandardError=syslog
+# adds a syslog identifier so you can have these logs filtered into
+# a separate file
+SyslogIdentifier=gemini
+
+[Install]
+WantedBy=multi-user.target
