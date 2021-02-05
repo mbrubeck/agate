@@ -1,27 +1,24 @@
+mod metadata;
+use metadata::{FileOptions, PresetMeta};
+
 use {
     once_cell::sync::Lazy,
-    percent_encoding::{AsciiSet, CONTROLS, percent_decode_str, percent_encode},
+    percent_encoding::{percent_decode_str, percent_encode, AsciiSet, CONTROLS},
     rustls::{
         internal::pemfile::{certs, pkcs8_private_keys},
         NoClientAuth, ServerConfig,
     },
     std::{
-        borrow::Cow,
-        error::Error,
-        ffi::OsStr,
-        fmt::Write,
-        fs::File,
-        io::BufReader,
-        net::SocketAddr,
-        path::Path,
-        sync::Arc,
+        borrow::Cow, error::Error, ffi::OsStr, fmt::Write, fs::File, io::BufReader,
+        net::SocketAddr, path::Path, sync::Arc,
     },
     tokio::{
         io::{AsyncReadExt, AsyncWriteExt},
         net::{TcpListener, TcpStream},
         runtime::Runtime,
+        sync::Mutex,
     },
-    tokio_rustls::{TlsAcceptor, server::TlsStream},
+    tokio_rustls::{server::TlsStream, TlsAcceptor},
     url::{Host, Url},
 };
 
@@ -30,12 +27,18 @@ fn main() -> Result {
         env_logger::Builder::new().parse_filters("info").init();
     }
     Runtime::new()?.block_on(async {
+        let mimetypes = Arc::new(Mutex::new(FileOptions::new(PresetMeta::Parameters(
+            ARGS.language
+                .as_ref()
+                .map_or(String::new(), |lang| format!(";lang={}", lang)),
+        ))));
         let listener = TcpListener::bind(&ARGS.addrs[..]).await?;
         log::info!("Listening on {:?}...", ARGS.addrs);
         loop {
             let (stream, _) = listener.accept().await?;
+            let arc = mimetypes.clone();
             tokio::spawn(async {
-                match RequestHandle::new(stream).await {
+                match RequestHandle::new(stream, arc).await {
                     Ok(handle) => match handle.handle().await {
                         Ok(info) => log::info!("{}", info),
                         Err(err) => log::warn!("{}", err),
@@ -73,15 +76,49 @@ struct Args {
 fn args() -> Result<Args> {
     let args: Vec<String> = std::env::args().collect();
     let mut opts = getopts::Options::new();
-    opts.optopt("", "content", "Root of the content directory (default ./content)", "DIR");
-    opts.optopt("", "cert", "TLS certificate PEM file (default ./cert.pem)", "FILE");
-    opts.optopt("", "key", "PKCS8 private key file (default ./key.rsa)", "FILE");
-    opts.optmulti("", "addr", "Address to listen on (multiple occurences possible, default 0.0.0.0:1965 and [::]:1965)", "IP:PORT");
-    opts.optopt("", "hostname", "Domain name of this Gemini server (optional)", "NAME");
-    opts.optopt("", "lang", "RFC 4646 Language code(s) for text/gemini documents", "LANG");
+    opts.optopt(
+        "",
+        "content",
+        "Root of the content directory (default ./content)",
+        "DIR",
+    );
+    opts.optopt(
+        "",
+        "cert",
+        "TLS certificate PEM file (default ./cert.pem)",
+        "FILE",
+    );
+    opts.optopt(
+        "",
+        "key",
+        "PKCS8 private key file (default ./key.rsa)",
+        "FILE",
+    );
+    opts.optopt(
+        "",
+        "addr",
+        "Address to listen on (multiple occurences possible, default 0.0.0.0:1965 and [::]:1965)",
+        "IP:PORT",
+    );
+    opts.optopt(
+        "",
+        "hostname",
+        "Domain name of this Gemini server (optional)",
+        "NAME",
+    );
+    opts.optopt(
+        "",
+        "lang",
+        "RFC 4646 Language code(s) for text/gemini documents",
+        "LANG",
+    );
     opts.optflag("s", "silent", "Disable logging output");
     opts.optflag("h", "help", "Print this help menu");
-    opts.optflag("", "serve-secret", "Enable serving secret files (files/directories starting with a dot)");
+    opts.optflag(
+        "",
+        "serve-secret",
+        "Enable serving secret files (files/directories starting with a dot)",
+    );
     opts.optflag("", "log-ip", "Output IP addresses when logging");
 
     let matches = opts.parse(&args[1..]).map_err(|f| f.to_string())?;
@@ -142,12 +179,13 @@ fn acceptor() -> Result<TlsAcceptor> {
 struct RequestHandle {
     stream: TlsStream<TcpStream>,
     log_line: String,
+    metadata: Arc<Mutex<FileOptions>>,
 }
 
 impl RequestHandle {
     /// Creates a new request handle for the given stream. If establishing the TLS
     /// session fails, returns a corresponding log line.
-    async fn new(stream: TcpStream) -> Result<Self, String> {
+    async fn new(stream: TcpStream, metadata: Arc<Mutex<FileOptions>>) -> Result<Self, String> {
         let log_line = format!(
             "{} {}",
             stream.local_addr().unwrap(),
@@ -163,7 +201,11 @@ impl RequestHandle {
         );
 
         match TLS.accept(stream).await {
-            Ok(stream) => Ok(Self { stream, log_line }),
+            Ok(stream) => Ok(Self {
+                stream,
+                log_line,
+                metadata,
+            }),
             Err(e) => Err(format!("{} error:{}", log_line, e)),
         }
     }
@@ -274,7 +316,15 @@ impl RequestHandle {
             }
         }
 
-        // Make sure the file opens successfully before sending the success header.
+        let data = self.metadata.lock().await.get(&path);
+
+        if let PresetMeta::FullHeader(status, meta) = data {
+            self.send_header(status, &meta).await?;
+            // do not try to access the file
+            return Ok(());
+        }
+
+        // Make sure the file opens successfully before sending a success header.
         let mut file = match tokio::fs::File::open(&path).await {
             Ok(file) => file,
             Err(e) => {
@@ -284,12 +334,22 @@ impl RequestHandle {
         };
 
         // Send header.
-        if path.extension() == Some(OsStr::new("gmi")) {
-            self.send_text_gemini_header().await?;
-        } else {
-            let mime = mime_guess::from_path(&path).first_or_octet_stream();
-            self.send_header(20, mime.essence_str()).await?;
-        }
+        let mime = match data {
+            // this was already handled before opening the file
+            PresetMeta::FullHeader(..) => unreachable!(),
+            // treat this as the full MIME type
+            PresetMeta::FullMime(mime) => mime.clone(),
+            // guess the MIME type and add the parameters
+            PresetMeta::Parameters(params) => {
+                if path.extension() == Some(OsStr::new("gmi")) {
+                    format!("text/gemini{}", params)
+                } else {
+                    let mime = mime_guess::from_path(&path).first_or_octet_stream();
+                    format!("{}{}", mime.essence_str(), params)
+                }
+            }
+        };
+        self.send_header(20, &mime).await?;
 
         // Send body.
         tokio::io::copy(&mut file, &mut self.stream).await?;
@@ -310,7 +370,7 @@ impl RequestHandle {
             .add(b'}');
 
         log::info!("Listing directory {:?}", path);
-        self.send_text_gemini_header().await?;
+        self.send_header(20, "text/gemini").await?;
         let mut entries = tokio::fs::read_dir(path).await?;
         let mut lines = vec![];
         while let Some(entry) = entries.next_entry().await? {
@@ -345,14 +405,5 @@ impl RequestHandle {
             .write_all(format!("{} {}\r\n", status, meta).as_bytes())
             .await?;
         Ok(())
-    }
-
-    async fn send_text_gemini_header(&mut self) -> Result {
-        if let Some(lang) = ARGS.language.as_deref() {
-            self.send_header(20, &format!("text/gemini;lang={}", lang))
-                .await
-        } else {
-            self.send_header(20, "text/gemini").await
-        }
     }
 }

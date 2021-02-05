@@ -43,7 +43,42 @@ agate --content path/to/content/ \
 
 All of the command-line arguments are optional.  Run `agate --help` to see the default values used when arguments are omitted.
 
-When a client requests the URL `gemini://example.com/foo/bar`, Agate will respond with the file at `path/to/content/foo/bar`. If any segment of the requested path starts with a dot, agate will respond with a status code 52, even if the file does not exist (this behaviour can be disabled with `--serve-secret`). If there is a directory at that path, Agate will look for a file named `index.gmi` inside that directory. If there is no such file, but a file named `.directory-listing-ok` exists inside that directory, a basic directory listing is displayed. Files or directories whose name starts with a dot (e.g. the `.directory-listing-ok` file itself) are omitted from the list.
+When a client requests the URL `gemini://example.com/foo/bar`, Agate will respond with the file at `path/to/content/foo/bar`. If any segment of the requested path starts with a dot, agate will respond with a status code 52, wether the file exists or not (this behaviour can be disabled with `--serve-secret`). If there is a directory at that path, Agate will look for a file named `index.gmi` inside that directory.
+
+## Configuration
+
+### Directory listing
+
+You can enable a basic directory listing for a directory by putting a file called `.directory-listing-ok` in that directory. This does not have an effect on subdirectories.
+The directory listing will hide files and directories whose name starts with a dot (e.g. the `.directory-listing-ok` file itself or also the `.meta` configuration file).
+
+A file called `index.gmi` will always take precedence over a directory listing.
+
+### Meta-Presets
+
+You can put a file called `.meta` in a directory that stores some metadata about these files which Agate will use when serving these files. The file should be UTF-8 encoded. Like the `.directory-listing-ok` file, this file does not have an effect on subdirectories.
+Lines starting with a `#` are comments and will be ignored like empty lines. All other lines must start with a file name (not a path), followed by a colon and then the metadata.
+
+The metadata can take one of four possible forms:
+1. empty  
+    Agate will not send a default language parameter, even if it was specified on the command line.
+2. starting with a semicolon followed by MIME parameters  
+    Agate will append the specified string onto the MIME type, if the file is found.
+3. starting with a gemini status code (i.e. a digit 1-6 inclusive followed by another digit) and a space  
+    Agate will send the metadata wether the file exists or not. The file will not be sent or accessed.
+4. a MIME type, may include parameters  
+    Agate will use this MIME type instead of what it would guess, if the file is found.
+    The default language parameter will not be used, even if it was specified on the command line.
+
+If a line violates the format or looks like case 3, but is incorrect, it might be ignored. You should check your logs. Please know that this configuration file is first read when a file from the respective directory is accessed. So no log messages after startup does not mean the `.meta` file is okay.
+
+Such a configuration file might look like this:
+```text
+# This line will be ignored.
+index.gmi:;lang=en-UK
+LICENSE:text/plain;charset=UTF-8
+gone.gmi:52 This file is no longer here, sorry.
+```
 
 [Gemini]: https://gemini.circumlunar.space/
 [Rust]: https://www.rust-lang.org/
