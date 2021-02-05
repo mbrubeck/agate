@@ -24,7 +24,10 @@ use {
 
 fn main() -> Result {
     if !ARGS.silent {
-        env_logger::Builder::new().parse_filters("info").init();
+        env_logger::Builder::new()
+            .filter_level(log::LevelFilter::Info)
+            .parse_default_env()
+            .init();
     }
     Runtime::new()?.block_on(async {
         let mimetypes = Arc::new(Mutex::new(FileOptions::new(PresetMeta::Parameters(

@@ -80,9 +80,14 @@ LICENSE:text/plain;charset=UTF-8
 gone.gmi:52 This file is no longer here, sorry.
 ```
 
+### Logging Verbosity
+
+Agate uses the `env_logger` crate and allows you to set the logging verbosity by setting the default `RUST_LOG` environment variable. For more information, please see the [documentation of `env_logger`].
+
 [Gemini]: https://gemini.circumlunar.space/
 [Rust]: https://www.rust-lang.org/
 [home]: gemini://gem.limpet.net/agate/
 [rustup]: https://www.rust-lang.org/tools/install
 [source]: https://github.com/mbrubeck/agate
 [crates.io]: https://crates.io/crates/agate
+[documentation of `env_logger`]: https://docs.rs/env_logger/0.8
