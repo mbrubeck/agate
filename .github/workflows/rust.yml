@@ -25,7 +25,7 @@ jobs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
 
   build_ubuntu:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     needs: create_release
     steps:
     - uses: actions/checkout@v1
@@ -73,19 +73,21 @@ jobs:
     needs: create_release
     steps:
     - uses: actions/checkout@v1
-    - run: rustc -Vv
     - name: Build
       run: cargo build --verbose --release
+    - name: strip names
+      run: strip target/release/agate.exe
+    - name: compress
+      run: gzip -c target/release/agate.exe > ./agate.exe.gz
     - name: upload release asset win
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ needs.create_release.outputs.upload_url }}
-        asset_name: agate.x86_64-pc-windows-msvc.exe
-        # TODO: this one is not zipped and not stripped
-        asset_path: target/release/agate.exe
-        asset_content_type: application/vnd.microsoft.portable-executable
+        asset_name: agate.x86_64-pc-windows-msvc.exe.gz
+        asset_path: agate.exe.gz
+        asset_content_type: application/gzip
 
   build_macos:
     runs-on: macos-latest

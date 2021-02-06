@@ -5,13 +5,13 @@ set -e
 
 # Cross-compiling needs a linker for the respective platforms. If you are on a Debian-based x86_64 Linux,
 # you can install them with:
-sudo apt -y install gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu
+sudo apt -y install podman gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu
+# Also install cross compilation tool for cargo
+cargo install cross
 
 for i in x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu arm-unknown-linux-gnueabihf armv7-unknown-linux-gnueabihf
 do
-	# Make sure the cross-compiled std crate is available.
-	rustup target add $i
-	cargo build --verbose --release --target $i
+	cross build --verbose --release --target $i
 	cp target/$i/release/agate agate.$i
 done
 
