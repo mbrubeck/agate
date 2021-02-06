@@ -82,7 +82,8 @@ gone.gmi:52 This file is no longer here, sorry.
 
 ### Logging Verbosity
 
-Agate uses the `env_logger` crate and allows you to set the logging verbosity by setting the default `RUST_LOG` environment variable. For more information, please see the [documentation of `env_logger`].
+Agate uses the `env_logger` crate and allows you to set the logging verbosity by setting the default `RUST_LOG` environment variable. For more information, please see the documentation of `env_logger`.
+=> https://docs.rs/env_logger/0.8 documentation of `env_logger` crate
 
 ## Change log
 
