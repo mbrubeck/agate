@@ -127,7 +127,7 @@ fn args() -> Result<Args> {
     let matches = opts.parse(&args[1..]).map_err(|f| f.to_string())?;
     if matches.opt_present("h") {
         let usage = opts.usage(&format!("Usage: {} [options]", &args[0]));
-        Err(usage)?;
+        return Err(usage.into())
     }
     let hostname = match matches.opt_str("hostname") {
         Some(s) => Some(Host::parse(&s)?),
@@ -332,7 +332,7 @@ impl RequestHandle {
             Ok(file) => file,
             Err(e) => {
                 self.send_header(51, "Not found, sorry.").await?;
-                Err(e)?
+                return Err(e.into())
             }
         };
 
