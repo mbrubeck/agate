@@ -22,6 +22,11 @@ Since Agate by default uses port 1965, you should be able to run other servers (
    Or download the source code and run `cargo build --release` inside the
    source repository, then find the binary at `target/release/agate`.
 
+***
+You can use the install script in the `tools` directory for the remaining steps if there is one for your system.  
+If there is none, please consider contributing one to make it easier for less tech-savvy users!
+***
+
 2. Generate a self-signed TLS certificate and private key.  For example, if you have OpenSSL 1.1 installed, you can use a command like the following.  (Replace the hostname `example.com` with the address of your Gemini server.)
 
 ```
