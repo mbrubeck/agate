@@ -100,13 +100,13 @@ fn args() -> Result<Args> {
     opts.optmulti(
         "",
         "addr",
-        "Address to listen on (multiple occurences possible, default 0.0.0.0:1965 and [::]:1965)",
+        "Address to listen on (default 0.0.0.0:1965 and [::]:1965; muliple occurences means listening on multiple interfaces)",
         "IP:PORT",
     );
     opts.optmulti(
         "",
         "hostname",
-        "Domain name of this Gemini server (optional; simple vhosts if there are multiple occurences)",
+        "Domain name of this Gemini server (default is not checking hostname or port; multiple occurences means basic vhosts)",
         "NAME",
     );
     opts.optopt(
