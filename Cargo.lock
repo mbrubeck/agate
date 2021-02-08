@@ -2,7 +2,7 @@
 # It is not intended for manual editing.
 [[package]]
 name = "agate"
-version = "2.4.0"
+version = "2.4.1"
 dependencies = [
  "env_logger",
  "getopts",

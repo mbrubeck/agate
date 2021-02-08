@@ -97,7 +97,7 @@ fn args() -> Result<Args> {
         "PKCS8 private key file (default ./key.rsa)",
         "FILE",
     );
-    opts.optopt(
+    opts.optmulti(
         "",
         "addr",
         "Address to listen on (multiple occurences possible, default 0.0.0.0:1965 and [::]:1965)",
