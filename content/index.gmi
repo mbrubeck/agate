@@ -87,6 +87,10 @@ Agate uses the `env_logger` crate and allows you to set the logging verbosity by
 
 ## Change log
 
+### 2.4.1
+
+* Enabled multiple occurences of `--addr`. This was already included in the help, but accidentally disabled.
+
 ### 2.4.0
 
 * Added a sidecar file for specifying language, MIME media types or complete headers on a per file basis.
