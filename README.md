@@ -89,6 +89,14 @@ gone.gmi:52 This file is no longer here, sorry.
 
 Agate uses the `env_logger` crate and allows you to set the logging verbosity by setting the default `RUST_LOG` environment variable. For more information, please see the [documentation of `env_logger`].
 
+### Virtual Hosts
+
+Agate has basic support for virtual hosts. If you specify multiple `--hostname`s, Agate will look in a directory with the respective hostname within the content root directory.
+For example if one of the hostnames is `example.com`, and the content root directory is set to the default `./content`, and `gemini://example.com/file.gmi` is requested, then Agate will look for `./content/example.com/file.gmi`. This behaviour is only enabled if multiple `--hostname`s are specified.
+Agate does not support different certificates for different hostnames, you will have to use a single certificate for all domains (multi domain certificate).
+
+If you want to serve the same content for multiple domains, you can instead disable the hostname check by not specifying `--hostname`. In this case Agate will disregard a request's hostname apart from checking that there is one.
+
 [Gemini]: https://gemini.circumlunar.space/
 [Rust]: https://www.rust-lang.org/
 [home]: gemini://gem.limpet.net/agate/
