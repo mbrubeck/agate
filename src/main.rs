@@ -74,6 +74,7 @@ struct Args {
     silent: bool,
     serve_secret: bool,
     log_ips: bool,
+    only_tls13: bool,
 }
 
 fn args() -> Result<Args> {
@@ -118,6 +119,11 @@ fn args() -> Result<Args> {
     opts.optflag("s", "silent", "Disable logging output");
     opts.optflag("h", "help", "Print this help menu");
     opts.optflag(
+        "3",
+        "only-tls13",
+        "Only use TLSv1.3 (default also allows TLSv1.2)",
+    );
+    opts.optflag(
         "",
         "serve-secret",
         "Enable serving secret files (files/directories starting with a dot)",
@@ -153,6 +159,7 @@ fn args() -> Result<Args> {
         silent: matches.opt_present("s"),
         serve_secret: matches.opt_present("serve-secret"),
         log_ips: matches.opt_present("log-ip"),
+        only_tls13: matches.opt_present("only-tls13"),
     })
 }
 
@@ -175,6 +182,9 @@ fn acceptor() -> Result<TlsAcceptor> {
     let mut keys = pkcs8_private_keys(&mut BufReader::new(key_file)).or(Err("bad key"))?;
 
     let mut config = ServerConfig::new(NoClientAuth::new());
+    if ARGS.only_tls13 {
+        config.versions = vec![rustls::ProtocolVersion::TLSv1_3];
+    }
     config.set_single_cert(certs, keys.remove(0))?;
     Ok(TlsAcceptor::from(Arc::new(config)))
 }

@@ -52,6 +52,10 @@ When a client requests the URL `gemini://example.com/foo/bar`, Agate will respon
 
 ## Configuration
 
+### TLS versions
+
+Agate by default supports TLSv1.2 and TLSv1.3. You can disable support for TLSv1.2 by using the flag `--only-tls13` (or its short version `-3`). This is *NOT RECOMMENDED* as it may break compatibility with some clients. The Gemini specification requires compatibility with TLSv1.2 "for now" because not all platforms have good support for TLSv1.3 (cf. §4.1 of the specification).
+
 ### Directory listing
 
 You can enable a basic directory listing for a directory by putting a file called `.directory-listing-ok` in that directory. This does not have an effect on subdirectories.
