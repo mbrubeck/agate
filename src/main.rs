@@ -118,7 +118,11 @@ fn args() -> Result<Args> {
     );
     opts.optflag("s", "silent", "Disable logging output");
     opts.optflag("h", "help", "Print this help menu");
-    opts.optflag("3", "only-tls13", "Only use TLSv1.3 (default also allows TLSv1.2)");
+    opts.optflag(
+        "3",
+        "only-tls13",
+        "Only use TLSv1.3 (default also allows TLSv1.2)",
+    );
     opts.optflag(
         "",
         "serve-secret",
@@ -129,7 +133,7 @@ fn args() -> Result<Args> {
     let matches = opts.parse(&args[1..]).map_err(|f| f.to_string())?;
     if matches.opt_present("h") {
         let usage = opts.usage(&format!("Usage: {} [options]", &args[0]));
-        return Err(usage.into())
+        return Err(usage.into());
     }
     let hostname = match matches.opt_str("hostname") {
         Some(s) => Some(Host::parse(&s)?),
@@ -338,7 +342,7 @@ impl RequestHandle {
             Ok(file) => file,
             Err(e) => {
                 self.send_header(51, "Not found, sorry.").await?;
-                return Err(e.into())
+                return Err(e.into());
             }
         };
 
