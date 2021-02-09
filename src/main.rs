@@ -69,7 +69,7 @@ struct Args {
     content_dir: String,
     cert_file: String,
     key_file: String,
-    hostname: Option<Host>,
+    hostnames: Vec<Host>,
     language: Option<String>,
     silent: bool,
     serve_secret: bool,
@@ -101,13 +101,13 @@ fn args() -> Result<Args> {
     opts.optmulti(
         "",
         "addr",
-        "Address to listen on (multiple occurences possible, default 0.0.0.0:1965 and [::]:1965)",
+        "Address to listen on (default 0.0.0.0:1965 and [::]:1965; muliple occurences means listening on multiple interfaces)",
         "IP:PORT",
     );
-    opts.optopt(
+    opts.optmulti(
         "",
         "hostname",
-        "Domain name of this Gemini server (optional)",
+        "Domain name of this Gemini server (default is not checking hostname or port; multiple occurences means basic vhosts)",
         "NAME",
     );
     opts.optopt(
@@ -135,10 +135,10 @@ fn args() -> Result<Args> {
         let usage = opts.usage(&format!("Usage: {} [options]", &args[0]));
         return Err(usage.into());
     }
-    let hostname = match matches.opt_str("hostname") {
-        Some(s) => Some(Host::parse(&s)?),
-        None => None,
-    };
+    let mut hostnames = vec![];
+    for s in matches.opt_strs("hostname") {
+        hostnames.push(Host::parse(&s)?);
+    }
     let mut addrs = vec![];
     for i in matches.opt_strs("addr") {
         addrs.push(i.parse()?);
@@ -154,7 +154,7 @@ fn args() -> Result<Args> {
         content_dir: check_path(matches.opt_get_default("content", "content".into())?)?,
         cert_file: check_path(matches.opt_get_default("cert", "cert.pem".into())?)?,
         key_file: check_path(matches.opt_get_default("key", "key.rsa".into())?)?,
-        hostname,
+        hostnames,
         language: matches.opt_str("lang"),
         silent: matches.opt_present("s"),
         serve_secret: matches.opt_present("serve-secret"),
@@ -278,14 +278,16 @@ impl RequestHandle {
         if url.scheme() != "gemini" {
             return Err((53, "Unsupported URL scheme"));
         }
-        // TODO: Can be simplified by https://github.com/servo/rust-url/pull/651
-        if let (Some(Host::Domain(expected)), Some(Host::Domain(host))) =
-            (url.host(), &ARGS.hostname)
-        {
-            if host != expected {
+
+        if let Some(host) = url.host() {
+            // TODO: to_owned can be removed in next version of url https://github.com/servo/rust-url/pull/651
+            if !ARGS.hostnames.is_empty() && !ARGS.hostnames.contains(&host.to_owned()) {
                 return Err((53, "Proxy request refused"));
             }
+        } else {
+            return Err((59, "URL does not contain a host"));
         }
+
         if let Some(port) = url.port() {
             // Validate that the port in the URL is the same as for the stream this request came in on.
             if port != self.stream.get_ref().0.local_addr().unwrap().port() {
@@ -298,6 +300,12 @@ impl RequestHandle {
     /// Send the client the file located at the requested URL.
     async fn send_response(&mut self, url: Url) -> Result {
         let mut path = std::path::PathBuf::from(&ARGS.content_dir);
+
+        if ARGS.hostnames.len() > 1 {
+            // basic vhosts, existence of host_str was checked by parse_request already
+            path.push(url.host_str().expect("no hostname"));
+        }
+
         if let Some(segments) = url.path_segments() {
             for segment in segments {
                 if !ARGS.serve_secret && segment.starts_with('.') {
