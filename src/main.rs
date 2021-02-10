@@ -186,6 +186,7 @@ fn acceptor() -> Result<TlsAcceptor> {
     if ARGS.only_tls13 {
         config.versions = vec![rustls::ProtocolVersion::TLSv1_3];
     }
+    assert!(!keys.is_empty(), "no valid keys");
     config.set_single_cert(certs, keys.remove(0))?;
     Ok(TlsAcceptor::from(Arc::new(config)))
 }
