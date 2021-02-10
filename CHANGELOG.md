@@ -5,15 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+Agate now has an explicit code of conduct and contributing guidelines.
+Thank you to @gegeweb for contributing to this release.
+
+### Added
+* You can now supply multiple `--hostname`s to enable basic vhosts (#28).
+* Disabling support for TLSv1.2 can now be done using the `--only-tls13` flag, but this is *NOT RECOMMENDED* (#12).
+* The tools now also contain a startup script for FreeBSD (#13).
+
+### Changed
+* The changelog is now also kept in this file in addition to the GitHub releases.
+
+### Fixed
+* The Syntax for the IPv6 address in the README has been corrected.
+
 ## [2.4.1] - 2020-02-08
 ### Fixed
-* Reenabled multiple occurences of `--addr`. This was accidentally disabled by a merge.
+* Re-enabled multiple occurrences of `--addr`. This was accidentally disabled by a merge.
 
 ## [2.4.0]+podman.build - 2020-02-06
 This is the same as [2.4.0], only the build process has been changed so it should accommodate a wider range of architectures and devices.
 
 ## [2.4.0] - 2020-02-06
-Since there is a new maintainer (@Johann150), the range in precompiled binaries has changed a bit.
+Since there is a new maintainer (@Johann150), the range in pre-compiled binaries has changed a bit.
 
 ### Added
 * Added some installation tools for Debian.
@@ -41,7 +56,7 @@ Thank you to @Johann150 for contributing to this release.
 
 ## [2.1.3] - 2020-01-02
 ### Changed
-* Switch to the Tokio async runtime.
+* Switch to the Tokio async run time.
 
 ### Fixed
 * Send TLS close-notify message when closing a connection.
@@ -59,10 +74,10 @@ Thank you to @Johann150 for contributing to this release.
 
 ### Fixed
 * Handle percent-escaped paths in URLs.
-* Percent-escape whitespace characters in directory listings.
+* Percent-escape white space characters in directory listings.
 
 ## [2.1.0] - 2020-12-29
-* Enabled GitHub Discussins. If you are using Agate, please feel free to leave a comment to let us know about it!
+* Enabled GitHub Discussions. If you are using Agate, please feel free to leave a comment to let us know about it!
 Thank you to @Johann150 to contributing to this release.
 
 ### Added
@@ -130,8 +145,8 @@ Thank you @Johann150 and @tronje for contributing to this release!
 
 ## [1.0.1] - 2020-05-21
 ### Added
-* Send more accureate error codes for unsupported requests.
-* Do more validataion of request URLs.
+* Send more accurate error codes for unsupported requests.
+* Do more validation of request URLs.
 
 ## [1.0.0] - 2020-05-21
 
