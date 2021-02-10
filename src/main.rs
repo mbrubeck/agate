@@ -6,7 +6,7 @@ use {
     percent_encoding::{percent_decode_str, percent_encode, AsciiSet, CONTROLS},
     rustls::{
         internal::pemfile::{certs, pkcs8_private_keys},
-        NoClientAuth, ServerConfig,
+        Certificate, NoClientAuth, PrivateKey, ServerConfig,
     },
     std::{
         borrow::Cow, error::Error, ffi::OsStr, fmt::Write, fs::File, io::BufReader,
@@ -68,8 +68,8 @@ static ARGS: Lazy<Args> = Lazy::new(|| {
 struct Args {
     addrs: Vec<SocketAddr>,
     content_dir: String,
-    cert_file: String,
-    key_file: String,
+    cert_chain: Vec<Certificate>,
+    key: PrivateKey,
     hostnames: Vec<Host>,
     language: Option<String>,
     silent: bool,
@@ -150,11 +150,26 @@ fn args() -> Result<Args> {
             "0.0.0.0:1965".parse().unwrap(),
         ];
     }
+
+    let cert_file = File::open(check_path(
+        matches.opt_get_default("cert", "cert.pem".into())?,
+    )?)?;
+    let cert_chain = certs(&mut BufReader::new(cert_file)).or(Err("bad cert"))?;
+
+    let key_file = File::open(check_path(
+        matches.opt_get_default("key", "key.rsa".into())?,
+    )?)?;
+    let key = pkcs8_private_keys(&mut BufReader::new(key_file))
+        .or(Err("bad key file"))?
+        .drain(..)
+        .next()
+        .ok_or("no keys found")?;
+
     Ok(Args {
         addrs,
         content_dir: check_path(matches.opt_get_default("content", "content".into())?)?,
-        cert_file: check_path(matches.opt_get_default("cert", "cert.pem".into())?)?,
-        key_file: check_path(matches.opt_get_default("key", "key.rsa".into())?)?,
+        cert_chain,
+        key,
         hostnames,
         language: matches.opt_str("lang"),
         silent: matches.opt_present("s"),
@@ -176,18 +191,11 @@ fn check_path(s: String) -> Result<String, String> {
 static TLS: Lazy<TlsAcceptor> = Lazy::new(|| acceptor().unwrap());
 
 fn acceptor() -> Result<TlsAcceptor> {
-    let cert_file = File::open(&ARGS.cert_file)?;
-    let certs = certs(&mut BufReader::new(cert_file)).or(Err("bad cert"))?;
-
-    let key_file = File::open(&ARGS.key_file)?;
-    let mut keys = pkcs8_private_keys(&mut BufReader::new(key_file)).or(Err("bad key"))?;
-
     let mut config = ServerConfig::new(NoClientAuth::new());
     if ARGS.only_tls13 {
         config.versions = vec![rustls::ProtocolVersion::TLSv1_3];
     }
-    assert!(!keys.is_empty(), "no valid keys");
-    config.set_single_cert(certs, keys.remove(0))?;
+    config.set_single_cert(ARGS.cert_chain.clone(), ARGS.key.clone())?;
     Ok(TlsAcceptor::from(Arc::new(config)))
 }
 

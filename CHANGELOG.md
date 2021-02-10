@@ -16,9 +16,11 @@ Thank you to @gegeweb for contributing to this release.
 
 ### Changed
 * The changelog is now also kept in this file in addition to the GitHub releases.
+* Certificate chain and key file are now only loaded once at startup, certificate changes need a restart to take effect.
 
 ### Fixed
 * The Syntax for the IPv6 address in the README has been corrected.
+* Give a better error message when no keys are found in the key file instead of panicking with a range check.
 
 ## [2.4.1] - 2020-02-08
 ### Fixed
