@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
-use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use std::time::SystemTime;
+use yaml_rust::YamlLoader;
 
 static SIDECAR_FILENAME: &str = ".meta";
 
@@ -108,60 +108,82 @@ impl FileOptions {
         db.push(SIDECAR_FILENAME);
         let db = db.as_path();
 
-        if let Ok(file) = std::fs::File::open(db) {
-            let r = BufReader::new(file);
-            r.lines()
-                // discard any I/O errors
-                .filter_map(|line| line.ok())
-                // filter out comment lines
-                .filter(|line| !line.trim_start().starts_with('#'))
-                .for_each(|line| {
-                    // split line at colon
-                    let parts = line.splitn(2, ':').collect::<Vec<_>>();
-                    // only continue if line fits the format
-                    if parts.len() == 2 {
-                        // generate workspace-unique path
-                        let mut path = db_dir.clone();
-                        path.push(parts[0].trim());
-                        // parse the line
-                        let header = parts[1].trim();
+        if let Ok(contents) = std::fs::read_to_string(db) {
+            let docs = match YamlLoader::load_from_str(&contents) {
+                Ok(docs) => docs,
+                Err(e) => {
+                    log::error!("Invalid YAML document in {:?}: {}", db, e);
+                    return;
+                }
+            };
+            if let Some(files) = docs.get(0).and_then(|hash| hash.as_hash()) {
+                for (rel_path, header) in files {
+                    // from YAML to Rust types
+                    let rel_path = if let Some(rel_path) = rel_path.as_str() {
+                        rel_path
+                    } else {
+                        log::error!(
+                            "Expected string filename, but got {:?} in {:?}",
+                            rel_path,
+                            db
+                        );
+                        continue;
+                    };
+                    let header = if let Some(header) = header.as_str() {
+                        header
+                    } else {
+                        log::error!("Expected string contents, but got {:?} in {:?}", header, db);
+                        continue;
+                    };
 
-                        let preset = if header.is_empty() || header.starts_with(';') {
-                            PresetMeta::Parameters(header.to_string())
-                        } else if matches!(header.chars().next(), Some('1'..='6')) {
-                            if header.len() < 3
-                                || !header.chars().nth(1).unwrap().is_ascii_digit()
-                                || !header.chars().nth(2).unwrap().is_whitespace()
-                            {
-                                log::error!("Line for {:?} starts like a full header line, but it is incorrect; ignoring it.", path);
-                                return;
-                            }
-                            let separator = header.chars().nth(2).unwrap();
-                            if separator != ' ' {
-                                // the Gemini specification says that the third
-                                // character has to be a space, so correct any
-                                // other whitespace to it (e.g. tabs)
-                                log::warn!("Full Header line for {:?} has an invalid character, treating {:?} as a space.", path, separator);
-                            }
-                            let status = header.chars()
-                                .take(2)
-                                .collect::<String>()
-                                .parse::<u8>()
-                                // unwrap since we alread checked it's a number
-                                .unwrap();
-                            // not taking a slice here because the separator
-                            // might be a whitespace wider than a byte
-                            let meta = header.chars().skip(3).collect::<String>();
-                            PresetMeta::FullHeader(status, meta)
-                        } else {
-                            // must be a MIME type, but without status code
-                            PresetMeta::FullMime(header.to_string())
-                        };
-                        self.file_meta.insert(path, preset);
-                    }
-                });
+                    // generate workspace-unique path
+                    let mut path = db_dir.clone();
+                    path.push(rel_path);
+
+                    // parse the preset
+                    let preset = if header.is_empty() || header.starts_with(';') {
+                        PresetMeta::Parameters(header.to_string())
+                    } else if matches!(header.chars().next(), Some('1'..='6')) {
+                        if header.len() < 3
+                            || !header.chars().nth(1).unwrap().is_ascii_digit()
+                            || !header.chars().nth(2).unwrap().is_whitespace()
+                        {
+                            log::error!("Line for {:?} starts like a full header line, but it is incorrect; ignoring it.", path);
+                            return;
+                        }
+                        let separator = header.chars().nth(2).unwrap();
+                        if separator != ' ' {
+                            // the Gemini specification says that the third
+                            // character has to be a space, so correct any
+                            // other whitespace to it (e.g. tabs)
+                            log::warn!("Full Header line for {:?} has an invalid character, treating {:?} as a space.", path, separator);
+                        }
+                        let status = header
+                            .chars()
+                            .take(2)
+                            .collect::<String>()
+                            .parse::<u8>()
+                            // unwrap since we alread checked it's a number
+                            .unwrap();
+                        // not taking a slice here because the separator
+                        // might be a whitespace wider than a byte
+                        let meta = header.chars().skip(3).collect::<String>();
+                        PresetMeta::FullHeader(status, meta)
+                    } else {
+                        // must be a MIME type, but without status code
+                        PresetMeta::FullMime(header.to_string())
+                    };
+
+                    self.file_meta.insert(path, preset);
+                }
+            } else {
+                log::error!("no YAML document {:?}", db);
+                return;
+            };
             self.databases_read
                 .insert(db_dir.clone(), SystemTime::now());
+        } else {
+            log::error!("could not read configuration file {:?}", db);
         }
     }
 

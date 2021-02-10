@@ -30,11 +30,12 @@ fn main() -> Result {
             .init();
     }
     Runtime::new()?.block_on(async {
-        let mimetypes = Arc::new(Mutex::new(FileOptions::new(PresetMeta::Parameters(
+        let default = PresetMeta::Parameters(
             ARGS.language
                 .as_ref()
                 .map_or(String::new(), |lang| format!(";lang={}", lang)),
-        ))));
+        );
+        let mimetypes = Arc::new(Mutex::new(FileOptions::new(default)));
         let listener = TcpListener::bind(&ARGS.addrs[..]).await?;
         log::info!("Listening on {:?}...", ARGS.addrs);
         loop {
