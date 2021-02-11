@@ -19,6 +19,7 @@ Thank you to @gegeweb for contributing to this release.
 * The configuration files are now parsed as YAML. The syntax only changes in that a space is now required behind the colon.
 * The changelog is now also kept in this file in addition to the GitHub releases.
 * Certificate chain and key file are now only loaded once at startup, certificate changes need a restart to take effect.
+* Hidden files are now served if there is an explicit setting in a `.meta` file for them, regardless of the `--serve-secret` flag.
 
 ### Fixed
 * The Syntax for the IPv6 address in the README has been corrected.

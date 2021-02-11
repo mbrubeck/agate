@@ -1,5 +1,5 @@
 use std::collections::BTreeMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 use yaml_rust::YamlLoader;
 
@@ -67,21 +67,22 @@ impl FileOptions {
         }
     }
 
-    /// Checks wether the database for the respective directory is still
-    /// up to date.
-    /// Will only return true if the database should be (re)read, i.e. it will
-    /// return false if there is no database file in the specified directory.
-    fn check_outdated(&self, db_dir: &PathBuf) -> bool {
-        let mut db = db_dir.clone();
-        db.push(SIDECAR_FILENAME);
-        let db = db.as_path();
+    /// Checks wether the database for the directory of the specified file is
+    /// still up to date and re-reads it if outdated or not yet read.
+    fn update(&mut self, dir: &Path) {
+        let mut dir = if super::ARGS.central_config {
+            super::ARGS.content_dir.clone()
+        } else {
+            dir.parent().expect("no parent directory").to_path_buf()
+        };
+        dir.push(SIDECAR_FILENAME);
 
-        if let Ok(metadata) = db.metadata() {
+        let should_read = if let Ok(metadata) = dir.as_path().metadata() {
             if !metadata.is_file() {
                 // it exists, but it is a directory
                 false
             } else if let (Ok(modified), Some(last_read)) =
-                (metadata.modified(), self.databases_read.get(db_dir))
+                (metadata.modified(), self.databases_read.get(&dir))
             {
                 // check that it was last modified before the read
                 // if the times are the same, we might have read the old file
@@ -95,18 +96,17 @@ impl FileOptions {
         } else {
             // the file probably does not exist
             false
+        };
+
+        if should_read {
+            self.read_database(&dir);
         }
     }
 
-    /// (Re)reads a specific sidecar file that resides in the specified
-    /// directory. The function takes a directory to minimize path
-    /// alterations "on the fly".
+    /// (Re)reads a specified sidecar file.
     /// This function will allways try to read the file, even if it is current.
-    fn read_database(&mut self, db_dir: &PathBuf) {
-        log::trace!("reading database for {:?}", db_dir);
-        let mut db = db_dir.clone();
-        db.push(SIDECAR_FILENAME);
-        let db = db.as_path();
+    fn read_database(&mut self, db: &PathBuf) {
+        log::trace!("reading database {:?}", db);
 
         if let Ok(contents) = std::fs::read_to_string(db) {
             let docs = match YamlLoader::load_from_str(&contents) {
@@ -137,7 +137,8 @@ impl FileOptions {
                     };
 
                     // generate workspace-unique path
-                    let mut path = db_dir.clone();
+                    let mut path = db.clone();
+                    path.pop();
                     path.push(rel_path);
 
                     // parse the preset
@@ -180,8 +181,10 @@ impl FileOptions {
                 log::error!("no YAML document {:?}", db);
                 return;
             };
-            self.databases_read
-                .insert(db_dir.clone(), SystemTime::now());
+            self.databases_read.insert(
+                db.as_path().parent().unwrap().to_path_buf(),
+                SystemTime::now(),
+            );
         } else {
             log::error!("could not read configuration file {:?}", db);
         }
@@ -192,17 +195,17 @@ impl FileOptions {
     /// The file path should consistenly be either absolute or relative to the
     /// working/content directory. If inconsisten file paths are used, this can
     /// lead to loading and storing sidecar files multiple times.
-    pub fn get(&mut self, file: &PathBuf) -> PresetMeta {
-        let dir = if super::ARGS.central_config {
-            super::ARGS.content_dir.clone()
-        } else {
-            file.parent().expect("no parent directory").to_path_buf()
-        };
-
-        if self.check_outdated(&dir) {
-            self.read_database(&dir);
-        }
+    pub fn get(&mut self, file: &Path) -> PresetMeta {
+        self.update(file);
 
         self.file_meta.get(file).unwrap_or(&self.default).clone()
+    }
+
+    /// Returns true if a configuration exists in a configuration file.
+    /// Returns false if no or only the default value exists.
+    pub fn exists(&mut self, file: &Path) -> bool {
+        self.update(file);
+
+        self.file_meta.contains_key(file)
     }
 }

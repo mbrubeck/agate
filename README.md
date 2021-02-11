@@ -48,7 +48,7 @@ agate --content path/to/content/ \
 
 All of the command-line arguments are optional.  Run `agate --help` to see the default values used when arguments are omitted.
 
-When a client requests the URL `gemini://example.com/foo/bar`, Agate will respond with the file at `path/to/content/foo/bar`. If any segment of the requested path starts with a dot, agate will respond with a status code 52, whether the file exists or not (this behaviour can be disabled with `--serve-secret`). If there is a directory at that path, Agate will look for a file named `index.gmi` inside that directory.
+When a client requests the URL `gemini://example.com/foo/bar`, Agate will respond with the file at `path/to/content/foo/bar`. If any segment of the requested path starts with a dot, agate will respond with a status code 52, whether the file exists or not. This behaviour can be disabled with `--serve-secret` or by an entry for the specific file in the `.meta` configuration file (see Meta-Presets). If there is a directory at that path, Agate will look for a file named `index.gmi` inside that directory.
 
 ## Configuration
 

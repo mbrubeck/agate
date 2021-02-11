@@ -331,15 +331,24 @@ impl RequestHandle {
             path.push(url.host_str().expect("no hostname"));
         }
 
-        if let Some(segments) = url.path_segments() {
-            for segment in segments {
-                if !ARGS.serve_secret && segment.starts_with('.') {
-                    // Do not serve anything that looks like a hidden file.
-                    return self
-                        .send_header(52, "If I told you, it would not be a secret.")
-                        .await;
-                }
-                path.push(&*percent_decode_str(segment).decode_utf8()?);
+        if let Some(mut segments) = url.path_segments() {
+            // append percent-decoded path segments
+            path.extend(
+                segments
+                    .clone()
+                    .map(|segment| Ok(percent_decode_str(segment).decode_utf8()?.into_owned()))
+                    .collect::<Result<Vec<_>>>()?,
+            );
+            // check if hiding files is disabled
+            if !ARGS.serve_secret
+                // there is a configuration for this file, assume it should be served
+                && !self.metadata.lock().await.exists(&path)
+                // check if file or directory is hidden
+                && segments.any(|segment| segment.starts_with('.'))
+            {
+                return self
+                    .send_header(52, "If I told you, it would not be a secret.")
+                    .await;
             }
         }
 
