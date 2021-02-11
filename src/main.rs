@@ -9,8 +9,15 @@ use {
         Certificate, NoClientAuth, PrivateKey, ServerConfig,
     },
     std::{
-        borrow::Cow, error::Error, ffi::OsStr, fmt::Write, fs::File, io::BufReader,
-        net::SocketAddr, path::Path, sync::Arc,
+        borrow::Cow,
+        error::Error,
+        ffi::OsStr,
+        fmt::Write,
+        fs::File,
+        io::BufReader,
+        net::SocketAddr,
+        path::{Path, PathBuf},
+        sync::Arc,
     },
     tokio::{
         io::{AsyncReadExt, AsyncWriteExt},
@@ -67,7 +74,7 @@ static ARGS: Lazy<Args> = Lazy::new(|| {
 
 struct Args {
     addrs: Vec<SocketAddr>,
-    content_dir: String,
+    content_dir: PathBuf,
     cert_chain: Vec<Certificate>,
     key: PrivateKey,
     hostnames: Vec<Host>,
@@ -76,6 +83,7 @@ struct Args {
     serve_secret: bool,
     log_ips: bool,
     only_tls13: bool,
+    central_config: bool,
 }
 
 fn args() -> Result<Args> {
@@ -130,6 +138,11 @@ fn args() -> Result<Args> {
         "Enable serving secret files (files/directories starting with a dot)",
     );
     opts.optflag("", "log-ip", "Output IP addresses when logging");
+    opts.optflag(
+        "C",
+        "central-conf",
+        "Use a central .meta file in the content root directory.",
+    );
 
     let matches = opts.parse(&args[1..]).map_err(|f| f.to_string())?;
     if matches.opt_present("h") {
@@ -176,14 +189,16 @@ fn args() -> Result<Args> {
         serve_secret: matches.opt_present("serve-secret"),
         log_ips: matches.opt_present("log-ip"),
         only_tls13: matches.opt_present("only-tls13"),
+        central_config: matches.opt_present("central-conf"),
     })
 }
 
-fn check_path(s: String) -> Result<String, String> {
-    if Path::new(&s).exists() {
-        Ok(s)
+fn check_path(s: String) -> Result<PathBuf, String> {
+    let p = PathBuf::from(s);
+    if p.as_path().exists() {
+        Ok(p)
     } else {
-        Err(format!("No such file: {}", s))
+        Err(format!("No such file: {:?}", p))
     }
 }
 

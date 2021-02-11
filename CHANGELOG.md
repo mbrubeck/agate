@@ -13,8 +13,10 @@ Thank you to @gegeweb for contributing to this release.
 * You can now supply multiple `--hostname`s to enable basic vhosts (#28).
 * Disabling support for TLSv1.2 can now be done using the `--only-tls13` flag, but this is *NOT RECOMMENDED* (#12).
 * The tools now also contain a startup script for FreeBSD (#13).
+* Using central config mode (flag `-C`), all configuration can be done in one `.meta` file (see README.md for details).
 
 ### Changed
+* The configuration files are now parsed as YAML. The syntax only changes in that a space is now required behind the colon.
 * The changelog is now also kept in this file in addition to the GitHub releases.
 * Certificate chain and key file are now only loaded once at startup, certificate changes need a restart to take effect.
 

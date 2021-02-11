@@ -67,7 +67,7 @@ A file called `index.gmi` will always take precedence over a directory listing.
 
 You can put a file called `.meta` in a directory. This file stores some metadata about these files which Agate will use when serving these files. The file should be UTF-8 encoded. Like the `.directory-listing-ok` file, this file does not have an effect on sub-directories. (*1)
 This file is parsed as a YAML file and should contain a "hash" datatype with file names as the keys. This means:
-Lines starting with a `#` are comments and will be ignored like empty lines. All other lines must start with a file name, followed by a colon and then the metadata.
+Lines starting with a `#` are comments and will be ignored like empty lines. All other lines must start with a file name, followed by a colon and a space and then the metadata.
 
 The metadata can take one of four possible forms:
 1. empty  
@@ -85,10 +85,12 @@ If a line violates the format or looks like case 3, but is incorrect, it might b
 Such a configuration file might look like this:
 ```text
 # This line will be ignored.
-index.gmi:;lang=en-UK
-LICENSE:text/plain;charset=UTF-8
-gone.gmi:52 This file is no longer here, sorry.
+index.gmi: ;lang=en-UK
+LICENSE: text/plain;charset=UTF-8
+gone.gmi: 52 This file is no longer here, sorry.
 ```
+
+You can enable a central configuration file with the `-C` flag (or the long version `--central-conf`). In this case Agate will always look for the `.meta` configuration file in the content root directory and will ignore `.meta` files in other directories.
 
 (*1) It is *theoretically* possible to specify information on files which are in sub-directories. The problem would only be to make sure that this file is loaded before the respective path/file is requested. This is because Agate does not actively check that the "no sub-directories" regulation is met. In fact this might be dropped in a change of configuration format in the foreseeable future.
 

@@ -193,7 +193,12 @@ impl FileOptions {
     /// working/content directory. If inconsisten file paths are used, this can
     /// lead to loading and storing sidecar files multiple times.
     pub fn get(&mut self, file: &PathBuf) -> PresetMeta {
-        let dir = file.parent().expect("no parent directory").to_path_buf();
+        let dir = if super::ARGS.central_config {
+            super::ARGS.content_dir.clone()
+        } else {
+            file.parent().expect("no parent directory").to_path_buf()
+        };
+
         if self.check_outdated(&dir) {
             self.read_database(&dir);
         }
