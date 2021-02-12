@@ -96,17 +96,17 @@ If a line violates the format or looks like case 3, but is incorrect, it might b
 Such a configuration file might look like this:
 ```text
 # This line will be ignored.
-**.de.gmi: ;lang=de
-nl/**.gmi: ;lang=nl
+**/*.de.gmi: ;lang=de
+nl/**/*.gmi: ;lang=nl
 index.gmi: ;lang=en-UK
 LICENSE: text/plain;charset=UTF-8
 gone.gmi: 52 This file is no longer here, sorry.
 ```
 
-If this is the `.meta` file in the content root directory and the `-C' flag is used, this will result in the following:
+If this is the `.meta` file in the content root directory and the `-C` flag is used, this will result in the following:
 requested filename|response header
 ---|---
-`/ ` or `/index.gmi`|`20 text/gemini;lang=en-UK`
+`/` or `/index.gmi`|`20 text/gemini;lang=en-UK`
 `/LICENSE`|`20 text/plain;charset=UTF-8`
 `/gone.gmi`|`52 This file is no longer here, sorry.`
 any non-hidden file ending in `.de.gmi` (including in non-hidden subdirectories)|`20 text/gemini;lang=de`
