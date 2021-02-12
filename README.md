@@ -68,19 +68,19 @@ A file called `index.gmi` will always take precedence over a directory listing.
 You can put a file called `.meta` in any content directory. This file stores some metadata about the adjacent files which Agate will use when serving these files. The `.meta` file must be UTF-8 encoded.
 You can also enable a central configuration file with the `-C` flag (or the long version `--central-conf`). In this case Agate will always look for the `.meta` configuration file in the content root directory and will ignore `.meta` files in other directories.
 
-The `.meta` file is parsed as a YAML file and should contain a "hash" datatype with file names as the keys. This means:
-* Lines starting with a `#` are comments and will be ignored, as will empty lines.
-* All other lines must have the form `<path>: <metadata`, i.e. start with a file path, followed by a colon and a space and then the metadata.
+The `.meta` file has the following format (*1):
+* Lines starting with a `#` or a ';' are comments and will be ignored, as will empty lines.
+* All other lines must have the form `<path>:<metadata>`, i.e. start with a file path, followed by a colon and then the metadata.
 
 `<path>` is a case sensitive file path, which may or may not exist on disk. If <path> leads to a directory, it is ignored.
-If central configuration file mode is not used, using a path that is not a file in the current directory is undefined behaviour (for example: `../index.gmi` would be undefined behaviour).
+If central configuration file mode is not used, using a path that is not a file in the current directory is undefined behaviour (for example `../index.gmi` would be undefined behaviour).
 You can use Unix style patterns in existing paths. For example `content/*` will match any file within `content`, and `content/**` will additionally match any files in subdirectories of `content`.
-However, the `*` and `**` globs on their own will by default not match files or directories that start with a dot because of their special meaning (see Directory listing).
+However, the `*` and `**` globs on their own will by default not match files or directories that start with a dot because of their special meaning.
 This behaviour can be disabled with `--serve-secret` or by explicitly matching files starting with a dot with e.g. `content/.*` or `content/**/.*` respectively.
 For more information on the patterns you can use, please see the [documentation of `glob::Pattern`](https://https://docs.rs/glob/0.3.0/glob/struct.Pattern.html).
 Rules can overwrite other rules, so if a file is matched by multiple rules, the last one applies.
 
-The metadata can take one of four possible forms:
+`<metadata>` can take one of four possible forms:
 1. empty  
     Agate will not send a default language parameter, even if it was specified on the command line.
 2. starting with a semicolon followed by MIME parameters  
@@ -111,6 +111,8 @@ requested filename|response header
 `/gone.gmi`|`52 This file is no longer here, sorry.`
 any non-hidden file ending in `.de.gmi` (including in non-hidden subdirectories)|`20 text/gemini;lang=de`
 any non-hidden file in the `nl` directory ending in `.gmi` (including in non-hidden subdirectories)|`20 text/gemini;lang=nl`
+
+(*1) In theory the syntax is that of a typical INI-like file and also allows for sections with `[section]` (the default section is set to `m̀ime` in the parser), since all other sections are disregarded, this does not make a difference. This also means that you can in theory also use `=` instead of `:`. For even more information, you can visit the [documentation of `configparser`](https://docs.rs/configparser/2.0).
 
 ### Logging Verbosity
 

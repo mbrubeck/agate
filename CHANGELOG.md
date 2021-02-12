@@ -17,7 +17,7 @@ Thank you to @gegeweb for contributing to this release.
 * The `.meta` configuration file now allows for globs to be used.
 
 ### Changed
-* The configuration files are now parsed as YAML. The syntax only changes in that a space is now required behind the colon.
+* The `.meta` file parser now uses the `configparser` crate. The syntax does not change.
 * The changelog is now also kept in this file in addition to the GitHub releases.
 * Certificate chain and key file are now only loaded once at startup, certificate changes need a restart to take effect.
 * Hidden files are now served if there is an explicit setting in a `.meta` file for them, regardless of the `--serve-secret` flag.
