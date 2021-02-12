@@ -2,25 +2,28 @@
 
 ## Simple Gemini server for static files
 
-Agate is a server for the [Gemini] network protocol, built with the [Rust] programming language. Agate has very few features, and can only serve static files. It uses async I/O, and should be quite efficient even when running on low-end hardware and serving many concurrent requests.
+Agate is a server for the Gemini network protocol, built with the Rust programming language. Agate has very few features, and can only serve static files. It uses async I/O, and should be quite efficient even when running on low-end hardware and serving many concurrent requests.
 
 Since Agate by default uses port 1965, you should be able to run other servers (like e.g. Apache or nginx) on the same device.
 
 ## Learn more
 
-=> gemini://gemini.circumlunar.space/ Gemini project
-=> https://github.com/mbrubeck/agate Agate on GitHub
+=> gemini://qwertqwefsday.eu/agate.gmi Home page
 => https://crates.io/crates/agate Agate on crates.io
+=> https://github.com/mbrubeck/agate Source code
 
 ## Installation and setup
 
-1. Download and unpack the pre-compiled binary:
-
+1. Download and unpack the pre-compiled binary from the releases page:
 => https://github.com/mbrubeck/agate/releases
 
-Or run `cargo install agate` to install agate from crates.io.
+Or, if you have the Rust toolchain installed, run `cargo install agate` to install agate from crates.io.
 
 Or download the source code and run `cargo build --release` inside the source repository, then find the binary at `target/release/agate`.
+
+***
+You can use the install script in the `tools` directory for the remaining steps if there is one for your system. If there is none, please consider contributing one to make it easier for less tech-savvy users!
+***
 
 2. Generate a self-signed TLS certificate and private key.  For example, if you have OpenSSL 1.1 installed, you can use a command like the following.  (Replace the hostname `example.com` with the address of your Gemini server.)
 
@@ -35,7 +38,7 @@ openssl req -x509 -newkey rsa:4096 -keyout key.rsa -out cert.pem \
 agate --content path/to/content/ \
       --key key.rsa \
       --cert cert.pem \
-      --addr :::1965 \
+      --addr [::]:1965 \
       --addr 0.0.0.0:1965 \
       --hostname example.com \
       --lang en-US
@@ -43,142 +46,261 @@ agate --content path/to/content/ \
 
 All of the command-line arguments are optional.  Run `agate --help` to see the default values used when arguments are omitted.
 
-When a client requests the URL `gemini://example.com/foo/bar`, Agate will respond with the file at `path/to/content/foo/bar`. If any segment of the requested path starts with a dot, agate will respond with a status code 52, wether the file exists or not (this behaviour can be disabled with `--serve-secret`). If there is a directory at that path, Agate will look for a file named `index.gmi` inside that directory.
+When a client requests the URL `gemini://example.com/foo/bar`, Agate will respond with the file at `path/to/content/foo/bar`. If any segment of the requested path starts with a dot, agate will respond with a status code 52, whether the file exists or not. This behaviour can be disabled with `--serve-secret` or by an entry for the specific file in the `.meta` configuration file (see Meta-Presets). If there is a directory at that path, Agate will look for a file named `index.gmi` inside that directory.
 
 ## Configuration
 
+### TLS versions
+
+Agate by default supports TLSv1.2 and TLSv1.3. You can disable support for TLSv1.2 by using the flag `--only-tls13` (or its short version `-3`). This is *NOT RECOMMENDED* as it may break compatibility with some clients. The Gemini specification requires compatibility with TLSv1.2 "for now" because not all platforms have good support for TLSv1.3 (cf. §4.1 of the specification).
+
 ### Directory listing
 
-You can enable a basic directory listing for a directory by putting a file called `.directory-listing-ok` in that directory. This does not have an effect on subdirectories.
+You can enable a basic directory listing for a directory by putting a file called `.directory-listing-ok` in that directory. This does not have an effect on sub-directories.
 The directory listing will hide files and directories whose name starts with a dot (e.g. the `.directory-listing-ok` file itself or also the `.meta` configuration file).
 
 A file called `index.gmi` will always take precedence over a directory listing.
 
 ### Meta-Presets
 
-You can put a file called `.meta` in a directory that stores some metadata about these files which Agate will use when serving these files. The file should be UTF-8 encoded. Like the `.directory-listing-ok` file, this file does not have an effect on subdirectories.
-Lines starting with a `#` are comments and will be ignored like empty lines. All other lines must start with a file name (not a path), followed by a colon and then the metadata.
+You can put a file called `.meta` in any content directory. This file stores some metadata about the adjacent files which Agate will use when serving these files. The `.meta` file must be UTF-8 encoded.
+You can also enable a central configuration file with the `-C` flag (or the long version `--central-conf`). In this case Agate will always look for the `.meta` configuration file in the content root directory and will ignore `.meta` files in other directories.
 
-The metadata can take one of four possible forms:
+The `.meta` file has the following format [1]:
+* Empty lines are ignored.
+* Everything behind a `#` on the same line is a comment and will be ignored.
+* All other lines must have the form `<path>:<metadata>`, i.e. start with a file path, followed by a colon and then the metadata.
+
+`<path>` is a case sensitive file path, which may or may not exist on disk. If <path> leads to a directory, it is ignored.
+If central configuration file mode is not used, using a path that is not a file in the current directory is undefined behaviour (for example `../index.gmi` would be undefined behaviour).
+You can use Unix style patterns in existing paths. For example `content/*` will match any file within `content`, and `content/**` will additionally match any files in subdirectories of `content`.
+However, the `*` and `**` globs on their own will by default not match files or directories that start with a dot because of their special meaning.
+This behaviour can be disabled with `--serve-secret` or by explicitly matching files starting with a dot with e.g. `content/.*` or `content/**/.*` respectively.
+For more information on the patterns you can use, please see the documentation of `glob::Pattern`.
+Rules can overwrite other rules, so if a file is matched by multiple rules, the last one applies.
+
+=> https://docs.rs/glob/0.3.0/glob/struct.Pattern.html Documentation of `glob::Pattern`.
+
+`<metadata>` can take one of four possible forms:
 1. empty:
-   Agate will not send a default language parameter, even if it was specified on the command line.
+Agate will not send a default language parameter, even if it was specified on the command line.
 2. starting with a semicolon followed by MIME parameters:
-   Agate will append the specified string onto the MIME type, if the file is found.
+Agate will append the specified string onto the MIME type, if the file is found.
 3. starting with a gemini status code (i.e. a digit 1-6 inclusive followed by another digit) and a space:
-   Agate will send the metadata wether the file exists or not. The file will not be sent or accessed.
+Agate will send the metadata whether the file exists or not. The file will not be sent or accessed.
 4. a MIME type, may include parameters:
-   Agate will use this MIME type instead of what it would guess, if the file is found.
-   The default language parameter will not be used, even if it was specified on the command line.
+Agate will use this MIME type instead of what it would guess, if the file is found. The default language parameter will not be used, even if it was specified on the command line.
 
 If a line violates the format or looks like case 3, but is incorrect, it might be ignored. You should check your logs. Please know that this configuration file is first read when a file from the respective directory is accessed. So no log messages after startup does not mean the `.meta` file is okay.
 
 Such a configuration file might look like this:
 ```text
 # This line will be ignored.
-index.gmi:;lang=en-UK
-LICENSE:text/plain;charset=UTF-8
-gone.gmi:52 This file is no longer here, sorry.
+**/*.de.gmi: ;lang=de
+nl/**/*.gmi: ;lang=nl
+index.gmi: ;lang=en-UK
+LICENSE: text/plain;charset=UTF-8
+gone.gmi: 52 This file is no longer here, sorry.
 ```
+
+If this is the `.meta` file in the content root directory and the `-C` flag is used, this will result in the following response headers:
+```
+`/` or `/index.gmi`
+    -> `20 text/gemini;lang=en-UK`
+`/LICENSE`
+    -> `20 text/plain;charset=UTF-8`
+`/gone.gmi`
+    -> `52 This file is no longer here, sorry.`
+any non-hidden file ending in `.de.gmi` (including in non-hidden subdirectories)
+    -> `20 text/gemini;lang=de`
+any non-hidden file in the `nl` directory ending in `.gmi` (including in non-hidden subdirectories)
+    -> `20 text/gemini;lang=nl`
+```
+
+[1] In theory the syntax is that of a typical INI-like file and also allows for sections with `[section]` (the default section is set to `mime` in the parser), since all other sections are disregarded, this does not make a difference. This also means that you can in theory also use `=` instead of `:`. For even more information, you can visit the documentation of `configparser`.
+=> https://docs.rs/configparser/2.0 documentation of `configparser`
 
 ### Logging Verbosity
 
 Agate uses the `env_logger` crate and allows you to set the logging verbosity by setting the default `RUST_LOG` environment variable. For more information, please see the documentation of `env_logger`.
 => https://docs.rs/env_logger/0.8 documentation of `env_logger` crate
 
-## Change log
+### Virtual Hosts
 
-### 2.4.1
+Agate has basic support for virtual hosts. If you specify multiple `--hostname`s, Agate will look in a directory with the respective hostname within the content root directory.
+For example if one of the hostnames is `example.com`, and the content root directory is set to the default `./content`, and `gemini://example.com/file.gmi` is requested, then Agate will look for `./content/example.com/file.gmi`. This behaviour is only enabled if multiple `--hostname`s are specified.
+Agate does not support different certificates for different hostnames, you will have to use a single certificate for all domains (multi domain certificate).
 
-* Enabled multiple occurences of `--addr`. This was already included in the help, but accidentally disabled.
+If you want to serve the same content for multiple domains, you can instead disable the hostname check by not specifying `--hostname`. In this case Agate will disregard a request's hostname apart from checking that there is one.
 
-### 2.4.0
+# Changelog
 
-* Added a sidecar file for specifying language, MIME media types or complete headers on a per file basis.
-* Improved logging output. This also uses the RUST_LOG environment variable now, so you can configure the log level.
+All notable changes to this project will be documented in this file.
+
+The format is based on Keep a Changelog and this project adheres to Semantic Versioning.
+=> https://keepachangelog.com/en/1.0.0/ Keep a Changelog home page
+=> https://semver.org/spec/v2.0.0.html Semantic versioning standard v2.0.0
+
+## [Unreleased]
+
+## [2.5.2] - 2021-02-12
+
+### Fixed
+* Semicolons are no longer considered to be starting a comment in `.mime` files.
+
+## [2.5.1] - 2021-02-12
+Functionally equivalent to version 2.5.1, only releasing a new version to update README on crates.io.
+
+### Fixed
+* Fixed mistakes in the README.
+
+## [2.5.0] - 2021-02-12
+Agate now has an explicit code of conduct and contributing guidelines.
+Thank you to @gegeweb for contributing to this release.
+
+### Added
+* You can now supply multiple `--hostname`s to enable basic vhosts (#28).
+* Disabling support for TLSv1.2 can now be done using the `--only-tls13` flag, but this is *NOT RECOMMENDED* (#12).
+* The tools now also contain a startup script for FreeBSD (#13).
+* Using central config mode (flag `-C`), all configuration can be done in one `.meta` file (see README.md for details).
+* The `.meta` configuration file now allows for globs to be used.
+
+### Changed
+* The `.meta` file parser now uses the `configparser` crate. The syntax does not change.
+* The changelog is now also kept in this file in addition to the GitHub releases.
+* Certificate chain and key file are now only loaded once at startup, certificate changes need a restart to take effect.
+* Hidden files are now served if there is an explicit setting in a `.meta` file for them, regardless of the `--serve-secret` flag.
+
+### Fixed
+* The Syntax for the IPv6 address in the README has been corrected.
+* Give a better error message when no keys are found in the key file instead of panicking with a range check.
+
+## [2.4.1] - 2020-02-08
+### Fixed
+* Re-enabled multiple occurrences of `--addr`. This was accidentally disabled by a merge.
+
+## [2.4.0]+podman.build - 2020-02-06
+This is the same as [2.4.0], only the build process has been changed so it should accommodate a wider range of architectures and devices.
+
+## [2.4.0] - 2020-02-06
+Since there is a new maintainer (@Johann150), the range in pre-compiled binaries has changed a bit.
+
+### Added
 * Added some installation tools for Debian.
+* Added a sidecar file for specifying languages, MIME media types or complete headers on a per file basis.
 
-There is a new maintainer: Johann150.
+### Changed
+* Improved logging output. Agate now also respects the `RUST_LOG` environment variable, so you can configure the log level.
 
-### 2.3.0
+## [2.3.0] - 2020-01-17
+Thanks to @Johann150.
 
-* Combine address and port in a single command-line parameter again.
+### Changed
+* Combine address and port back into a single command-line argument (#21).
 
-### 2.2.0
+## [2.2.0] - 2020-01-16
+Thank you to @Johann150 for contributing to this release.
 
-* Split address and port into separate command-line parmeters.
-* Listen on both IPv4 and IPv6 interfaces by default.
-* Fix the logic for detecting hidden files.
-* Fix redirects of URLs with query strings.
+### Changed
+* Split address and port into separate command-line parameters.
 
-### 2.1.3
+### Fixed
+* Listen on both IPv6 and IPv4 interfaces by default.
+* fix the logic for detecting hidden files (#20).
+* Fix redirects of URLs with query strings (#19).
 
-* Send a TLS close-notify message when closing a connection.
+## [2.1.3] - 2020-01-02
+### Changed
+* Switch to the Tokio async run time.
+
+### Fixed
+* Send TLS close-notify message when closing a connection.
 * Require absolute URLs in requests.
-* Switch to the Tokio async runtime.
 
-### 2.1.2
-
+## [2.1.2] - 2020-01-01
+### Fixed
 * More complete percent-encoding of special characters in filenames.
 * Minor improvements to error logging.
 * Internal code cleanup.
 
-### 2.1.1
+## [2.1.1] - 2020-12-31
+### Changed
+* List directory content in alphabetical order.
 
+### Fixed
 * Handle percent-escaped paths in URLs.
-* Percent-escape whitespace characters in directory listings.
-* List directory contents in alphabetical order.
+* Percent-escape white space characters in directory listings.
 
-### 2.1.0
+## [2.1.0] - 2020-12-29
+* Enabled GitHub Discussions. If you are using Agate, please feel free to leave a comment to let us know about it!
+Thank you to @Johann150 to contributing to this release.
 
-* Optional directory listing.
+### Added
+* Optional directory listings (#9).
+
+### Fixed
 * Updated dependencies.
 
-### 2.0.0
+## [2.0.0] - 2020-12-23
+### Added
+* New `--language` option to add a language tag to the MIME type for text/gemini responses (#6).
 
-* New format for command-line options.  See the documentation or run `agate --help` for details.
-* Logging is enabled be default.  Use the `--silent` flag to disable it.
-* New `--language` option to add a language tag to the MIME type for text/gemini responses.
-* Pre-compiled binaries are built with the `cross` tool, for better compatibility with older Linux systems.
+### Changed
+* New format for command-line options. See the documentation or run `agate --help` for details.
+* Logging is enabled by default. Use the `--silent` flag to disable it.
+* Pre-compiled binaries are built with the [`cross`](https://github.com/rust-embedded/cross) tool, for better compatibility with older Linux systems.
 
-### 1.3.2
+## [1.3.2] - 2020-12-09
+This release is functionally identical to Agate 1.3.1, and users of that version do not need to update.
 
-* Updated dependencies.
+### Fixed
+* Update to async-tls 0.11 because the previous version was yanked.
 
-### 1.3.1
+## [1.3.1] - 2020-12-08
+Thanks @dcreager for contributing this fix.
 
-* Updated dependencies.
+### Fixed
+* Updated dependencies to fix `cargo install` (#7).
 
-### 1.3.0
+## [1.3.0] - 2020-11-20
+Thank you @Johann150 and @tronje for contributing to this release!
 
-* Verify hostname and port in request URL.
-* Improved logging.
-* Don't redirect to "/" when the path is empty.
+### Fixed
+* verify hostname and port in request URL (#4).
+* improved logging (#3).
+* Don't redirect to "/" when the path is empty (#5).
 * Update dependencies.
 
-### 1.2.2
+## [1.2.2] - 2020-09-21
+### Changed
+* Switch from `tree_magic` to `mime_guess` for simpler MIME type guessing.
+* Built both x86_64 and ARM binaries. These binaries are built for Linux operating systems with glibc 2.28 or later, such as Debian 10 ("buster") or newer, Ubuntu 18.10 or newer, and Raspberry Pi OS 2019-06-20 or newer.
 
-* Use a faster/simpler library for guessing MIME types.
+### Fixed
 * Update dependencies.
-* Publish pre-compiled ARM binaries.
+* Minor internal code cleanup.
 
-### 1.2.1
-
+## [1.2.1] - 2020-06-20
+### Fixed
 * Reduce memory usage when serving large files.
 * Update dependencies.
 
-### 1.2.0
+## [1.2.0] - 2020-06-10
+### Changed
+* text/gemini filename extension from `.gemini` to `.gmi`.
 
-* Change text/gemini filename extension from .gemini to .gmi.
-* Improve handling of requests that exceed 1KB.
+### Fixed
+* Handling for requests that exceed 1KB.
 * Reduce memory allocations and speed up request parsing.
 * Update dependencies.
 
-### 1.1.0
-
+## [1.1.0] - 2020-05-22
+### Added
 * Auto-detect MIME types.
 
-### 1.0.1
+## [1.0.1] - 2020-05-21
+### Added
+* Send more accurate error codes for unsupported requests.
+* Do more validation of request URLs.
 
-* More accurate error codes.
-* Handle scheme-less URLs.
-* Throw error codes for unsupported URL types.
+## [1.0.0] - 2020-05-21

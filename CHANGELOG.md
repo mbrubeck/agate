@@ -7,10 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.2] - 2021-02-12
+
+### Fixed
+* Semicolons are no longer considered to be starting a comment in `.mime` files.
+
 ## [2.5.1] - 2021-02-12
 Functionally equivalent to version 2.5.1, only releasing a new version to update README on crates.io.
 
-## Fixed
+### Fixed
 * Fixed mistakes in the README.
 
 ## [2.5.0] - 2021-02-12
@@ -164,7 +169,8 @@ Thank you @Johann150 and @tronje for contributing to this release!
 
 ## [1.0.0] - 2020-05-21
 
-[Unreleased]: https://github.com/mbrubeck/agate/compare/v2.5.1...HEAD
+[Unreleased]: https://github.com/mbrubeck/agate/compare/v2.5.2...HEAD
+[2.5.2]: https://github.com/mbrubeck/agate/compare/v2.5.1...v2.5.2
 [2.5.1]: https://github.com/mbrubeck/agate/compare/v2.5.0...v2.5.1
 [2.5.0]: https://github.com/mbrubeck/agate/compare/v2.4.1...v2.5.0
 [2.4.1]: https://github.com/mbrubeck/agate/compare/v2.4.0...v2.4.1

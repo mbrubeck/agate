@@ -78,7 +78,7 @@ If central configuration file mode is not used, using a path that is not a file 
 You can use Unix style patterns in existing paths. For example `content/*` will match any file within `content`, and `content/**` will additionally match any files in subdirectories of `content`.
 However, the `*` and `**` globs on their own will by default not match files or directories that start with a dot because of their special meaning.
 This behaviour can be disabled with `--serve-secret` or by explicitly matching files starting with a dot with e.g. `content/.*` or `content/**/.*` respectively.
-For more information on the patterns you can use, please see the [documentation of `glob::Pattern`](https://https://docs.rs/glob/0.3.0/glob/struct.Pattern.html).
+For more information on the patterns you can use, please see the [documentation of `glob::Pattern`](https://docs.rs/glob/0.3.0/glob/struct.Pattern.html).
 Rules can overwrite other rules, so if a file is matched by multiple rules, the last one applies.
 
 `<metadata>` can take one of four possible forms:
