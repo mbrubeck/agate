@@ -111,6 +111,7 @@ impl FileOptions {
 
         let mut ini = Ini::new_cs();
         ini.set_default_section("mime");
+        ini.set_comment_symbols(&['#']);
         let map = ini
             .load(db.to_str().expect("config path not UTF-8"))
             .and_then(|mut sections| {

@@ -69,7 +69,8 @@ You can put a file called `.meta` in any content directory. This file stores som
 You can also enable a central configuration file with the `-C` flag (or the long version `--central-conf`). In this case Agate will always look for the `.meta` configuration file in the content root directory and will ignore `.meta` files in other directories.
 
 The `.meta` file has the following format (*1):
-* Lines starting with a `#` or a ';' are comments and will be ignored, as will empty lines.
+* Empty lines are ignored.
+* Everything behind a `#` on the same line is a comment and will be ignored.
 * All other lines must have the form `<path>:<metadata>`, i.e. start with a file path, followed by a colon and then the metadata.
 
 `<path>` is a case sensitive file path, which may or may not exist on disk. If <path> leads to a directory, it is ignored.
@@ -103,14 +104,17 @@ LICENSE: text/plain;charset=UTF-8
 gone.gmi: 52 This file is no longer here, sorry.
 ```
 
-If this is the `.meta` file in the content root directory and the `-C` flag is used, this will result in the following:
-requested filename|response header
----|---
-`/` or `/index.gmi`|`20 text/gemini;lang=en-UK`
-`/LICENSE`|`20 text/plain;charset=UTF-8`
-`/gone.gmi`|`52 This file is no longer here, sorry.`
-any non-hidden file ending in `.de.gmi` (including in non-hidden subdirectories)|`20 text/gemini;lang=de`
-any non-hidden file in the `nl` directory ending in `.gmi` (including in non-hidden subdirectories)|`20 text/gemini;lang=nl`
+If this is the `.meta` file in the content root directory and the `-C` flag is used, this will result in the following response headers:
+* `/` or `/index.gmi`
+    -> `20 text/gemini;lang=en-UK`
+* `/LICENSE`
+    -> `20 text/plain;charset=UTF-8`
+* `/gone.gmi`
+    -> `52 This file is no longer here, sorry.`
+* any non-hidden file ending in `.de.gmi` (including in non-hidden subdirectories)
+    -> `20 text/gemini;lang=de`
+* any non-hidden file in the `nl` directory ending in `.gmi` (including in non-hidden subdirectories)
+    -> `20 text/gemini;lang=nl`
 
 (*1) In theory the syntax is that of a typical INI-like file and also allows for sections with `[section]` (the default section is set to `m̀ime` in the parser), since all other sections are disregarded, this does not make a difference. This also means that you can in theory also use `=` instead of `:`. For even more information, you can visit the [documentation of `configparser`](https://docs.rs/configparser/2.0).
 
