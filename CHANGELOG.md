@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [2.5.0]
 Agate now has an explicit code of conduct and contributing guidelines.
 Thank you to @gegeweb for contributing to this release.
 
@@ -156,7 +158,8 @@ Thank you @Johann150 and @tronje for contributing to this release!
 
 ## [1.0.0] - 2020-05-21
 
-[Unreleased]: https://github.com/mbrubeck/agate/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/mbrubeck/agate/compare/v2.5.0...HEAD
+[2.5.0]: https://github.com/mbrubeck/agate/compare/v2.4.1...v2.5.0
 [2.4.1]: https://github.com/mbrubeck/agate/compare/v2.4.0...v2.4.1
 [2.4.0]: https://github.com/mbrubeck/agate/compare/v2.3.0...v2.4.0
 [2.3.0]: https://github.com/mbrubeck/agate/compare/v2.2.0...v2.3.0
