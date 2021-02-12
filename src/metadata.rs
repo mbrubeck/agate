@@ -1,3 +1,4 @@
+use glob::{glob_with, MatchOptions};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
@@ -69,20 +70,20 @@ impl FileOptions {
 
     /// Checks wether the database for the directory of the specified file is
     /// still up to date and re-reads it if outdated or not yet read.
-    fn update(&mut self, dir: &Path) {
-        let mut dir = if super::ARGS.central_config {
+    fn update(&mut self, file: &Path) {
+        let mut db = if super::ARGS.central_config {
             super::ARGS.content_dir.clone()
         } else {
-            dir.parent().expect("no parent directory").to_path_buf()
+            file.parent().expect("no parent directory").to_path_buf()
         };
-        dir.push(SIDECAR_FILENAME);
+        db.push(SIDECAR_FILENAME);
 
-        let should_read = if let Ok(metadata) = dir.as_path().metadata() {
+        let should_read = if let Ok(metadata) = db.as_path().metadata() {
             if !metadata.is_file() {
                 // it exists, but it is a directory
                 false
             } else if let (Ok(modified), Some(last_read)) =
-                (metadata.modified(), self.databases_read.get(&dir))
+                (metadata.modified(), self.databases_read.get(&db))
             {
                 // check that it was last modified before the read
                 // if the times are the same, we might have read the old file
@@ -99,7 +100,7 @@ impl FileOptions {
         };
 
         if should_read {
-            self.read_database(&dir);
+            self.read_database(&db);
         }
     }
 
@@ -109,6 +110,9 @@ impl FileOptions {
         log::trace!("reading database {:?}", db);
 
         if let Ok(contents) = std::fs::read_to_string(db) {
+            self.databases_read
+                .insert(db.to_path_buf(), SystemTime::now());
+
             let docs = match YamlLoader::load_from_str(&contents) {
                 Ok(docs) => docs,
                 Err(e) => {
@@ -136,7 +140,7 @@ impl FileOptions {
                         continue;
                     };
 
-                    // generate workspace-unique path
+                    // generate workspace-relative path
                     let mut path = db.clone();
                     path.pop();
                     path.push(rel_path);
@@ -175,16 +179,50 @@ impl FileOptions {
                         PresetMeta::FullMime(header.to_string())
                     };
 
-                    self.file_meta.insert(path, preset);
+                    let glob_options = MatchOptions {
+                        case_sensitive: true,
+                        // so there is a difference between "*" and "**".
+                        require_literal_separator: true,
+                        // security measure because entries for .hidden files
+                        // would result in them being exposed.
+                        require_literal_leading_dot: !crate::ARGS.serve_secret,
+                    };
+
+                    // process filename as glob
+                    let paths = if let Some(path) = path.to_str() {
+                        match glob_with(path, glob_options) {
+                            Ok(paths) => paths.collect::<Vec<_>>(),
+                            Err(err) => {
+                                log::error!("incorrect glob pattern: {}", err);
+                                continue;
+                            }
+                        }
+                    } else {
+                        log::error!("path is not UTF-8: {:?}", path);
+                        continue;
+                    };
+
+                    if paths.is_empty() {
+                        // probably an entry for a nonexistent file, glob only works for existing files
+                        self.file_meta.insert(path, preset);
+                    } else {
+                        for glob_result in paths {
+                            match glob_result {
+                                Ok(path) if path.is_dir() => { /* ignore */ }
+                                Ok(path) => {
+                                    self.file_meta.insert(path, preset.clone());
+                                }
+                                Err(err) => {
+                                    log::warn!("could not process glob path: {}", err);
+                                    continue;
+                                }
+                            };
+                        }
+                    }
                 }
             } else {
                 log::error!("no YAML document {:?}", db);
-                return;
-            };
-            self.databases_read.insert(
-                db.as_path().parent().unwrap().to_path_buf(),
-                SystemTime::now(),
-            );
+            }
         } else {
             log::error!("could not read configuration file {:?}", db);
         }

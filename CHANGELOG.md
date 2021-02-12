@@ -14,6 +14,7 @@ Thank you to @gegeweb for contributing to this release.
 * Disabling support for TLSv1.2 can now be done using the `--only-tls13` flag, but this is *NOT RECOMMENDED* (#12).
 * The tools now also contain a startup script for FreeBSD (#13).
 * Using central config mode (flag `-C`), all configuration can be done in one `.meta` file (see README.md for details).
+* The `.meta` configuration file now allows for globs to be used.
 
 ### Changed
 * The configuration files are now parsed as YAML. The syntax only changes in that a space is now required behind the colon.

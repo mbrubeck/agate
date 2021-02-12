@@ -6,6 +6,7 @@ version = "2.4.1"
 dependencies = [
  "env_logger",
  "getopts",
+ "glob",
  "log",
  "mime_guess",
  "once_cell",
@@ -94,6 +95,12 @@ checksum = "14dbbfd5c71d70241ecf9e6f13737f7b5ce823821063188d7e46c41d371eebd5"
 dependencies = [
  "unicode-width",
 ]
+
+[[package]]
+name = "glob"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9b919933a397b79c37e33b77bb2aa3dc8eb6e165ad809e58ff75bc7db2e34574"
 
 [[package]]
 name = "hermit-abi"
