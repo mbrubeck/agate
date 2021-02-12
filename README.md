@@ -8,7 +8,7 @@ Since Agate by default uses port 1965, you should be able to run other servers (
 
 ## Learn more
 
-* Home page: [gemini://gem.limpet.net/agate/][home]
+* Home page: [gemini://qwertqwefsday.eu/agate.gmi][home]
 * [Cargo package][crates.io]
 * [Source code][source]
 
@@ -116,7 +116,7 @@ If this is the `.meta` file in the content root directory and the `-C` flag is u
 * any non-hidden file in the `nl` directory ending in `.gmi` (including in non-hidden subdirectories)
     -> `20 text/gemini;lang=nl`
 
-(*1) In theory the syntax is that of a typical INI-like file and also allows for sections with `[section]` (the default section is set to `m̀ime` in the parser), since all other sections are disregarded, this does not make a difference. This also means that you can in theory also use `=` instead of `:`. For even more information, you can visit the [documentation of `configparser`](https://docs.rs/configparser/2.0).
+(*1) In theory the syntax is that of a typical INI-like file and also allows for sections with `[section]` (the default section is set to `mime` in the parser), since all other sections are disregarded, this does not make a difference. This also means that you can in theory also use `=` instead of `:`. For even more information, you can visit the [documentation of `configparser`](https://docs.rs/configparser/2.0).
 
 ### Logging Verbosity
 
@@ -132,7 +132,7 @@ If you want to serve the same content for multiple domains, you can instead disa
 
 [Gemini]: https://gemini.circumlunar.space/
 [Rust]: https://www.rust-lang.org/
-[home]: gemini://gem.limpet.net/agate/
+[home]: gemini://qwertqwefsday.eu/agate.gmi
 [source]: https://github.com/mbrubeck/agate
 [crates.io]: https://crates.io/crates/agate
 [documentation of `env_logger`]: https://docs.rs/env_logger/0.8
