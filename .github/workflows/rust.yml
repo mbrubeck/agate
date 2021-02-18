@@ -78,16 +78,16 @@ jobs:
     - name: strip names
       run: strip target/release/agate.exe
     - name: compress
-      run: gzip -c target/release/agate.exe > ./agate.exe.gz
+      run: Compress-Archive -LiteralPath target/release/agate.exe -DestinationPath agate.zip
     - name: upload release asset win
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ needs.create_release.outputs.upload_url }}
-        asset_name: agate.x86_64-pc-windows-msvc.exe.gz
-        asset_path: agate.exe.gz
-        asset_content_type: application/gzip
+        asset_name: agate.x86_64-pc-windows-msvc.zip
+        asset_path: agate.zip
+        asset_content_type: application/zip
 
   build_macos:
     runs-on: macos-latest
