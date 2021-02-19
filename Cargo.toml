@@ -25,6 +25,11 @@ url = "2.2.1"
 glob = "0.3"
 configparser = "2.0"
 
+[dev-dependencies]
+assert_cmd = "1.0"
+gemini-fetch = { git = "https://github.com/Johann150/gemini-fetch.git" }
+anyhow = "1.0"
+
 [profile.release]
 lto = true
 codegen-units = 1

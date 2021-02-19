@@ -1,0 +1,12 @@
+# test setting a mime type
+index.gmi: text/gemini
+# test globs and setting parameters
+*.de.gmi: ;lang=de
+# test double star globs
+**/*.nl.gmi: ;lang=nl
+# test setting multiple parameters
+test.gmi: ;lang=en ;charset=us-ascii
+# test setting data for nonexistent files
+gone.txt: 52 This file is no longer available.
+# test setting data for files in other directories
+example.com/index.gmi: ;lang=en-US

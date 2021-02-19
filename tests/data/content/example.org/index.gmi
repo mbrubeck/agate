@@ -1,0 +1,2 @@
+This is example.org.
+=> gemini://example.com/
