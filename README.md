@@ -12,29 +12,43 @@ Since Agate by default uses port 1965, you should be able to run other servers (
 * [Cargo package][crates.io]
 * [Source code][source]
 
-## Installation and setup
+## Installation and Setup
 
-1. Download and unpack the [pre-compiled binary](https://github.com/mbrubeck/agate/releases).
+### Installation
 
-   Or, if you have the Rust toolchain installed, run `cargo install agate` to
-   install agate from crates.io.
+#### Pre-compiled
 
-   Or download the source code and run `cargo build --release` inside the
-   source repository, then find the binary at `target/release/agate`.
+Download and unpack the [pre-compiled binary](https://github.com/mbrubeck/agate/releases).
+
+#### NixOS/Nix
+
+Using the nix package manager run `nix-env -i agate`
+
+_Note:_ agate is currently only in the unstable channel and will reach a release channel once the next release is tagged
+
+#### Cargo
+
+If you have the Rust toolchain installed, run `cargo install agate` to install agate from crates.io.
+
+#### Source
+
+Download the source code and run `cargo build --release` inside the source repository, then find the binary at `target/release/agate`.
 
 ***
 You can use the install script in the `tools` directory for the remaining steps if there is one for your system.  
 If there is none, please consider contributing one to make it easier for less tech-savvy users!
 ***
 
-2. Generate a self-signed TLS certificate and private key.  For example, if you have OpenSSL 1.1 installed, you can use a command like the following.  (Replace the hostname `example.com` with the address of your Gemini server.)
+### Setup
+
+1. Generate a self-signed TLS certificate and private key.  For example, if you have OpenSSL 1.1 installed, you can use a command like the following.  (Replace the hostname `example.com` with the address of your Gemini server.)
 
 ```
 openssl req -x509 -newkey rsa:4096 -keyout key.rsa -out cert.pem \
     -days 3650 -nodes -subj "/CN=example.com"
 ```
 
-3. Run the server. You can use the following arguments to specify the locations of the content directory, certificate and key files, IP address and port to listen on, host name to expect in request URLs, and default language code(s) to include in the MIME type for for text/gemini files: (Again replace the hostname `example.com` with the address of your Gemini server.)
+2. Run the server. You can use the following arguments to specify the locations of the content directory, certificate and key files, IP address and port to listen on, host name to expect in request URLs, and default language code(s) to include in the MIME type for for text/gemini files: (Again replace the hostname `example.com` with the address of your Gemini server.)
 
 ```
 agate --content path/to/content/ \
