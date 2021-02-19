@@ -146,8 +146,8 @@ fn args() -> Result<Args> {
 
     let matches = opts.parse(&args[1..]).map_err(|f| f.to_string())?;
     if matches.opt_present("h") {
-        let usage = opts.usage(&format!("Usage: {} [options]", &args[0]));
-        return Err(usage.into());
+        eprintln!("{}", opts.usage(&format!("Usage: {} [options]", &args[0])));
+        std::process::exit(0);
     }
     let mut hostnames = vec![];
     for s in matches.opt_strs("hostname") {
