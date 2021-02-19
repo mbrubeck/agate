@@ -52,6 +52,7 @@ Follow these steps to contribute to the project:
 1. Make a fork of the [Agate repository][agate-repo].
 1. Within your fork, create a branch for your contribution. Use a meaningful name.
 1. Create your contribution, meeting all [contribution quality standards](#quality-standards).
+1. Update the changelog with any added, removed, changed, or fixed functionality. Adhere to the changelog format.
 1. [Create a pull request][create-a-pr] against the `master` branch of the repository.
 1. Once the pull request is reviewed and CI passes, it will be merged.
 
@@ -64,7 +65,6 @@ Most quality and style standards are checked automatically by the CI build.
 Contributions should:
 
 - Separate each **logical change** into its own commit.
-- Update the changelog with any added, removed, changed, or fixed functionality. Adhere to the changelog format.
 - Ensure the code compiles correctly, if you can also run `cargo clippy`.
 - Format code with `cargo fmt`.
 - Avoid adding `unsafe` code.

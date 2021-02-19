@@ -6,10 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+Thank you to @06kellyjac for contributing to this release.
 
-* Have help exit with successfully with `0` rather than `1`
-* Split out install steps to allow for more options in the future
-* Add install notes for nix/NixOS
+### Changed
+* Forbid unsafe code.
+
+### Fixed
+* Updated `url` to newest version, which resolves a TODO.
+* The help exits successfully with `0` rather than `1`.
+* Split out install steps to allow for more options in the future.
+* Add install notes for nix/NixOS to the README.
 
 ## [2.5.2] - 2021-02-12
 

@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 mod metadata;
 use metadata::{FileOptions, PresetMeta};
 
