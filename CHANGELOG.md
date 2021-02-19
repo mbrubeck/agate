@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 * Have help exit with successfully with `0` rather than `1`
+* Split out install steps to allow for more options in the future
+* Add install notes for nix/NixOS
 
 ## [2.5.2] - 2021-02-12
 

@@ -12,15 +12,27 @@ Since Agate by default uses port 1965, you should be able to run other servers (
 * [Cargo package][crates.io]
 * [Source code][source]
 
-## Installation and setup
+## Installation and Setup
 
-1. Download and unpack the [pre-compiled binary](https://github.com/mbrubeck/agate/releases).
+1. Get a binary for agate. You can use any of the below ways:
 
-   Or, if you have the Rust toolchain installed, run `cargo install agate` to
-   install agate from crates.io.
+### Pre-compiled
 
-   Or download the source code and run `cargo build --release` inside the
-   source repository, then find the binary at `target/release/agate`.
+Download and unpack the [pre-compiled binary](https://github.com/mbrubeck/agate/releases).
+
+### NixOS/Nix
+
+Using the nix package manager run `nix-env -i agate`
+
+_Note:_ agate is currently only in the unstable channel and will reach a release channel once the next release is tagged
+
+### Cargo
+
+If you have the Rust toolchain installed, run `cargo install agate` to install agate from crates.io.
+
+### Source
+
+Download the source code and run `cargo build --release` inside the source repository, then find the binary at `target/release/agate`.
 
 ***
 You can use the install script in the `tools` directory for the remaining steps if there is one for your system.  
