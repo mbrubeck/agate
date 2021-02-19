@@ -305,8 +305,9 @@ impl RequestHandle {
         }
 
         if let Some(host) = url.host() {
-            // TODO: to_owned can be removed in next version of url https://github.com/servo/rust-url/pull/651
-            if !ARGS.hostnames.is_empty() && !ARGS.hostnames.contains(&host.to_owned()) {
+            // do not use "contains" here since it requires the same type and does
+            // not allow to check for Host<&str> if the vec contains Hostname<String>
+            if !ARGS.hostnames.is_empty() && !ARGS.hostnames.iter().any(|h| h == &host) {
                 return Err((53, "Proxy request refused"));
             }
         } else {
