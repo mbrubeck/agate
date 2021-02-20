@@ -83,6 +83,154 @@ fn index_page() {
             .unwrap()
         )
     );
+}
 
-    println!("{:?}", page);
+#[test]
+fn meta() {
+    let page = get(
+        &["--addr", "[::]:1966"],
+        addr(1966),
+        "gemini://localhost/test",
+    )
+    .expect("could not get page");
+
+    assert_eq!(
+        page.header,
+        Header {
+            status: Status::Success,
+            meta: "text/html".to_string(),
+        }
+    );
+}
+
+#[test]
+fn meta_param() {
+    let page = get(
+        &["--addr", "[::]:1967"],
+        addr(1967),
+        "gemini://localhost/test.gmi",
+    )
+    .expect("could not get page");
+
+    assert_eq!(
+        page.header,
+        Header {
+            status: Status::Success,
+            meta: "text/gemini;lang=en ;charset=us-ascii".to_string(),
+        }
+    );
+}
+
+#[test]
+fn glob() {
+    let page = get(
+        &["--addr", "[::]:1968"],
+        addr(1968),
+        "gemini://localhost/test.de.gmi",
+    )
+    .expect("could not get page");
+
+    assert_eq!(
+        page.header,
+        Header {
+            status: Status::Success,
+            meta: "text/gemini;lang=de".to_string(),
+        }
+    );
+}
+
+#[test]
+fn doubleglob() {
+    let page = get(
+        &["--addr", "[::]:1969", "-C"],
+        addr(1969),
+        "gemini://localhost/testdir/a.nl.gmi",
+    )
+    .expect("could not get page");
+
+    assert_eq!(
+        page.header,
+        Header {
+            status: Status::Success,
+            meta: "text/gemini;lang=nl".to_string(),
+        }
+    );
+}
+
+#[test]
+fn full_header_preset() {
+    let page = get(
+        &["--addr", "[::]:1970"],
+        addr(1970),
+        "gemini://localhost/gone.txt",
+    )
+    .expect("could not get page");
+
+    assert_eq!(
+        page.header,
+        Header {
+            status: Status::Gone,
+            meta: "This file is no longer available.".to_string(),
+        }
+    );
+}
+
+#[test]
+fn hostname_check() {
+    let page = get(
+        &["--addr", "[::]:1971", "--hostname", "example.org"],
+        addr(1971),
+        "gemini://example.com/",
+    )
+    .expect("could not get page");
+
+    assert_eq!(page.header.status, Status::ProxyRequestRefused);
+}
+
+#[test]
+fn port_check() {
+    let page = get(
+        &["--addr", "[::]:1972", "--hostname", "example.org"],
+        addr(1972),
+        "gemini://example.org:1971/",
+    )
+    .expect("could not get page");
+
+    assert_eq!(page.header.status, Status::ProxyRequestRefused);
+}
+
+#[test]
+fn secret_nonexistent() {
+    let page = get(
+        &["--addr", "[::]:1973"],
+        addr(1973),
+        "gemini://localhost/.secret",
+    )
+    .expect("could not get page");
+
+    assert_eq!(page.header.status, Status::Gone);
+}
+
+#[test]
+fn secret_exists() {
+    let page = get(
+        &["--addr", "[::]:1974"],
+        addr(1974),
+        "gemini://localhost/.meta",
+    )
+    .expect("could not get page");
+
+    assert_eq!(page.header.status, Status::Gone);
+}
+
+#[test]
+fn serve_secret() {
+    let page = get(
+        &["--addr", "[::]:1975", "--serve-secret"],
+        addr(1975),
+        "gemini://localhost/.meta",
+    )
+    .expect("could not get page");
+
+    assert_eq!(page.header.status, Status::Success);
 }

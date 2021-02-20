@@ -27,7 +27,7 @@ configparser = "2.0"
 
 [dev-dependencies]
 assert_cmd = "1.0"
-gemini-fetch = "0.2.0"
+gemini-fetch = { version = "0.2.1", git = "https://github.com/Johann150/gemini-fetch.git" }
 anyhow = "1.0"
 
 [profile.release]

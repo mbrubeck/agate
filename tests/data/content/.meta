@@ -1,5 +1,5 @@
 # test setting a mime type
-index.gmi: text/gemini
+test: text/html
 # test globs and setting parameters
 *.de.gmi: ;lang=de
 # test double star globs

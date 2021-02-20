@@ -147,9 +147,8 @@ dependencies = [
 
 [[package]]
 name = "gemini-fetch"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cc9dc5c196fd09461b039356a198fb59d55a8edcefdc5dd81ca763c0e8a04625"
+version = "0.2.1"
+source = "git+https://github.com/Johann150/gemini-fetch.git#5b5d986a857bfb1c444892d56c1946b353987f1c"
 dependencies = [
  "anyhow",
  "ring",
