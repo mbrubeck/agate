@@ -95,9 +95,9 @@ checksum = "b700ce4376041dcd0a327fd0097c41095743c4c8af8887265942faf1100bd040"
 
 [[package]]
 name = "cc"
-version = "1.0.66"
+version = "1.0.67"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c0496836a84f8d0495758516b8621a622beb77c0fed418570e50764093ced48"
+checksum = "e3c69b077ad434294d3ce9f1f6143a2a4b89a8a2d54ef813d85003a4fd1137fd"
 
 [[package]]
 name = "cfg-if"
@@ -147,8 +147,9 @@ dependencies = [
 
 [[package]]
 name = "gemini-fetch"
-version = "0.1.0"
-source = "git+https://github.com/Johann150/gemini-fetch.git#e1d3c57d874c96e7236500b4dac5127cfe9ebf53"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cc9dc5c196fd09461b039356a198fb59d55a8edcefdc5dd81ca763c0e8a04625"
 dependencies = [
  "anyhow",
  "ring",
