@@ -6,11 +6,17 @@ use url::Url;
 
 static BINARY_PATH: &'static str = env!("CARGO_BIN_EXE_agate");
 
-fn addr() -> SocketAddr {
-    "[::1]:1965".to_socket_addrs().unwrap().next().unwrap()
+fn addr(port: u16) -> SocketAddr {
+    use std::net::{IpAddr, Ipv4Addr};
+
+    (IpAddr::V4(Ipv4Addr::LOCALHOST), port)
+        .to_socket_addrs()
+        .unwrap()
+        .next()
+        .unwrap()
 }
 
-fn get(args: &[&str], url: &str) -> Result<Page, anyhow::Error> {
+fn get(args: &[&str], addr: SocketAddr, url: &str) -> Result<Page, anyhow::Error> {
     // start the server
     let mut server = Command::new(BINARY_PATH)
         .stderr(Stdio::piped())
@@ -32,7 +38,7 @@ fn get(args: &[&str], url: &str) -> Result<Page, anyhow::Error> {
     // actually perform the request
     let page = tokio::runtime::Runtime::new()
         .unwrap()
-        .block_on(async { Page::fetch_from(&Url::parse(url).unwrap(), addr(), None).await });
+        .block_on(async { Page::fetch_from(&Url::parse(url).unwrap(), addr, None).await });
 
     // try to stop the server again
     match server.try_wait() {
@@ -57,7 +63,7 @@ fn get(args: &[&str], url: &str) -> Result<Page, anyhow::Error> {
 
 #[test]
 fn index_page() {
-    let page = get(&[], "gemini://localhost").expect("could not get page");
+    let page = get(&[], addr(1965), "gemini://localhost").expect("could not get page");
 
     assert_eq!(
         page.header,
