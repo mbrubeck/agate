@@ -233,6 +233,7 @@ impl RequestHandle {
                 stream
                     .peer_addr()
                     .expect("could not get peer address")
+                    .ip()
                     .to_string()
             } else {
                 // Do not log IP address, but something else so columns still line up.
