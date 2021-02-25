@@ -29,6 +29,7 @@ configparser = "2.0"
 assert_cmd = "1.0"
 gemini-fetch = { version = "0.2.1", git = "https://github.com/Johann150/gemini-fetch.git" }
 anyhow = "1.0"
+webpki = "0.21.4"
 
 [profile.release]
 lto = true

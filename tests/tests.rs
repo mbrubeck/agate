@@ -254,3 +254,25 @@ fn serve_secret() {
 
     assert_eq!(page.header.status, Status::Success);
 }
+
+#[test]
+#[should_panic(expected = "AlertReceived(ProtocolVersion)")]
+fn explicit_tls_version() {
+    use rustls::{ClientSession, ProtocolVersion};
+    use std::io::Read;
+    use std::net::TcpStream;
+
+    let _server = Server::new(&["--addr", "[::]:1976", "-3"]);
+
+    let mut config = rustls::ClientConfig::new();
+    // try to connect using only TLS 1.2
+    config.versions = vec![ProtocolVersion::TLSv1_2];
+
+    let dns_name = webpki::DNSNameRef::try_from_ascii_str("localhost").unwrap();
+    let mut session = ClientSession::new(&std::sync::Arc::new(config), dns_name);
+    let mut tcp = TcpStream::connect(addr(1976)).unwrap();
+    let mut tls = rustls::Stream::new(&mut session, &mut tcp);
+
+    let mut buf = [0; 10];
+    tls.read(&mut buf).unwrap();
+}

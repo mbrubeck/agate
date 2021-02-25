@@ -19,6 +19,7 @@ dependencies = [
  "tokio",
  "tokio-rustls",
  "url",
+ "webpki",
 ]
 
 [[package]]
