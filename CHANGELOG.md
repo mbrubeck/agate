@@ -6,7 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [2.5.3] - 2021-02-27
 Thank you to @littleli and @06kellyjac for contributing to this release.
+
+### Added
+* Automated tests have been added so things like 2.5.2 should not happen again (#34).
+* Version information flag (`-V` or `--version` as conventional with e.g. cargo)
 
 ### Changed
 * Forbid unsafe code. (There was none before, just make it harder to add some.)
@@ -15,7 +21,6 @@ Thank you to @littleli and @06kellyjac for contributing to this release.
 ### Fixed
 * Updated `url` to newest version, which resolves a TODO.
 * The help exits successfully with `0` rather than `1` (#37).
-* Automated tests have been added so things like 2.5.2 should not happen again (#34).
 * The GitHub workflow has been fixed so Windows binaries are compressed correctly (#36).
 * Split out install steps to allow for more options in the future.
 * Add install notes for nix/NixOS to the README (#38).
@@ -187,7 +192,8 @@ Thank you to @m040601 for contributing to this release.
 
 ## [1.0.0] - 2020-05-21
 
-[Unreleased]: https://github.com/mbrubeck/agate/compare/v2.5.2...HEAD
+[Unreleased]: https://github.com/mbrubeck/agate/compare/v2.5.3...HEAD
+[2.5.3]: https://github.com/mbrubeck/agate/compare/v2.5.2...v2.5.3
 [2.5.2]: https://github.com/mbrubeck/agate/compare/v2.5.1...v2.5.2
 [2.5.1]: https://github.com/mbrubeck/agate/compare/v2.5.0...v2.5.1
 [2.5.0]: https://github.com/mbrubeck/agate/compare/v2.4.1...v2.5.0

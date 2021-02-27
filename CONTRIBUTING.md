@@ -82,6 +82,7 @@ Contributions should:
 1. Bump the version number appropriately. (Update `Cargo.lock` too!)
 1. Run `cargo package` to make sure everything compiles correctly.
 1. Update the changelog with the new version ranges.
+1. Update agate's homepage (`content/index.gmi`) with changes to the README and CHANGELOG
 1. Add a git tag for the version, e.g. with `git tag v2.4.1`.
 1. Push the changelog commit and tag to the repository.
     Upon detecting the push of a tag beginning with "v", CI should start building the prebuilt binaries.

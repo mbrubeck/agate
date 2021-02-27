@@ -2,7 +2,7 @@
 # It is not intended for manual editing.
 [[package]]
 name = "agate"
-version = "2.5.2"
+version = "2.5.3"
 dependencies = [
  "anyhow",
  "configparser",
