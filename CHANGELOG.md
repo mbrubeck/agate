@@ -6,16 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-Thank you to @06kellyjac for contributing to this release.
+Thank you to @littleli and @06kellyjac for contributing to this release.
 
 ### Changed
-* Forbid unsafe code.
+* Forbid unsafe code. (There was none before, just make it harder to add some.)
+* When logging remote IP addresses, the port is now never logged, which also changes the address format.
 
 ### Fixed
 * Updated `url` to newest version, which resolves a TODO.
-* The help exits successfully with `0` rather than `1`.
+* The help exits successfully with `0` rather than `1` (#37).
+* Automated tests have been added so things like 2.5.2 should not happen again (#34).
+* The GitHub workflow has been fixed so Windows binaries are compressed correctly (#36).
 * Split out install steps to allow for more options in the future.
-* Add install notes for nix/NixOS to the README.
+* Add install notes for nix/NixOS to the README (#38).
 
 ## [2.5.2] - 2021-02-12
 
@@ -30,10 +33,10 @@ Functionally equivalent to version 2.5.1, only releasing a new version to update
 
 ## [2.5.0] - 2021-02-12
 Agate now has an explicit code of conduct and contributing guidelines.
-Thank you to @gegeweb for contributing to this release.
+Thank you to @ERnsTL, @gegeweb, @SuddenPineapple, and @Ylhp for contributing to this release.
 
 ### Added
-* You can now supply multiple `--hostname`s to enable basic vhosts (#28).
+* You can now supply multiple `--hostname`s to enable basic vhosts (#28, #31).
 * Disabling support for TLSv1.2 can now be done using the `--only-tls13` flag, but this is *NOT RECOMMENDED* (#12).
 * The tools now also contain a startup script for FreeBSD (#13).
 * Using central config mode (flag `-C`), all configuration can be done in one `.meta` file (see README.md for details).
@@ -47,7 +50,7 @@ Thank you to @gegeweb for contributing to this release.
 
 ### Fixed
 * The Syntax for the IPv6 address in the README has been corrected.
-* Give a better error message when no keys are found in the key file instead of panicking with a range check.
+* Give a better error message when no keys are found in the key file instead of panicking with a range check (#33).
 
 ## [2.4.1] - 2020-02-08
 ### Fixed
@@ -61,10 +64,10 @@ Since there is a new maintainer (@Johann150), the range in pre-compiled binaries
 
 ### Added
 * Added some installation tools for Debian.
-* Added a sidecar file for specifying languages, MIME media types or complete headers on a per file basis.
+* Added a sidecar file for specifying languages, MIME media types or complete headers on a per file basis (#16).
 
 ### Changed
-* Improved logging output. Agate now also respects the `RUST_LOG` environment variable, so you can configure the log level.
+* Improved logging output. Agate now also respects the `RUST_LOG` environment variable, so you can configure the log level (#22, #23).
 
 ## [2.3.0] - 2020-01-17
 Thanks to @Johann150.
@@ -73,14 +76,14 @@ Thanks to @Johann150.
 * Combine address and port back into a single command-line argument (#21).
 
 ## [2.2.0] - 2020-01-16
-Thank you to @Johann150 for contributing to this release.
+Thank you to @gegeweb, @Johann150 and @purexo for contributing to this release.
 
 ### Changed
 * Split address and port into separate command-line parameters.
 
 ### Fixed
-* Listen on both IPv6 and IPv4 interfaces by default.
-* fix the logic for detecting hidden files (#20).
+* Listen on both IPv6 and IPv4 interfaces by default (#14, #15).
+* Do not serve files whose path contains a segment starting with a dot (#17, #20).
 * Fix redirects of URLs with query strings (#19).
 
 ## [2.1.3] - 2020-01-02
@@ -107,15 +110,17 @@ Thank you to @Johann150 for contributing to this release.
 
 ## [2.1.0] - 2020-12-29
 * Enabled GitHub Discussions. If you are using Agate, please feel free to leave a comment to let us know about it!
-Thank you to @Johann150 to contributing to this release.
+Thank you to @Johann150 and @KilianKemps for contributing to this release.
 
 ### Added
-* Optional directory listings (#9).
+* Optional directory listings (#8, #9).
 
 ### Fixed
 * Updated dependencies.
 
 ## [2.0.0] - 2020-12-23
+Thank you to @bortzmeyer, @KillianKemps, and @Ylhp for contributing to this release.
+
 ### Added
 * New `--language` option to add a language tag to the MIME type for text/gemini responses (#6).
 
@@ -137,18 +142,20 @@ Thanks @dcreager for contributing this fix.
 * Updated dependencies to fix `cargo install` (#7).
 
 ## [1.3.0] - 2020-11-20
-Thank you @Johann150 and @tronje for contributing to this release!
+Thank you @Johann150, @jonhiggs and @tronje for contributing to this release!
 
 ### Fixed
 * verify hostname and port in request URL (#4).
-* improved logging (#3).
+* improved logging (#2, #3).
 * Don't redirect to "/" when the path is empty (#5).
 * Update dependencies.
 
 ## [1.2.2] - 2020-09-21
+Thank you to @m040601 for contributing to this release.
+
 ### Changed
 * Switch from `tree_magic` to `mime_guess` for simpler MIME type guessing.
-* Built both x86_64 and ARM binaries. These binaries are built for Linux operating systems with glibc 2.28 or later, such as Debian 10 ("buster") or newer, Ubuntu 18.10 or newer, and Raspberry Pi OS 2019-06-20 or newer.
+* Built both x86_64 and ARM binaries. These binaries are built for Linux operating systems with glibc 2.28 or later, such as Debian 10 ("buster") or newer, Ubuntu 18.10 or newer, and Raspberry Pi OS 2019-06-20 or newer (#1).
 
 ### Fixed
 * Update dependencies.
