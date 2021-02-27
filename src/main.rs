@@ -129,6 +129,7 @@ fn args() -> Result<Args> {
     );
     opts.optflag("s", "silent", "Disable logging output");
     opts.optflag("h", "help", "Print this help menu and exit.");
+    opts.optflag("V", "version", "Print version information and exit.");
     opts.optflag(
         "3",
         "only-tls13",
@@ -149,6 +150,10 @@ fn args() -> Result<Args> {
     let matches = opts.parse(&args[1..]).map_err(|f| f.to_string())?;
     if matches.opt_present("h") {
         eprintln!("{}", opts.usage(&format!("Usage: {} [options]", &args[0])));
+        std::process::exit(0);
+    }
+    if matches.opt_present("V") {
+        eprintln!("agate {}", env!("CARGO_PKG_VERSION"));
         std::process::exit(0);
     }
     let mut hostnames = vec![];
