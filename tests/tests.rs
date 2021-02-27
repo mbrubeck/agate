@@ -297,3 +297,66 @@ fn explicit_tls_version() {
     let mut buf = [0; 10];
     tls.read(&mut buf).unwrap();
 }
+
+#[test]
+/// - simple vhosts are enabled when multiple hostnames are supplied
+/// - the vhosts access the correct files
+fn vhosts_example_com() {
+    let page = get(
+        &[
+            "--addr",
+            "[::]:1977",
+            "--hostname",
+            "example.com",
+            "--hostname",
+            "example.org",
+        ],
+        addr(1977),
+        "gemini://example.com/",
+    )
+    .expect("could not get page");
+
+    assert_eq!(page.header.status, Status::Success);
+
+    assert_eq!(
+        page.body,
+        Some(
+            std::fs::read_to_string(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/tests/data/content/example.com/index.gmi"
+            ))
+            .unwrap()
+        )
+    );
+}
+
+#[test]
+/// - the vhosts access the correct files
+fn vhosts_example_org() {
+    let page = get(
+        &[
+            "--addr",
+            "[::]:1978",
+            "--hostname",
+            "example.com",
+            "--hostname",
+            "example.org",
+        ],
+        addr(1978),
+        "gemini://example.org/",
+    )
+    .expect("could not get page");
+
+    assert_eq!(page.header.status, Status::Success);
+
+    assert_eq!(
+        page.body,
+        Some(
+            std::fs::read_to_string(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/tests/data/content/example.org/index.gmi"
+            ))
+            .unwrap()
+        )
+    );
+}
