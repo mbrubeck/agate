@@ -9,7 +9,7 @@ repository = "https://github.com/mbrubeck/agate"
 readme = "README.md"
 license = "MIT/Apache-2.0"
 edition = "2018"
-exclude = ["/tools", ".github/", "release.sh", "/content"]
+exclude = ["/tools", "/.github", "/release.sh", "/Cross.toml", "/content", "/CODE_OF_CONDUCT.md", "/CONTRIBUTING.md", "/CHANGELOG.md"]
 
 [dependencies]
 tokio-rustls = "0.22.0"
@@ -26,8 +26,7 @@ glob = "0.3"
 configparser = "2.0"
 
 [dev-dependencies]
-assert_cmd = "1.0"
-gemini-fetch = { version = "0.2.1", git = "https://github.com/Johann150/gemini-fetch.git" }
+gemini-fetch = "0.2.1"
 anyhow = "1.0"
 webpki = "0.21.4"
 

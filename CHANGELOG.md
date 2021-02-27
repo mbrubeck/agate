@@ -19,6 +19,7 @@ Thank you to @littleli and @06kellyjac for contributing to this release.
 * The GitHub workflow has been fixed so Windows binaries are compressed correctly (#36).
 * Split out install steps to allow for more options in the future.
 * Add install notes for nix/NixOS to the README (#38).
+* Updated dependencies.
 
 ## [2.5.2] - 2021-02-12
 
