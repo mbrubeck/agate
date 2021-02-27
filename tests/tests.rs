@@ -82,6 +82,8 @@ fn get(args: &[&str], addr: SocketAddr, url: &str) -> Result<Page, anyhow::Error
 }
 
 #[test]
+/// - serves index page for a directory
+/// - serves the correct content
 fn index_page() {
     let page = get(&[], addr(1965), "gemini://localhost").expect("could not get page");
 
@@ -106,6 +108,8 @@ fn index_page() {
 }
 
 #[test]
+/// - the `--addr` configuration works
+/// - MIME media types can be set in the configuration file
 fn meta() {
     let page = get(
         &["--addr", "[::]:1966"],
@@ -124,6 +128,8 @@ fn meta() {
 }
 
 #[test]
+/// - MIME type is correctly guessed for `.gmi` files
+/// - MIME media type parameters can be set in the configuration file
 fn meta_param() {
     let page = get(
         &["--addr", "[::]:1967"],
@@ -142,11 +148,13 @@ fn meta_param() {
 }
 
 #[test]
+/// - globs in the configuration file work correctly
+/// - distributed configuration file is used when `-C` flag not used
 fn glob() {
     let page = get(
         &["--addr", "[::]:1968"],
         addr(1968),
-        "gemini://localhost/test.de.gmi",
+        "gemini://localhost/testdir/a.nl.gmi",
     )
     .expect("could not get page");
 
@@ -154,12 +162,14 @@ fn glob() {
         page.header,
         Header {
             status: Status::Success,
-            meta: "text/gemini;lang=de".to_string(),
+            meta: "text/plain;lang=nl".to_string(),
         }
     );
 }
 
 #[test]
+/// - double globs (i.e. `**`) work correctly in the configuration file
+/// - central configuration file is used when `-C` flag is used
 fn doubleglob() {
     let page = get(
         &["--addr", "[::]:1969", "-C"],
@@ -178,6 +188,7 @@ fn doubleglob() {
 }
 
 #[test]
+/// - full header lines can be set in the configuration file
 fn full_header_preset() {
     let page = get(
         &["--addr", "[::]:1970"],
@@ -196,6 +207,8 @@ fn full_header_preset() {
 }
 
 #[test]
+/// - hostname is checked when provided
+/// - status for wrong host is "proxy request refused"
 fn hostname_check() {
     let page = get(
         &["--addr", "[::]:1971", "--hostname", "example.org"],
@@ -208,6 +221,8 @@ fn hostname_check() {
 }
 
 #[test]
+/// - port is checked when hostname is provided
+/// - status for wrong port is "proxy request refused"
 fn port_check() {
     let page = get(
         &["--addr", "[::]:1972", "--hostname", "example.org"],
@@ -220,6 +235,7 @@ fn port_check() {
 }
 
 #[test]
+/// - status for paths with hidden segments is "gone" if file does not exist
 fn secret_nonexistent() {
     let page = get(
         &["--addr", "[::]:1973"],
@@ -232,6 +248,7 @@ fn secret_nonexistent() {
 }
 
 #[test]
+/// - status for paths with hidden segments is "gone" if file exists
 fn secret_exists() {
     let page = get(
         &["--addr", "[::]:1974"],
@@ -244,6 +261,7 @@ fn secret_exists() {
 }
 
 #[test]
+/// - secret file served if `--serve-secret` is enabled
 fn serve_secret() {
     let page = get(
         &["--addr", "[::]:1975", "--serve-secret"],
@@ -257,6 +275,9 @@ fn serve_secret() {
 
 #[test]
 #[should_panic(expected = "AlertReceived(ProtocolVersion)")]
+/// - if TLSv1.3 is selected, does not accept TLSv1.2 connections
+///   (lower versions do not have to be tested because rustls does not even
+///   support them, making agate incapable of accepting them)
 fn explicit_tls_version() {
     use rustls::{ClientSession, ProtocolVersion};
     use std::io::Read;

@@ -1,7 +1,5 @@
 # test setting a mime type
 test: text/html
-# test globs and setting parameters
-*.de.gmi: ;lang=de
 # test double star globs
 **/*.nl.gmi: ;lang=nl
 # test setting multiple parameters

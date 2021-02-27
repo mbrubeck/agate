@@ -1,2 +1,4 @@
 # test distributed configurations
 index.gmi: 51 No index file for you.
+# test which configuration file is used
+*.nl.gmi: text/plain;lang=nl
