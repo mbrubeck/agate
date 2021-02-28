@@ -160,7 +160,7 @@ fn args() -> Result<Args> {
         ];
     }
 
-    let certs = Arc::new(certificates::CertStore::load_from(check_path(
+    let certs = Arc::new(certificates::CertStore::load_from(&check_path(
         matches.opt_get_default("certs", ".certificates".into())?,
     )?)?);
 
@@ -188,15 +188,15 @@ fn check_path(s: String) -> Result<PathBuf, String> {
 }
 
 /// TLS configuration.
-static TLS: Lazy<TlsAcceptor> = Lazy::new(|| acceptor().unwrap());
+static TLS: Lazy<TlsAcceptor> = Lazy::new(acceptor);
 
-fn acceptor() -> Result<TlsAcceptor> {
+fn acceptor() -> TlsAcceptor {
     let mut config = ServerConfig::new(NoClientAuth::new());
     if ARGS.only_tls13 {
         config.versions = vec![rustls::ProtocolVersion::TLSv1_3];
     }
     config.cert_resolver = ARGS.certs.clone();
-    Ok(TlsAcceptor::from(Arc::new(config)))
+    TlsAcceptor::from(Arc::new(config))
 }
 
 struct RequestHandle {
