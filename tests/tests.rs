@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use gemini_fetch::{Header, Page, Status};
 use std::io::Read;
 use std::net::{SocketAddr, ToSocketAddrs};
@@ -19,6 +20,8 @@ fn addr(port: u16) -> SocketAddr {
 struct Server {
     server: std::process::Child,
     buf: u8,
+    // is set when output is collected by stop()
+    output: Option<Result<(), String>>,
 }
 
 impl Server {
@@ -44,17 +47,20 @@ impl Server {
         Self {
             server,
             buf: buffer[0],
+            output: None,
         }
     }
-}
 
-impl Drop for Server {
-    fn drop(&mut self) {
-        // try to stop the server again
-        match self.server.try_wait() {
-            Err(e) => panic!("cannot access orchestrated program: {:?}", e),
+    pub fn stop(&mut self) -> Result<(), String> {
+        // try to stop the server
+        if let Some(output) = self.output.clone() {
+            return output;
+        }
+
+        self.output = Some(match self.server.try_wait() {
+            Err(e) => Err(format!("cannot access orchestrated program: {:?}", e)),
             // everything fine, still running as expected, kill it now
-            Ok(None) => self.server.kill().unwrap(),
+            Ok(None) => Ok(self.server.kill().unwrap()),
             Ok(Some(_)) => {
                 // forward stderr so we have a chance to understand the problem
                 let buffer = std::iter::once(Ok(self.buf))
@@ -62,23 +68,37 @@ impl Drop for Server {
                     .collect::<Result<Vec<u8>, _>>()
                     .unwrap();
 
-                eprintln!("{}", String::from_utf8_lossy(&buffer));
-                // make the test fail
-                panic!("program had crashed");
+                Err(String::from_utf8_lossy(&buffer).into_owned())
             }
+        });
+        return self.output.clone().unwrap();
+    }
+}
+
+impl Drop for Server {
+    fn drop(&mut self) {
+        if self.output.is_none() && !std::thread::panicking() {
+            // a potential error message was not yet handled
+            self.stop().unwrap();
+        } else if self.output.is_some() {
+            // error was already handled, ignore it
+            self.stop().unwrap_or(());
+        } else {
+            // we are panicking and a potential error was not handled
+            self.stop().unwrap_or_else(|e| eprintln!("{:?}", e));
         }
     }
 }
 
 fn get(args: &[&str], addr: SocketAddr, url: &str) -> Result<Page, anyhow::Error> {
-    let _server = Server::new(args);
+    let mut server = Server::new(args);
 
     // actually perform the request
     let page = tokio::runtime::Runtime::new()
         .unwrap()
         .block_on(async { Page::fetch_from(&Url::parse(url).unwrap(), addr, None).await });
 
-    page
+    server.stop().map_err(|e| anyhow!(e)).and(page)
 }
 
 #[test]
@@ -298,65 +318,161 @@ fn explicit_tls_version() {
     tls.read(&mut buf).unwrap();
 }
 
-#[test]
-/// - simple vhosts are enabled when multiple hostnames are supplied
-/// - the vhosts access the correct files
-fn vhosts_example_com() {
-    let page = get(
-        &[
-            "--addr",
-            "[::]:1977",
-            "--hostname",
-            "example.com",
-            "--hostname",
-            "example.org",
-        ],
-        addr(1977),
-        "gemini://example.com/",
-    )
-    .expect("could not get page");
+mod vhosts {
+    use super::*;
 
-    assert_eq!(page.header.status, Status::Success);
-
-    assert_eq!(
-        page.body,
-        Some(
-            std::fs::read_to_string(concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/tests/data/content/example.com/index.gmi"
-            ))
-            .unwrap()
+    #[test]
+    /// - simple vhosts are enabled when multiple hostnames are supplied
+    /// - the vhosts access the correct files
+    fn example_com() {
+        let page = get(
+            &[
+                "--addr",
+                "[::]:1977",
+                "--hostname",
+                "example.com",
+                "--hostname",
+                "example.org",
+            ],
+            addr(1977),
+            "gemini://example.com/",
         )
-    );
+        .expect("could not get page");
+
+        assert_eq!(page.header.status, Status::Success);
+
+        assert_eq!(
+            page.body,
+            Some(
+                std::fs::read_to_string(concat!(
+                    env!("CARGO_MANIFEST_DIR"),
+                    "/tests/data/content/example.com/index.gmi"
+                ))
+                .unwrap()
+            )
+        );
+    }
+
+    #[test]
+    /// - the vhosts access the correct files
+    fn example_org() {
+        let page = get(
+            &[
+                "--addr",
+                "[::]:1978",
+                "--hostname",
+                "example.com",
+                "--hostname",
+                "example.org",
+            ],
+            addr(1978),
+            "gemini://example.org/",
+        )
+        .expect("could not get page");
+
+        assert_eq!(page.header.status, Status::Success);
+
+        assert_eq!(
+            page.body,
+            Some(
+                std::fs::read_to_string(concat!(
+                    env!("CARGO_MANIFEST_DIR"),
+                    "/tests/data/content/example.org/index.gmi"
+                ))
+                .unwrap()
+            )
+        );
+    }
 }
 
-#[test]
-/// - the vhosts access the correct files
-fn vhosts_example_org() {
-    let page = get(
-        &[
-            "--addr",
-            "[::]:1978",
-            "--hostname",
-            "example.com",
-            "--hostname",
-            "example.org",
-        ],
-        addr(1978),
-        "gemini://example.org/",
-    )
-    .expect("could not get page");
+mod multicert {
+    use super::*;
 
-    assert_eq!(page.header.status, Status::Success);
+    #[test]
+    fn cert_missing() {
+        let mut server = Server::new(&["--addr", "[::]:1979", "--certs", "cert_missing"]);
 
-    assert_eq!(
-        page.body,
-        Some(
-            std::fs::read_to_string(concat!(
+        // wait for the server to stop, it should crash
+        let _ = server.server.wait();
+
+        assert!(server
+            .stop()
+            .unwrap_err()
+            .to_string()
+            .contains("certificate file for fallback is missing"));
+    }
+
+    #[test]
+    fn key_missing() {
+        let mut server = Server::new(&["--addr", "[::]:1980", "--certs", "key_missing"]);
+
+        // wait for the server to stop, it should crash
+        let _ = server.server.wait();
+
+        assert!(server
+            .stop()
+            .unwrap_err()
+            .to_string()
+            .contains("key file for fallback is missing"));
+    }
+
+    #[test]
+    fn example_com() {
+        use rustls::ClientSession;
+        use std::io::{Cursor, Write};
+        use std::net::TcpStream;
+
+        let mut server = Server::new(&["--addr", "[::]:1981", "--certs", "multicert"]);
+
+        let mut config = rustls::ClientConfig::new();
+        config
+            .root_store
+            .add_pem_file(&mut Cursor::new(include_bytes!(concat!(
                 env!("CARGO_MANIFEST_DIR"),
-                "/tests/data/content/example.org/index.gmi"
-            ))
-            .unwrap()
-        )
-    );
+                "/tests/data/multicert/ca_cert.pem"
+            ))))
+            .unwrap();
+
+        let dns_name = webpki::DNSNameRef::try_from_ascii_str("example.com").unwrap();
+        let mut session = ClientSession::new(&std::sync::Arc::new(config), dns_name);
+        let mut tcp = TcpStream::connect(addr(1981)).unwrap();
+        let mut tls = rustls::Stream::new(&mut session, &mut tcp);
+
+        write!(tls, "gemini://example.com/\r\n").unwrap();
+
+        let mut buf = [0; 10];
+        tls.read(&mut buf).unwrap();
+
+        server.stop().unwrap()
+    }
+
+    #[test]
+    fn example_org() {
+        use rustls::ClientSession;
+        use std::io::{Cursor, Write};
+        use std::net::TcpStream;
+
+        let mut server = Server::new(&["--addr", "[::]:1982", "--certs", "multicert"]);
+
+        let mut config = rustls::ClientConfig::new();
+        config
+            .root_store
+            .add_pem_file(&mut Cursor::new(include_bytes!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/tests/data/multicert/ca_cert.pem"
+            ))))
+            .unwrap();
+
+        let dns_name = webpki::DNSNameRef::try_from_ascii_str("example.org").unwrap();
+        let mut session = ClientSession::new(&std::sync::Arc::new(config), dns_name);
+        let mut tcp = TcpStream::connect(addr(1982)).unwrap();
+        let mut tls = rustls::Stream::new(&mut session, &mut tcp);
+
+        write!(tls, "gemini://example.org/\r\n").unwrap();
+
+        let mut buf = [0; 10];
+        tls.read(&mut buf).unwrap();
+
+        server.stop().unwrap()
+    }
 }
