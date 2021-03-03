@@ -96,7 +96,7 @@ fn args() -> Result<Args> {
         "",
         "certs",
         "folder for certificate files (default ./.certificates/)",
-        "FOLDER",
+        "DIR",
     );
     opts.optmulti(
         "",

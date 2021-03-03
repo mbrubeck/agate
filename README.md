@@ -39,19 +39,20 @@ You can use the install script in the `tools` directory for the remaining steps 
 If there is none, please consider contributing one to make it easier for less tech-savvy users!
 ***
 
-2. Generate a self-signed TLS certificate and private key.  For example, if you have OpenSSL 1.1 installed, you can use a command like the following.  (Replace the hostname `example.com` with the address of your Gemini server.)
+2. Generate a self-signed TLS certificate and private key in the `.certificates` directory.  For example, if you have OpenSSL 1.1 installed, you can use a command like the following.  (Replace the *two* occurences of `example.com` in the last line with the domain of your Gemini server.)
 
 ```
-openssl req -x509 -newkey rsa:4096 -keyout key.rsa -out cert.pem \
-    -days 3650 -nodes -subj "/CN=example.com"
+mkdir -p .certificates
+
+openssl req -x509 -newkey rsa:4096 -nodes -days 3650 \
+    -keyout .certificates/key.rsa -out .certificates/cert.pem \
+    -subj "/CN=example.com" -addext "subjectAltName = DNS:example.com"
 ```
 
 3. Run the server. You can use the following arguments to specify the locations of the content directory, certificate and key files, IP address and port to listen on, host name to expect in request URLs, and default language code(s) to include in the MIME type for for text/gemini files: (Again replace the hostname `example.com` with the address of your Gemini server.)
 
 ```
 agate --content path/to/content/ \
-      --key key.rsa \
-      --cert cert.pem \
       --addr [::]:1965 \
       --addr 0.0.0.0:1965 \
       --hostname example.com \
@@ -107,7 +108,7 @@ Rules can overwrite other rules, so if a file is matched by multiple rules, the 
 If a line violates the format or looks like case 3, but is incorrect, it might be ignored. You should check your logs. Please know that this configuration file is first read when a file from the respective directory is accessed. So no log messages after startup does not mean the `.meta` file is okay.
 
 Such a configuration file might look like this:
-```text
+```
 # This line will be ignored.
 **/*.de.gmi: ;lang=de
 nl/**/*.gmi: ;lang=nl
@@ -141,6 +142,33 @@ For example if one of the hostnames is `example.com`, and the content root direc
 Agate does not support different certificates for different hostnames, you will have to use a single certificate for all domains (multi domain certificate).
 
 If you want to serve the same content for multiple domains, you can instead disable the hostname check by not specifying `--hostname`. In this case Agate will disregard a request's hostname apart from checking that there is one.
+
+### Multiple certificates
+
+Agate has support for using multiple certificates with the `--certs` option. Agate will thus always require that a client uses SNI, which should not be a problem since the Gemini specification also requires SNI to be used.
+
+Certificates are by default stored in the `.certificates` directory. This is a hidden directory for the purpose that uncautious people may set the content root directory to the currrent director which may also contain the certificates directory. In this case, the certificates and private keys would still be hidden. The certificates are only loaded when Agate is started and are not reloaded while running. The certificates directory may directly contain a key and certificate pair, this is the default pair used if no other matching keys are present. The certificates directory may also contain subdirectories for specific domains, for example a folder for `example.org` and `portal.example.org`. Note that the subfolders for subdomains (like `portal.example.org`) should not be inside other subfolders but directly in the certificates directory. Agate will select the certificate/key pair whose name matches most closely. For example take the following directory structure:
+
+```
+.certificates
+|-- cert.pem     (1)
+|-- key.rsa      (1)
+|-- example.org
+|   |-- cert.pem (2)
+|   `-- key.rsa  (2)
+`-- portal.example.org
+    |-- cert.pem (3)
+    `-- key.rsa  (3)
+```
+
+This would be understood like this:
+* The certificate/key pair (1) would be used for the entire domain tree (exceptions below).
+* The certificate/key pair (2) would be used for the entire domain tree of `example.org`, so also including subdomains like `secret.example.org`. It overrides the pair (1) for this subtree (exceptions below).
+* The certificate/key pair (3) would be used for the entire domain tree of `portal.example.org`, so also inclduding subdomains like `test.portal.example.org`. It overrides the pairs (1) and (2) for this subtree.
+
+Using a directory named just `.` causes undefined behaviour as this would have the same meaning as the top level certificate/key pair (pair (1) in the example above).
+
+The files for a certificate/key pair have to be named `cert.pem` and `key.rsa` respectively. The certificate has to be a X.509 certificate in a PEM file and has to include a subject alt name of the domain name. The private key has to be in PKCS#8 format. For an example of how to create such certificates see Installation and Setup, step 2.
 
 [Gemini]: https://gemini.circumlunar.space/
 [Rust]: https://www.rust-lang.org/
