@@ -183,7 +183,7 @@ impl CertStore {
 
             let key = load_domain(certs_dir, filename.clone())?;
             key.cross_check_end_entity_cert(Some(dns_name))
-                .or_else(|e| Err(CertLoadError::BadCert(filename.clone(), e.to_string())))?;
+                .map_err(|e| CertLoadError::BadCert(filename.clone(), e.to_string()))?;
 
             certs.push((filename, key));
         }
