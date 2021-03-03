@@ -31,11 +31,14 @@ pub enum CertLoadError {
     NoReadCertDir,
     /// the specified domain name cannot be processed correctly
     BadDomain(String),
+    /// The key file for the given domain does not contain any suitable keys.
+    NoKeys(String),
     /// the key file for the specified domain is bad (e.g. does not contain a
     /// key or is invalid)
     BadKey(String),
-    /// the certificate file for the specified domain is bad (e.g. invalid)
-    BadCert(String),
+    /// The certificate file for the specified domain is bad (e.g. invalid)
+    /// The second parameter is the error message.
+    BadCert(String, String),
     /// the key file for the specified domain is missing (but a certificate
     /// file was present)
     MissingKey(String),
@@ -57,8 +60,15 @@ impl Display for CertLoadError {
                 domain
             ),
             Self::BadDomain(domain) => write!(f, "The domain name {} cannot be processed.", domain),
+            Self::NoKeys(domain) => write!(
+                f,
+                "The key file for {} does not contain any suitable key.",
+                domain
+            ),
             Self::BadKey(domain) => write!(f, "The key file for {} is malformed.", domain),
-            Self::BadCert(domain) => write!(f, "The certificate file for {} is malformed.", domain),
+            Self::BadCert(domain, e) => {
+                write!(f, "The certificate file for {} is malformed: {}", domain, e)
+            }
             Self::MissingKey(domain) => write!(f, "The key file for {} is missing.", domain),
             Self::MissingCert(domain) => {
                 write!(f, "The certificate file for {} is missing.", domain)
@@ -89,7 +99,7 @@ fn load_domain(certs_dir: &Path, domain: String) -> Result<CertifiedKey, CertLoa
 
     let cert_chain = match certs(&mut BufReader::new(File::open(&path).unwrap())) {
         Ok(cert) => cert,
-        Err(_) => return Err(CertLoadError::BadCert(domain)),
+        Err(()) => return Err(CertLoadError::BadCert(domain, String::new())),
     };
 
     // load key from file
@@ -99,13 +109,14 @@ fn load_domain(certs_dir: &Path, domain: String) -> Result<CertifiedKey, CertLoa
     }
     let key = match pkcs8_private_keys(&mut BufReader::new(File::open(&path).unwrap())) {
         Ok(mut keys) if !keys.is_empty() => keys.remove(0),
-        _ => return Err(CertLoadError::BadKey(domain)),
+        Ok(_) => return Err(CertLoadError::NoKeys(domain)),
+        Err(()) => return Err(CertLoadError::BadKey(domain)),
     };
 
     // transform key to correct format
     let key = match RSASigningKey::new(&key) {
         Ok(key) => key,
-        Err(_) => return Err(CertLoadError::BadKey(domain)),
+        Err(()) => return Err(CertLoadError::BadKey(domain)),
     };
     Ok(CertifiedKey::new(cert_chain, Arc::new(Box::new(key))))
 }
@@ -127,11 +138,14 @@ impl CertStore {
             Err(CertLoadError::EmptyDomain(_)) => { /* there are no fallback keys */ }
             Err(CertLoadError::NoReadCertDir) => unreachable!(),
             Err(CertLoadError::BadDomain(_)) => unreachable!(),
+            Err(CertLoadError::NoKeys(_)) => {
+                return Err(CertLoadError::NoKeys("fallback".to_string()))
+            }
             Err(CertLoadError::BadKey(_)) => {
                 return Err(CertLoadError::BadKey("fallback".to_string()))
             }
-            Err(CertLoadError::BadCert(_)) => {
-                return Err(CertLoadError::BadCert("fallback".to_string()))
+            Err(CertLoadError::BadCert(_, e)) => {
+                return Err(CertLoadError::BadCert("fallback".to_string(), e))
             }
             Err(CertLoadError::MissingKey(_)) => {
                 return Err(CertLoadError::MissingKey("fallback".to_string()))
@@ -163,9 +177,8 @@ impl CertStore {
             };
 
             let key = load_domain(certs_dir, filename.clone())?;
-            if key.cross_check_end_entity_cert(Some(dns_name)).is_err() {
-                return Err(CertLoadError::BadCert(filename));
-            }
+            key.cross_check_end_entity_cert(Some(dns_name))
+                .or_else(|e| Err(CertLoadError::BadCert(filename.clone(), e.to_string())))?;
 
             certs.push((filename, key));
         }
