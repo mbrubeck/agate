@@ -34,7 +34,10 @@ use {
 fn main() -> Result {
     if !ARGS.silent {
         env_logger::Builder::new()
-            .filter_level(log::LevelFilter::Info)
+            // turn off logging for other modules
+            .filter_level(log::LevelFilter::Off)
+            // turn on logging for agate
+            .filter_module("agate", log::LevelFilter::Info)
             .parse_default_env()
             .init();
     }
