@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+* All log lines are in the same format now:
+  `<local ip>:<local port> <remote ip or dash> "<request>" <response status> "<response meta>" [error:<error>]`
+  If the connection could not be established correctly (e.g. because of TLS errors), the status code `00` is used.
+* Messages from modules other than Agate itself are not logged by default.
+
 ## [2.5.3] - 2021-02-27
 Thank you to @littleli and @06kellyjac for contributing to this release.
 

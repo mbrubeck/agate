@@ -142,6 +142,16 @@ Agate does not support different certificates for different hostnames, you will 
 
 If you want to serve the same content for multiple domains, you can instead disable the hostname check by not specifying `--hostname`. In this case Agate will disregard a request's hostname apart from checking that there is one.
 
+## Logging
+
+All requests will be logged using this format:
+```
+<local ip>:<local port> <remote ip or dash> "<request>" <response status> "<response meta>"[ error:<error>]
+```
+The "error:" part will only be logged if an error occurred. This should only be used for informative purposes as the status code should provide the information that an error occurred. If the error consisted in the connection not being established (e.g. because of TLS errors), the status code `00` will be used.
+
+There are some lines apart from these that might occur in logs depending on the selected log level. For example the initial "Listening on..." line or information about listing a particular directory.
+
 [Gemini]: https://gemini.circumlunar.space/
 [Rust]: https://www.rust-lang.org/
 [home]: gemini://qwertqwefsday.eu/agate.gmi

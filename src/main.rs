@@ -255,7 +255,8 @@ impl RequestHandle {
                 log_line,
                 metadata,
             }),
-            Err(e) => Err(format!("{} error:{}", log_line, e)),
+            // use nonexistent status code 00 if connection was not established
+            Err(e) => Err(format!("{} \"\" 00 \"TLS error\" error:{}", log_line, e)),
         }
     }
 
