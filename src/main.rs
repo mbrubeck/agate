@@ -30,7 +30,10 @@ use {
 fn main() -> Result {
     if !ARGS.silent {
         env_logger::Builder::new()
-            .filter_level(log::LevelFilter::Info)
+            // turn off logging for other modules
+            .filter_level(log::LevelFilter::Off)
+            // turn on logging for agate
+            .filter_module("agate", log::LevelFilter::Info)
             .parse_default_env()
             .init();
     }
@@ -230,7 +233,8 @@ impl RequestHandle {
                 log_line,
                 metadata,
             }),
-            Err(e) => Err(format!("{} error:{}", log_line, e)),
+            // use nonexistent status code 00 if connection was not established
+            Err(e) => Err(format!("{} \"\" 00 \"TLS error\" error:{}", log_line, e)),
         }
     }
 
@@ -263,22 +267,31 @@ impl RequestHandle {
         let mut len = 0;
 
         // Read until CRLF, end-of-stream, or there's no buffer space left.
-        loop {
-            let bytes_read = self
-                .stream
-                .read(buf)
-                .await
-                .or(Err((59, "Request ended unexpectedly")))?;
+        //
+        // Since neither CR nor LF can be part of a URI according to
+        // ISOC-RFC 3986, we could use BufRead::read_line here, but that does
+        // not allow us to cap the number of read bytes at 1024+2.
+        let result = loop {
+            let bytes_read = if let Ok(read) = self.stream.read(buf).await {
+                read
+            } else {
+                break Err((59, "Request ended unexpectedly"));
+            };
             len += bytes_read;
             if request[..len].ends_with(b"\r\n") {
-                break;
+                break Ok(());
             } else if bytes_read == 0 {
-                return Err((59, "Request ended unexpectedly"));
+                break Err((59, "Request ended unexpectedly"));
             }
             buf = &mut request[len..];
         }
-        let request =
-            std::str::from_utf8(&request[..len - 2]).or(Err((59, "Non-UTF-8 request")))?;
+        .and_then(|()| std::str::from_utf8(&request[..len - 2]).or(Err((59, "Non-UTF-8 request"))));
+
+        let request = result.map_err(|e| {
+            // write empty request to log line for uniformity
+            write!(self.log_line, " \"\"").unwrap();
+            e
+        })?;
 
         // log literal request (might be different from or not an actual URL)
         write!(self.log_line, " \"{}\"", request).unwrap();

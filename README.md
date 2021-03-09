@@ -170,6 +170,16 @@ Using a directory named just `.` causes undefined behaviour as this would have t
 
 The files for a certificate/key pair have to be named `cert.pem` and `key.rsa` respectively. The certificate has to be a X.509 certificate in a PEM file and has to include a subject alt name of the domain name. The private key has to be in PKCS#8 format. For an example of how to create such certificates see Installation and Setup, step 2.
 
+## Logging
+
+All requests will be logged using this format:
+```
+<local ip>:<local port> <remote ip or dash> "<request>" <response status> "<response meta>"[ error:<error>]
+```
+The "error:" part will only be logged if an error occurred. This should only be used for informative purposes as the status code should provide the information that an error occurred. If the error consisted in the connection not being established (e.g. because of TLS errors), the status code `00` will be used.
+
+There are some lines apart from these that might occur in logs depending on the selected log level. For example the initial "Listening on..." line or information about listing a particular directory.
+
 [Gemini]: https://gemini.circumlunar.space/
 [Rust]: https://www.rust-lang.org/
 [home]: gemini://qwertqwefsday.eu/agate.gmi
