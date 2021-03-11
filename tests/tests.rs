@@ -429,7 +429,7 @@ mod multicert {
             .root_store
             .add_pem_file(&mut Cursor::new(include_bytes!(concat!(
                 env!("CARGO_MANIFEST_DIR"),
-                "/tests/data/multicert/ca_cert.pem"
+                "/tests/data/multicert/example.com/cert.pem"
             ))))
             .unwrap();
 
@@ -459,7 +459,7 @@ mod multicert {
             .root_store
             .add_pem_file(&mut Cursor::new(include_bytes!(concat!(
                 env!("CARGO_MANIFEST_DIR"),
-                "/tests/data/multicert/ca_cert.pem"
+                "/tests/data/multicert/example.org/cert.pem"
             ))))
             .unwrap();
 
