@@ -274,12 +274,11 @@ fn serve_secret() {
 }
 
 #[test]
-#[should_panic(expected = "AlertReceived(ProtocolVersion)")]
 /// - if TLSv1.3 is selected, does not accept TLSv1.2 connections
 ///   (lower versions do not have to be tested because rustls does not even
 ///   support them, making agate incapable of accepting them)
 fn explicit_tls_version() {
-    use rustls::{ClientSession, ProtocolVersion};
+    use rustls::{ClientSession, ProtocolVersion, TLSError};
     use std::io::Read;
     use std::net::TcpStream;
 
@@ -295,7 +294,15 @@ fn explicit_tls_version() {
     let mut tls = rustls::Stream::new(&mut session, &mut tcp);
 
     let mut buf = [0; 10];
-    tls.read(&mut buf).unwrap();
+    assert_eq!(
+        *tls.read(&mut buf)
+            .unwrap_err()
+            .into_inner()
+            .unwrap()
+            .downcast::<TLSError>()
+            .unwrap(),
+        TLSError::AlertReceived(rustls::internal::msgs::enums::AlertDescription::ProtocolVersion)
+    )
 }
 
 #[test]
