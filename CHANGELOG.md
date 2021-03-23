@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-* The ability to specify a certificate and key with `--cert` and `--key` respectively has been replaced with the `--certs` option.
+* The ability to specify a certificate and key with `--cert` and `--key` respectively has been replaced with the `--certs` option. (#40)
   Certificates are now stored in a special directory. To migrate to this version, the keys should be stored in the `.certificates` directory (or any other directory you specify).
   This enables us to use multiple certificates for multiple domains.
 
