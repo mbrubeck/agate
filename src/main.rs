@@ -1,22 +1,18 @@
 #![forbid(unsafe_code)]
 
+mod certificates;
 mod metadata;
 use metadata::{FileOptions, PresetMeta};
 
 use {
     once_cell::sync::Lazy,
     percent_encoding::{percent_decode_str, percent_encode, AsciiSet, CONTROLS},
-    rustls::{
-        internal::pemfile::{certs, pkcs8_private_keys},
-        Certificate, NoClientAuth, PrivateKey, ServerConfig,
-    },
+    rustls::{NoClientAuth, ServerConfig},
     std::{
         borrow::Cow,
         error::Error,
         ffi::OsStr,
         fmt::Write,
-        fs::File,
-        io::BufReader,
         net::SocketAddr,
         path::{Path, PathBuf},
         sync::Arc,
@@ -80,8 +76,7 @@ static ARGS: Lazy<Args> = Lazy::new(|| {
 struct Args {
     addrs: Vec<SocketAddr>,
     content_dir: PathBuf,
-    cert_chain: Vec<Certificate>,
-    key: PrivateKey,
+    certs: Arc<certificates::CertStore>,
     hostnames: Vec<Host>,
     language: Option<String>,
     silent: bool,
@@ -102,15 +97,9 @@ fn args() -> Result<Args> {
     );
     opts.optopt(
         "",
-        "cert",
-        "TLS certificate PEM file (default ./cert.pem)",
-        "FILE",
-    );
-    opts.optopt(
-        "",
-        "key",
-        "PKCS8 private key file (default ./key.rsa)",
-        "FILE",
+        "certs",
+        "folder for certificate files (default ./.certificates/)",
+        "DIR",
     );
     opts.optmulti(
         "",
@@ -174,25 +163,14 @@ fn args() -> Result<Args> {
         ];
     }
 
-    let cert_file = File::open(check_path(
-        matches.opt_get_default("cert", "cert.pem".into())?,
-    )?)?;
-    let cert_chain = certs(&mut BufReader::new(cert_file)).or(Err("bad cert"))?;
-
-    let key_file = File::open(check_path(
-        matches.opt_get_default("key", "key.rsa".into())?,
-    )?)?;
-    let key = pkcs8_private_keys(&mut BufReader::new(key_file))
-        .or(Err("bad key file"))?
-        .drain(..)
-        .next()
-        .ok_or("no keys found")?;
+    let certs = Arc::new(certificates::CertStore::load_from(&check_path(
+        matches.opt_get_default("certs", ".certificates".into())?,
+    )?)?);
 
     Ok(Args {
         addrs,
         content_dir: check_path(matches.opt_get_default("content", "content".into())?)?,
-        cert_chain,
-        key,
+        certs,
         hostnames,
         language: matches.opt_str("lang"),
         silent: matches.opt_present("s"),
@@ -213,15 +191,15 @@ fn check_path(s: String) -> Result<PathBuf, String> {
 }
 
 /// TLS configuration.
-static TLS: Lazy<TlsAcceptor> = Lazy::new(|| acceptor().unwrap());
+static TLS: Lazy<TlsAcceptor> = Lazy::new(acceptor);
 
-fn acceptor() -> Result<TlsAcceptor> {
+fn acceptor() -> TlsAcceptor {
     let mut config = ServerConfig::new(NoClientAuth::new());
     if ARGS.only_tls13 {
         config.versions = vec![rustls::ProtocolVersion::TLSv1_3];
     }
-    config.set_single_cert(ARGS.cert_chain.clone(), ARGS.key.clone())?;
-    Ok(TlsAcceptor::from(Arc::new(config)))
+    config.cert_resolver = ARGS.certs.clone();
+    TlsAcceptor::from(Arc::new(config))
 }
 
 struct RequestHandle {

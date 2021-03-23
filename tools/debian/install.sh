@@ -66,8 +66,10 @@ cp geminilogs /etc/logrotate.d/
 
 echo "setting up content files..."
 mkdir -p /srv/gemini/content
-openssl req -x509 -newkey rsa:4096 -keyout /srv/gemini/key.rsa -out /srv/gemini/cert.pem \
-	-days 3650 -nodes -subj "/CN=$(uname -n)"
+mkdir -p /srv/gemini/.certificates
+openssl req -x509 -newkey rsa:4096 -keyout /srv/gemini/.certificates/key.rsa \
+	-out /srv/gemini/.certificates/cert.pem -days 3650 -nodes \
+	-subj "/CN=$(uname -n)" -addext "subjectAltName = DNS:$(uname -n)"
 
 echo "starting service..."
 systemctl daemon-reload
