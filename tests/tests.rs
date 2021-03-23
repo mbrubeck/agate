@@ -81,8 +81,7 @@ impl Drop for Server {
             // a potential error message was not yet handled
             self.stop().unwrap();
         } else if self.output.is_some() {
-            // error was already handled, ignore it
-            self.stop().unwrap_or(());
+            // server was already stopped
         } else {
             // we are panicking and a potential error was not handled
             self.stop().unwrap_or_else(|e| eprintln!("{:?}", e));

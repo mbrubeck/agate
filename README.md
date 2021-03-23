@@ -180,6 +180,10 @@ The "error:" part will only be logged if an error occurred. This should only be 
 
 There are some lines apart from these that might occur in logs depending on the selected log level. For example the initial "Listening on..." line or information about listing a particular directory.
 
+## Security considerations
+
+If you want to run agate on a multi-user system, you should be aware that all certificate and key data is loaded into memory and stored there until the server stops. Since the memory is also not explicitly overwritten or zeroed after use, the sensitive data might stay in memory after the server has terminated.
+
 [Gemini]: https://gemini.circumlunar.space/
 [Rust]: https://www.rust-lang.org/
 [home]: gemini://qwertqwefsday.eu/agate.gmi

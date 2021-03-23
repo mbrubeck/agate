@@ -194,9 +194,10 @@ impl CertStore {
             // length of either a or b and the for loop will not decide.
             for (a_part, b_part) in a.split('.').rev().zip(b.split('.').rev()) {
                 if a_part != b_part {
-                    // What we sort by here is not really important, but `str`
-                    // already implements Ord, making it easier for us.
-                    return a_part.cmp(b_part);
+                    // Here we have to make sure that the empty string will
+                    // always be sorted to the end, so we reverse the usual
+                    // ordering of str.
+                    return a_part.cmp(b_part).reverse();
                 }
             }
             // Sort longer domains first.
