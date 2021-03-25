@@ -98,7 +98,7 @@ fn args() -> Result<Args> {
     opts.optopt(
         "",
         "certs",
-        "folder for certificate files (default ./.certificates/)",
+        "Root of the certificate directory (default ./.certificates/)",
         "DIR",
     );
     opts.optmulti(
@@ -110,7 +110,7 @@ fn args() -> Result<Args> {
     opts.optmulti(
         "",
         "hostname",
-        "Domain name of this Gemini server (default is not checking hostname or port; multiple occurences means basic vhosts)",
+        "Domain name of this Gemini server, enables checking hostname and port in requests. (multiple occurences means basic vhosts)",
         "NAME",
     );
     opts.optopt(
@@ -120,7 +120,7 @@ fn args() -> Result<Args> {
         "LANG",
     );
     opts.optflag("s", "silent", "Disable logging output");
-    opts.optflag("h", "help", "Print this help menu and exit.");
+    opts.optflag("h", "help", "Print this help text and exit.");
     opts.optflag("V", "version", "Print version information and exit.");
     opts.optflag(
         "3",
@@ -132,11 +132,11 @@ fn args() -> Result<Args> {
         "serve-secret",
         "Enable serving secret files (files/directories starting with a dot)",
     );
-    opts.optflag("", "log-ip", "Output IP addresses when logging");
+    opts.optflag("", "log-ip", "Output the remote IP address when logging.");
     opts.optflag(
         "C",
         "central-conf",
-        "Use a central .meta file in the content root directory.",
+        "Use a central .meta file in the content root directory. Decentral config files will be ignored.",
     );
 
     let matches = opts.parse(&args[1..]).map_err(|f| f.to_string())?;
