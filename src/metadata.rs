@@ -107,7 +107,7 @@ impl FileOptions {
     /// (Re)reads a specified sidecar file.
     /// This function will allways try to read the file, even if it is current.
     fn read_database(&mut self, db: &PathBuf) {
-        log::trace!("reading database {:?}", db);
+        log::debug!("reading database {:?}", db);
 
         let mut ini = Ini::new_cs();
         ini.set_default_section("mime");

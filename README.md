@@ -133,7 +133,7 @@ If this is the `.meta` file in the content root directory and the `-C` flag is u
 
 ### Logging Verbosity
 
-Agate uses the `env_logger` crate and allows you to set the logging verbosity by setting the default `RUST_LOG` environment variable. For more information, please see the [documentation of `env_logger`].
+Agate uses the `env_logger` crate and allows you to set the logging verbosity by setting the `RUST_LOG` environment variable. To turn off all logging use `RUST_LOG=off`. For more information, please see the [documentation of `env_logger`].
 
 ### Virtual Hosts
 

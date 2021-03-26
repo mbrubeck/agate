@@ -204,6 +204,11 @@ impl CertStore {
             a.len().cmp(&b.len()).reverse()
         });
 
+        log::debug!(
+            "certs loaded for {:?}",
+            certs.iter().map(|t| &t.0).collect::<Vec<_>>()
+        );
+
         Ok(Self { certs })
     }
 

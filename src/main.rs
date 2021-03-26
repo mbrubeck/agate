@@ -28,15 +28,11 @@ use {
 };
 
 fn main() -> Result {
-    if !ARGS.silent {
-        env_logger::Builder::new()
-            // turn off logging for other modules
-            .filter_level(log::LevelFilter::Off)
-            // turn on logging for agate
-            .filter_module("agate", log::LevelFilter::Info)
-            .parse_default_env()
-            .init();
-    }
+    env_logger::Builder::from_env(
+        // by default only turn on logging for agate
+        env_logger::Env::default().default_filter_or("agate=info"),
+    )
+    .init();
     Runtime::new()?.block_on(async {
         let default = PresetMeta::Parameters(
             ARGS.language
@@ -79,7 +75,6 @@ struct Args {
     certs: Arc<certificates::CertStore>,
     hostnames: Vec<Host>,
     language: Option<String>,
-    silent: bool,
     serve_secret: bool,
     log_ips: bool,
     only_tls13: bool,
@@ -119,7 +114,6 @@ fn args() -> Result<Args> {
         "RFC 4646 Language code for text/gemini documents",
         "LANG",
     );
-    opts.optflag("s", "silent", "Disable logging output");
     opts.optflag("h", "help", "Print this help text and exit.");
     opts.optflag("V", "version", "Print version information and exit.");
     opts.optflag(
@@ -173,7 +167,6 @@ fn args() -> Result<Args> {
         certs,
         hostnames,
         language: matches.opt_str("lang"),
-        silent: matches.opt_present("s"),
         serve_secret: matches.opt_present("serve-secret"),
         log_ips: matches.opt_present("log-ip"),
         only_tls13: matches.opt_present("only-tls13"),
