@@ -7,12 +7,15 @@ use metadata::{FileOptions, PresetMeta};
 use {
     once_cell::sync::Lazy,
     percent_encoding::{percent_decode_str, percent_encode, AsciiSet, CONTROLS},
+    rcgen::{Certificate, CertificateParams, DnType},
     rustls::{NoClientAuth, ServerConfig},
     std::{
         borrow::Cow,
         error::Error,
         ffi::OsStr,
         fmt::Write,
+        fs::{self, File},
+        io::Write as _,
         net::SocketAddr,
         path::{Path, PathBuf},
         sync::Arc,
@@ -132,20 +135,88 @@ fn args() -> Result<Args> {
         "central-conf",
         "Use a central .meta file in the content root directory. Decentral config files will be ignored.",
     );
+    opts.optflag(
+        "",
+        "ecdsa",
+        "Generate keys using the ecdsa signature algorithm instead of the default ed25519.",
+    );
 
     let matches = opts.parse(&args[1..]).map_err(|f| f.to_string())?;
+
     if matches.opt_present("h") {
         eprintln!("{}", opts.usage(&format!("Usage: {} [options]", &args[0])));
         std::process::exit(0);
     }
+
     if matches.opt_present("V") {
         eprintln!("agate {}", env!("CARGO_PKG_VERSION"));
         std::process::exit(0);
     }
+
+    let certs_path = check_path(matches.opt_get_default("certs", ".certificates".into())?)?;
+    let certs = match certificates::CertStore::load_from(&certs_path) {
+        Ok(certs) => Some(certs),
+        Err(certificates::CertLoadError::Empty) if matches.opt_present("hostname") => {
+            // we will generate certificates in the next step
+            None
+        }
+        Err(e) => return Err(e.into()),
+    };
+
+    let mut reload_certs = false;
     let mut hostnames = vec![];
     for s in matches.opt_strs("hostname") {
-        hostnames.push(Host::parse(&s)?);
+        let hostname = Host::parse(&s)?;
+
+        // check if we have a certificate for that domain
+        if let Host::Domain(ref domain) = hostname {
+            if !matches!(certs, Some(ref certs) if certs.has_domain(domain)) {
+                eprintln!("no certificate or key found for {:?}, generating...", s);
+
+                let mut cert_params = CertificateParams::new(vec![domain.clone()]);
+                cert_params
+                    .distinguished_name
+                    .push(DnType::CommonName, domain);
+
+                // <CertificateParams as Default>::default() already implements a
+                // date in the far future from the time of writing: 4096-01-01
+
+                if !matches.opt_present("ecdsa") {
+                    cert_params.alg = &rcgen::PKCS_ED25519;
+                }
+
+                // generate the certificate with the configuration
+                let cert = Certificate::from_params(cert_params)?;
+
+                fs::create_dir(certs_path.join(domain))?;
+                // write certificate data to disk
+                let mut cert_file = File::create(certs_path.join(format!(
+                    "{}/{}",
+                    domain,
+                    certificates::CERT_FILE_NAME
+                )))?;
+                cert_file.write_all(&cert.serialize_der()?)?;
+                let mut key_file = File::create(certs_path.join(format!(
+                    "{}/{}",
+                    domain,
+                    certificates::KEY_FILE_NAME
+                )))?;
+                key_file.write_all(&cert.serialize_private_key_der())?;
+
+                reload_certs = true;
+            }
+        }
+
+        hostnames.push(hostname);
     }
+
+    // if new certificates were generated, reload the certificate store
+    let certs = if reload_certs {
+        certificates::CertStore::load_from(&certs_path)?
+    } else {
+        certs.unwrap()
+    };
+
     let mut addrs = vec![];
     for i in matches.opt_strs("addr") {
         addrs.push(i.parse()?);
@@ -157,14 +228,10 @@ fn args() -> Result<Args> {
         ];
     }
 
-    let certs = Arc::new(certificates::CertStore::load_from(&check_path(
-        matches.opt_get_default("certs", ".certificates".into())?,
-    )?)?);
-
     Ok(Args {
         addrs,
         content_dir: check_path(matches.opt_get_default("content", "content".into())?)?,
-        certs,
+        certs: Arc::new(certs),
         hostnames,
         language: matches.opt_str("lang"),
         serve_secret: matches.opt_present("serve-secret"),

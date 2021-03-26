@@ -1,14 +1,11 @@
 use {
     rustls::{
-        internal::pemfile::{certs, pkcs8_private_keys},
-        sign::{CertifiedKey, RSASigningKey},
+        sign::{any_supported_type, CertifiedKey},
         ResolvesServerCert,
     },
     std::{
         ffi::OsStr,
         fmt::{Display, Formatter},
-        fs::File,
-        io::BufReader,
         path::Path,
         sync::Arc,
     },
@@ -23,17 +20,17 @@ pub(crate) struct CertStore {
     certs: Vec<(String, CertifiedKey)>,
 }
 
-static CERT_FILE_NAME: &str = "cert.pem";
-static KEY_FILE_NAME: &str = "key.rsa";
+pub static CERT_FILE_NAME: &str = "cert.der";
+pub static KEY_FILE_NAME: &str = "key.der";
 
 #[derive(Debug)]
 pub enum CertLoadError {
     /// could not access the certificate root directory
     NoReadCertDir,
+    /// no certificates or keys were found
+    Empty,
     /// the specified domain name cannot be processed correctly
     BadDomain(String),
-    /// The key file for the given domain does not contain any suitable keys.
-    NoKeys(String),
     /// the key file for the specified domain is bad (e.g. does not contain a
     /// key or is invalid)
     BadKey(String),
@@ -55,17 +52,13 @@ impl Display for CertLoadError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::NoReadCertDir => write!(f, "Could not read from certificate directory."),
+            Self::Empty => write!(f, "No keys or certificates were found in the given directory.\nSpecify the --hostname option to generate these automatically."),
             Self::BadDomain(domain) if !domain.is_ascii() => write!(
                 f,
                 "The domain name {} cannot be processed, it must be punycoded.",
                 domain
             ),
             Self::BadDomain(domain) => write!(f, "The domain name {} cannot be processed.", domain),
-            Self::NoKeys(domain) => write!(
-                f,
-                "The key file for {} does not contain any suitable key.",
-                domain
-            ),
             Self::BadKey(domain) => write!(f, "The key file for {} is malformed.", domain),
             Self::BadCert(domain, e) => {
                 write!(f, "The certificate file for {} is malformed: {}", domain, e)
@@ -97,29 +90,25 @@ fn load_domain(certs_dir: &Path, domain: String) -> Result<CertifiedKey, CertLoa
             CertLoadError::MissingCert(domain)
         });
     }
-
-    let cert_chain = match certs(&mut BufReader::new(File::open(&path).unwrap())) {
-        Ok(cert) => cert,
-        Err(()) => return Err(CertLoadError::BadCert(domain, String::new())),
-    };
+    let cert = rustls::Certificate(
+        std::fs::read(&path).map_err(|_| CertLoadError::MissingCert(domain.clone()))?,
+    );
 
     // load key from file
     path.set_file_name(KEY_FILE_NAME);
     if !path.is_file() {
         return Err(CertLoadError::MissingKey(domain));
     }
-    let key = match pkcs8_private_keys(&mut BufReader::new(File::open(&path).unwrap())) {
-        Ok(mut keys) if !keys.is_empty() => keys.remove(0),
-        Ok(_) => return Err(CertLoadError::NoKeys(domain)),
-        Err(()) => return Err(CertLoadError::BadKey(domain)),
-    };
+    let key = rustls::PrivateKey(
+        std::fs::read(&path).map_err(|_| CertLoadError::MissingKey(domain.clone()))?,
+    );
 
     // transform key to correct format
-    let key = match RSASigningKey::new(&key) {
+    let key = match any_supported_type(&key) {
         Ok(key) => key,
         Err(()) => return Err(CertLoadError::BadKey(domain)),
     };
-    Ok(CertifiedKey::new(cert_chain, Arc::new(Box::new(key))))
+    Ok(CertifiedKey::new(vec![cert], Arc::new(key)))
 }
 
 impl CertStore {
@@ -135,14 +124,12 @@ impl CertStore {
         let mut certs = vec![];
 
         // Try to load fallback certificate and key directly from the top level
-        // certificate directory. It will be loaded as the `.` domain.
-        match load_domain(certs_dir, ".".to_string()) {
+        // certificate directory.
+        match load_domain(certs_dir, String::new()) {
             Err(CertLoadError::EmptyDomain(_)) => { /* there are no fallback keys */ }
-            Err(CertLoadError::NoReadCertDir) => unreachable!(),
-            Err(CertLoadError::BadDomain(_)) => unreachable!(),
-            Err(CertLoadError::NoKeys(_)) => {
-                return Err(CertLoadError::NoKeys("fallback".to_string()))
-            }
+            Err(CertLoadError::Empty)
+            | Err(CertLoadError::NoReadCertDir)
+            | Err(CertLoadError::BadDomain(_)) => unreachable!(),
             Err(CertLoadError::BadKey(_)) => {
                 return Err(CertLoadError::BadKey("fallback".to_string()))
             }
@@ -186,6 +173,10 @@ impl CertStore {
                 .map_err(|e| CertLoadError::BadCert(filename.clone(), e.to_string()))?;
 
             certs.push((filename, key));
+        }
+
+        if certs.is_empty() {
+            return Err(CertLoadError::Empty);
         }
 
         certs.sort_unstable_by(|(a, _), (b, _)| {

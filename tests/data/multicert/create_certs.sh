@@ -5,7 +5,7 @@ mkdir -p example.com example.org
 for domain in "example.com" "example.org"
 do
 # create private key
-openssl genpkey -out $domain/key.rsa -algorithm RSA -pkeyopt rsa_keygen_bits:4096
+openssl genpkey -outform DER -out $domain/key.der -algorithm RSA -pkeyopt rsa_keygen_bits:4096
 
 # create config file:
 # the generated certificates must not be CA-capable, otherwise rustls complains
@@ -26,10 +26,10 @@ commonName = $domain
 subjectAltName = DNS:$domain
 EOT
 
-openssl req -new -sha256 -out request.csr -key $domain/key.rsa -config openssl.conf
+openssl req -new -sha256 -out request.csr -key $domain/key.der -keyform DER -config openssl.conf
 
-openssl x509 -req -sha256 -days 3650 -in request.csr -out $domain/cert.pem \
-	-extensions req_ext -extfile openssl.conf -signkey $domain/key.rsa
+openssl x509 -req -sha256 -days 3650 -in request.csr -outform DER -out $domain/cert.der \
+	-extensions req_ext -extfile openssl.conf -signkey $domain/key.der -keyform DER
 done
 
 # clean up

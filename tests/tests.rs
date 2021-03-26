@@ -1,11 +1,11 @@
 use anyhow::anyhow;
 use gemini_fetch::{Header, Page, Status};
-use std::io::Read;
+use std::io::{BufRead, BufReader, Read};
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::process::{Command, Stdio};
 use url::Url;
 
-static BINARY_PATH: &'static str = env!("CARGO_BIN_EXE_agate");
+static BINARY_PATH: &str = env!("CARGO_BIN_EXE_agate");
 
 fn addr(port: u16) -> SocketAddr {
     use std::net::{IpAddr, Ipv4Addr};
@@ -19,7 +19,6 @@ fn addr(port: u16) -> SocketAddr {
 
 struct Server {
     server: std::process::Child,
-    buf: u8,
     // is set when output is collected by stop()
     output: Option<Result<(), String>>,
 }
@@ -31,47 +30,67 @@ impl Server {
             .stderr(Stdio::piped())
             .current_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/data"))
             .args(args)
+            .env("RUST_LOG", "debug")
             .spawn()
             .expect("failed to start binary");
 
-        // the first output is when Agate is listening, so we only have to wait
-        // until the first byte is output
-        let mut buffer = [0; 1];
-        server
-            .stderr
-            .as_mut()
-            .unwrap()
-            .read_exact(&mut buffer)
-            .unwrap();
+        // We can be sure that agate is listening because it logs a message saying so.
+        let mut reader = BufReader::new(server.stderr.as_mut().unwrap());
+        let mut buffer = String::new();
+        while matches!(reader.read_line(&mut buffer), Ok(i) if i>0) {
+            print!("log: {}", buffer);
+            if buffer.contains("Listening") {
+                break;
+            }
+
+            buffer.clear();
+        }
+
+        if matches!(server.try_wait(), Ok(Some(_)) | Err(_)) {
+            panic!("Server did not start properly");
+        }
 
         Self {
             server,
-            buf: buffer[0],
             output: None,
         }
     }
 
     pub fn stop(&mut self) -> Result<(), String> {
         // try to stop the server
-        if let Some(output) = self.output.clone() {
-            return output;
+        if let Some(output) = self.output.as_ref() {
+            return output.clone();
         }
 
         self.output = Some(match self.server.try_wait() {
             Err(e) => Err(format!("cannot access orchestrated program: {:?}", e)),
-            // everything fine, still running as expected, kill it now
-            Ok(None) => Ok(self.server.kill().unwrap()),
-            Ok(Some(_)) => {
-                // forward stderr so we have a chance to understand the problem
-                let buffer = std::iter::once(Ok(self.buf))
-                    .chain(self.server.stderr.take().unwrap().bytes())
-                    .collect::<Result<Vec<u8>, _>>()
-                    .unwrap();
+            Ok(None) => {
+                // everything fine, still running as expected, kill it now
+                self.server.kill().unwrap();
 
-                Err(String::from_utf8_lossy(&buffer).into_owned())
+                let mut reader = BufReader::new(self.server.stderr.as_mut().unwrap());
+                let mut buffer = String::new();
+                while matches!(reader.read_line(&mut buffer), Ok(i) if i>0) {
+                    print!("log: {}", buffer);
+                    if buffer.contains("Listening") {
+                        break;
+                    }
+                }
+                Ok(())
+            }
+            Ok(Some(_)) => {
+                let mut reader = BufReader::new(self.server.stderr.as_mut().unwrap());
+                let mut buffer = String::new();
+                while matches!(reader.read_line(&mut buffer), Ok(i) if i>0) {
+                    print!("log: {}", buffer);
+                    if buffer.contains("Listening") {
+                        break;
+                    }
+                }
+                Err(buffer)
             }
         });
-        return self.output.clone().unwrap();
+        self.output.clone().unwrap()
     }
 }
 
@@ -84,7 +103,7 @@ impl Drop for Server {
             // server was already stopped
         } else {
             // we are panicking and a potential error was not handled
-            self.stop().unwrap_or_else(|e| eprintln!("{:?}", e));
+            self.stop().unwrap_or_else(|e| eprintln!("{}", e));
         }
     }
 }
@@ -395,37 +414,27 @@ mod multicert {
     use super::*;
 
     #[test]
+    #[should_panic]
     fn cert_missing() {
         let mut server = Server::new(&["--addr", "[::]:1979", "--certs", "cert_missing"]);
 
         // wait for the server to stop, it should crash
         let _ = server.server.wait();
-
-        assert!(server
-            .stop()
-            .unwrap_err()
-            .to_string()
-            .contains("certificate file for fallback is missing"));
     }
 
     #[test]
+    #[should_panic]
     fn key_missing() {
         let mut server = Server::new(&["--addr", "[::]:1980", "--certs", "key_missing"]);
 
         // wait for the server to stop, it should crash
         let _ = server.server.wait();
-
-        assert!(server
-            .stop()
-            .unwrap_err()
-            .to_string()
-            .contains("key file for fallback is missing"));
     }
 
     #[test]
     fn example_com() {
-        use rustls::ClientSession;
-        use std::io::{Cursor, Write};
+        use rustls::{Certificate, ClientSession};
+        use std::io::Write;
         use std::net::TcpStream;
 
         let mut server = Server::new(&["--addr", "[::]:1981", "--certs", "multicert"]);
@@ -433,10 +442,13 @@ mod multicert {
         let mut config = rustls::ClientConfig::new();
         config
             .root_store
-            .add_pem_file(&mut Cursor::new(include_bytes!(concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/tests/data/multicert/example.com/cert.pem"
-            ))))
+            .add(&Certificate(
+                include_bytes!(concat!(
+                    env!("CARGO_MANIFEST_DIR"),
+                    "/tests/data/multicert/example.com/cert.der"
+                ))
+                .to_vec(),
+            ))
             .unwrap();
 
         let dns_name = webpki::DNSNameRef::try_from_ascii_str("example.com").unwrap();
@@ -447,15 +459,15 @@ mod multicert {
         write!(tls, "gemini://example.com/\r\n").unwrap();
 
         let mut buf = [0; 10];
-        tls.read(&mut buf).unwrap();
+        let _ = tls.read(&mut buf);
 
-        server.stop().unwrap()
+        server.stop().unwrap();
     }
 
     #[test]
     fn example_org() {
-        use rustls::ClientSession;
-        use std::io::{Cursor, Write};
+        use rustls::{Certificate, ClientSession};
+        use std::io::Write;
         use std::net::TcpStream;
 
         let mut server = Server::new(&["--addr", "[::]:1982", "--certs", "multicert"]);
@@ -463,10 +475,13 @@ mod multicert {
         let mut config = rustls::ClientConfig::new();
         config
             .root_store
-            .add_pem_file(&mut Cursor::new(include_bytes!(concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/tests/data/multicert/example.org/cert.pem"
-            ))))
+            .add(&Certificate(
+                include_bytes!(concat!(
+                    env!("CARGO_MANIFEST_DIR"),
+                    "/tests/data/multicert/example.org/cert.der"
+                ))
+                .to_vec(),
+            ))
             .unwrap();
 
         let dns_name = webpki::DNSNameRef::try_from_ascii_str("example.org").unwrap();
@@ -477,8 +492,8 @@ mod multicert {
         write!(tls, "gemini://example.org/\r\n").unwrap();
 
         let mut buf = [0; 10];
-        tls.read(&mut buf).unwrap();
+        let _ = tls.read(&mut buf);
 
-        server.stop().unwrap()
+        server.stop().unwrap();
     }
 }
