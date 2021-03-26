@@ -206,6 +206,12 @@ impl CertStore {
 
         Ok(Self { certs })
     }
+
+    /// Checks if a certificate fitting a specific domain has been loaded.
+    /// The same rules about using a certificate at the level above apply.
+    pub fn has_domain(&self, domain: &str) -> bool {
+        self.certs.iter().any(|(s, _)| domain.ends_with(s))
+    }
 }
 
 impl ResolvesServerCert for CertStore {
