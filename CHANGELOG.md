@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+Thank you to @MidAutumnMoon and @steko for contributing to this release.
+
+### Added
+* Installation instructions for Arch Linux from Arch User Repositories. (#47)
+
+### Fixed
+* The certificate file extensions in the README example. (#45)
+* The certificate directory is automatically created if it does not exist. (#44)
 
 ## [3.0.0] - 2021-03-27
 Thank you to @ddevault for contributing to this release.

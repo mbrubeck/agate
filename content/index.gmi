@@ -26,6 +26,10 @@ Using the nix package manager run `nix-env -i agate`
 
 _Note:_ agate is currently only in the unstable channel and will reach a release channel once the next release is tagged
 
+### Arch Linux
+
+Install the package "agate-bin" from AUR for pre-compiled binary. Otherwise install the "agate" package from AUR to get agate compiled from source.
+
 ### Cargo
 
 If you have the Rust toolchain installed, run `cargo install agate` to install agate from crates.io.
@@ -187,6 +191,16 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning.
 => https://keepachangelog.com/en/1.0.0/ Keep a Changelog home page
 => https://semver.org/spec/v2.0.0.html Semantic versioning standard v2.0.0
+
+## [Unreleased]
+Thank you to @MidAutumnMoon and @steko for contributing to this release.
+
+### Added
+* Installation instructions for Arch Linux from Arch User Repositories. (#47)
+
+### Fixed
+* The certificate file extensions in the README example. (#45)
+* The certificate directory is automatically created if it does not exist. (#44)
 
 ## [3.0.0] - 2021-03-27
 Thank you to @ddevault for contributing to this release.
