@@ -153,17 +153,38 @@ fn args() -> Result<Args> {
         std::process::exit(0);
     }
 
-    let certs_path = check_path(matches.opt_get_default("certs", ".certificates".into())?)?;
-    let certs = match certificates::CertStore::load_from(&certs_path) {
-        Ok(certs) => Some(certs),
-        Err(certificates::CertLoadError::Empty) if matches.opt_present("hostname") => {
-            // we will generate certificates in the next step
-            None
+    // try to open the certificate directory
+    let certs_path = matches.opt_get_default("certs", ".certificates".to_string())?;
+    let (certs, certs_path) = match check_path(certs_path.clone()) {
+        // the directory exists, try to load certificates
+        Ok(certs_path) => match certificates::CertStore::load_from(&certs_path) {
+            // all is good
+            Ok(certs) => (Some(certs), certs_path),
+            // the certificate directory did not contain certificates, but we can generate some
+            // because the hostname option was given
+            Err(certificates::CertLoadError::Empty) if matches.opt_present("hostname") => {
+                (None, certs_path)
+            }
+            // failed loading certificates or missing hostname to generate them
+            Err(e) => return Err(e.into()),
+        },
+        // the directory does not exist
+        Err(_) => {
+            // since certificate management should be automated, we are going to create the directory too
+            log::info!(
+                "The certificate directory {:?} does not exist, creating it.",
+                certs_path
+            );
+            std::fs::create_dir(&certs_path).expect("could not create certificate directory");
+            // we just created the directory, skip loading from it
+            (None, PathBuf::from(certs_path))
         }
-        Err(e) => return Err(e.into()),
     };
 
-    let mut reload_certs = false;
+    // If we have not loaded any certificates yet, we have to try to reload them later.
+    // This ensures we get the right error message.
+    let mut reload_certs = certs.is_none();
+
     let mut hostnames = vec![];
     for s in matches.opt_strs("hostname") {
         let hostname = Host::parse(&s)?;
@@ -171,7 +192,7 @@ fn args() -> Result<Args> {
         // check if we have a certificate for that domain
         if let Host::Domain(ref domain) = hostname {
             if !matches!(certs, Some(ref certs) if certs.has_domain(domain)) {
-                eprintln!("no certificate or key found for {:?}, generating...", s);
+                log::info!("No certificate or key found for {:?}, generating them.", s);
 
                 let mut cert_params = CertificateParams::new(vec![domain.clone()]);
                 cert_params
