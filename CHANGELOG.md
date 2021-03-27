@@ -6,11 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+Thank you to @ddevault for contributing to this release.
+
+### Added
+* Support for ECDSA and Ed25519 keys.
+* Agate now generates certificates and keys for each `--hostname` that is specified but no matching files exist. (#41)
 
 ### Changed
 * The ability to specify a certificate and key with `--cert` and `--key` respectively has been replaced with the `--certs` option. (#40)
   Certificates are now stored in a special directory. To migrate to this version, the keys should be stored in the `.certificates` directory (or any other directory you specify).
   This enables us to use multiple certificates for multiple domains.
+* The certificate and key file format has been changed from PEM to DER. This simplifies loading certificate and key files without relying on unstable portions of other crates.
+  If you want to continue using your existing certificates and keys, please convert them to DER format. You should be able to use these commands if you have openssl installed:
+```
+openssl x509 -in cert.pem -out cert.der -outform DER
+openssl rsa -in key.rsa -out key.der -outform DER
+```
+  Since agate will automatically generate certificates from now on, the different format should not be a problem because users are not expected to handle certificates unless experienced enough to be able to handle DER formatting as well.
 
 ### Fixed
 * Agate now requires the use of SNI by any connecting client.
