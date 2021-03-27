@@ -26,6 +26,10 @@ Using the nix package manager run `nix-env -i agate`
 
 _Note:_ agate is currently only in the unstable channel and will reach a release channel once the next release is tagged
 
+### Arch Linux
+
+Install the package [`agate-bin`](https://aur.archlinux.org/packages/agate-bin/)<sup>AUR</sup> for pre-compiled binary. Otherwise install the [`agate`](https://aur.archlinux.org/packages/agate/)<sup>AUR</sup> package to get agate compiled from source.
+
 ### Cargo
 
 If you have the Rust toolchain installed, run `cargo install agate` to install agate from crates.io.
