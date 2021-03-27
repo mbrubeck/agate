@@ -106,7 +106,7 @@ impl FileOptions {
 
     /// (Re)reads a specified sidecar file.
     /// This function will allways try to read the file, even if it is current.
-    fn read_database(&mut self, db: &PathBuf) {
+    fn read_database(&mut self, db: &Path) {
         log::debug!("reading database {:?}", db);
 
         let mut ini = Ini::new_cs();
@@ -134,7 +134,7 @@ impl FileOptions {
             let header = header.unwrap_or_default();
 
             // generate workspace-relative path
-            let mut path = db.clone();
+            let mut path = db.to_path_buf();
             path.pop();
             path.push(rel_path);
 
