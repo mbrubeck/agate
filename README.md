@@ -142,14 +142,14 @@ Certificates are by default stored in the `.certificates` directory. This is a h
 
 ```
 .certificates
-|-- cert.pem     (1)
-|-- key.rsa      (1)
+|-- cert.der     (1)
+|-- key.der      (1)
 |-- example.org
-|   |-- cert.pem (2)
-|   `-- key.rsa  (2)
+|   |-- cert.der (2)
+|   `-- key.der  (2)
 `-- portal.example.org
-    |-- cert.pem (3)
-    `-- key.rsa  (3)
+    |-- cert.der (3)
+    `-- key.der  (3)
 ```
 
 This would be understood like this:
