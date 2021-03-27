@@ -39,17 +39,8 @@ You can use the install script in the `tools` directory for the remaining steps 
 If there is none, please consider contributing one to make it easier for less tech-savvy users!
 ***
 
-2. Generate a self-signed TLS certificate and private key in the `.certificates` directory.  For example, if you have OpenSSL 1.1 installed, you can use a command like the following.  (Replace the *two* occurences of `example.com` in the last line with the domain of your Gemini server.)
-
-```
-mkdir -p .certificates
-
-openssl req -x509 -newkey rsa:4096 -nodes -days 3650 \
-    -keyout .certificates/key.rsa -out .certificates/cert.pem \
-    -subj "/CN=example.com" -addext "subjectAltName = DNS:example.com"
-```
-
-3. Run the server. You can use the following arguments to specify the locations of the content directory, certificate and key files, IP address and port to listen on, host name to expect in request URLs, and default language code(s) to include in the MIME type for for text/gemini files: (Again replace the hostname `example.com` with the address of your Gemini server.)
+2. Run the server. You can use the following arguments to specify the locations of the content directory, IP address and port to listen on, host name to expect in request URLs, and default language code to include in the MIME type for text/gemini files: (Replace the hostname `example.com` with the address of your Gemini server.)
+If you have not done it yourself, Agate will generate a private key and certificate for you on the first run, using the specified hostname(s). See the section Certificates below for more.
 
 ```
 agate --content path/to/content/ \
@@ -139,11 +130,11 @@ Agate uses the `env_logger` crate and allows you to set the logging verbosity by
 
 Agate has basic support for virtual hosts. If you specify multiple `--hostname`s, Agate will look in a directory with the respective hostname within the content root directory.
 For example if one of the hostnames is `example.com`, and the content root directory is set to the default `./content`, and `gemini://example.com/file.gmi` is requested, then Agate will look for `./content/example.com/file.gmi`. This behaviour is only enabled if multiple `--hostname`s are specified.
-Agate does not support different certificates for different hostnames, you will have to use a single certificate for all domains (multi domain certificate).
+Agate also supports different certificates for different hostnames, see the section on certificates below. 
 
 If you want to serve the same content for multiple domains, you can instead disable the hostname check by not specifying `--hostname`. In this case Agate will disregard a request's hostname apart from checking that there is one.
 
-### Multiple certificates
+### Certificates
 
 Agate has support for using multiple certificates with the `--certs` option. Agate will thus always require that a client uses SNI, which should not be a problem since the Gemini specification also requires SNI to be used.
 
@@ -168,7 +159,8 @@ This would be understood like this:
 
 Using a directory named just `.` causes undefined behaviour as this would have the same meaning as the top level certificate/key pair (pair (1) in the example above).
 
-The files for a certificate/key pair have to be named `cert.pem` and `key.rsa` respectively. The certificate has to be a X.509 certificate in a PEM file and has to include a subject alt name of the domain name. The private key has to be in PKCS#8 format. For an example of how to create such certificates see Installation and Setup, step 2.
+The files for a certificate/key pair have to be named `cert.der` and `key.der` respectively. The certificate has to be a X.509 certificate in a DER format file and has to include a subject alt name of the domain name. The private key has to be in DER format and must be either an RSA, ECDSA or Ed25519 key.
+If the `--hostname` argument is used, Agate will generate certificates and Ed25519 certificates for each hostname specified.
 
 ## Logging
 
