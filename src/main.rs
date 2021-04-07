@@ -136,9 +136,9 @@ fn args() -> Result<Args> {
         "Use a central .meta file in the content root directory. Decentral config files will be ignored.",
     );
     opts.optflag(
-        "",
-        "ecdsa",
-        "Generate keys using the ecdsa signature algorithm instead of the default ed25519.",
+        "e",
+        "ed25519",
+        "Generate keys using the Ed25519 signature algorithm instead of the default ECDSA.",
     );
 
     let matches = opts.parse(&args[1..]).map_err(|f| f.to_string())?;
@@ -202,13 +202,14 @@ fn args() -> Result<Args> {
                 // <CertificateParams as Default>::default() already implements a
                 // date in the far future from the time of writing: 4096-01-01
 
-                if !matches.opt_present("ecdsa") {
+                if matches.opt_present("e") {
                     cert_params.alg = &rcgen::PKCS_ED25519;
                 }
 
                 // generate the certificate with the configuration
                 let cert = Certificate::from_params(cert_params)?;
 
+                // make sure the certificate directory exists
                 fs::create_dir(certs_path.join(domain))?;
                 // write certificate data to disk
                 let mut cert_file = File::create(certs_path.join(format!(
@@ -217,6 +218,7 @@ fn args() -> Result<Args> {
                     certificates::CERT_FILE_NAME
                 )))?;
                 cert_file.write_all(&cert.serialize_der()?)?;
+                // write key data to disk
                 let mut key_file = File::create(certs_path.join(format!(
                     "{}/{}",
                     domain,
@@ -238,6 +240,7 @@ fn args() -> Result<Args> {
         certs.unwrap()
     };
 
+    // parse listening addresses
     let mut addrs = vec![];
     for i in matches.opt_strs("addr") {
         addrs.push(i.parse()?);
