@@ -379,11 +379,18 @@ impl RequestHandle {
 
         let url = Url::parse(request).or(Err((59, "Invalid URL")))?;
 
-        // Validate the URL, host and port.
+        // Validate the URL:
+        // correct scheme
         if url.scheme() != "gemini" {
             return Err((53, "Unsupported URL scheme"));
         }
 
+        // no userinfo and no fragment
+        if url.password().is_some() || !url.username().is_empty() || url.fragment().is_some() {
+            return Err((59, "URL contains fragment or userinfo"));
+        }
+
+        // correct host
         if let Some(host) = url.host() {
             // do not use "contains" here since it requires the same type and does
             // not allow to check for Host<&str> if the vec contains Hostname<String>
@@ -394,6 +401,7 @@ impl RequestHandle {
             return Err((59, "URL does not contain a host"));
         }
 
+        // correct port
         if let Some(port) = url.port() {
             // Validate that the port in the URL is the same as for the stream this request came in on.
             if port != self.stream.get_ref().0.local_addr().unwrap().port() {
