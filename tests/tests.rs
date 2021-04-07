@@ -245,6 +245,45 @@ fn full_header_preset() {
 }
 
 #[test]
+/// - URLS with fragments are rejected
+fn fragment() {
+    let page = get(
+        &["--addr", "[::]:1983", "--hostname", "example.com"],
+        addr(1983),
+        "gemini://example.com/#fragment",
+    )
+    .expect("could not get page");
+
+    assert_eq!(page.header.status, Status::BadRequest);
+}
+
+#[test]
+/// - URLS with username are rejected
+fn username() {
+    let page = get(
+        &["--addr", "[::]:1984", "--hostname", "example.com"],
+        addr(1984),
+        "gemini://user@example.com/",
+    )
+    .expect("could not get page");
+
+    assert_eq!(page.header.status, Status::BadRequest);
+}
+
+#[test]
+/// - URLS with password are rejected
+fn password() {
+    let page = get(
+        &["--addr", "[::]:1984", "--hostname", "example.com"],
+        addr(1984),
+        "gemini://:secret@example.com/",
+    )
+    .expect("could not get page");
+
+    assert_eq!(page.header.status, Status::BadRequest);
+}
+
+#[test]
 /// - hostname is checked when provided
 /// - status for wrong host is "proxy request refused"
 fn hostname_check() {
