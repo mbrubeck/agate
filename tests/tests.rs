@@ -274,8 +274,8 @@ fn username() {
 /// - URLS with password are rejected
 fn password() {
     let page = get(
-        &["--addr", "[::]:1984", "--hostname", "example.com"],
-        addr(1984),
+        &["--addr", "[::]:1985", "--hostname", "example.com"],
+        addr(1985),
         "gemini://:secret@example.com/",
     )
     .expect("could not get page");
