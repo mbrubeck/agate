@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+Thank you to @kvibber, @lifelike and @pasdechance for contributing to this release.
+
+### Changed
+* The new specfication changes are obeyed regarding rejecting request URLs that contain fragments or userinfo parts.
+* The default signature algorithm used for generating certificates has been changed to ECDSA since there were multiple complaints about Ed25519.
 
 ## [3.0.1] - 2021-03-28
 Thank you to @MidAutumnMoon and @steko for contributing to this release.
