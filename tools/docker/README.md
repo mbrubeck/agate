@@ -24,7 +24,8 @@ rm tarball.tar.gz
 
 I assume you have git already installed. If not, please search on how to do it in the internet.
 
-```git clone https://github.com/mbrubeck/agate
+```
+git clone https://github.com/mbrubeck/agate
 cd agate
 ```
 
