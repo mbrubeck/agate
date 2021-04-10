@@ -23,6 +23,7 @@ rm tarball.tar.gz
 ### clone the repository with git
 
 I assume you have git already installed. If not, please search on how to do it in the internet.
+
 ```git clone https://github.com/mbrubeck/agate
 cd agate
 ```
@@ -42,7 +43,9 @@ This process will take a few minutes because all the rust modules have to be com
 
 ## start the docker container
 
-```docker run -t -d --name agate -p 1965:1965 -d /var/www/gmi/:/gmi/ -d /var/www/gmi/.certificates/:/agate/.certificates/ -e GEMINI_HOST=my.gemini.space -e GEMINI_LANG=en-US agate:latest```
+```
+docker run -t -d --name agate -p 1965:1965 -d /var/www/gmi/:/gmi/ -d /var/www/gmi/.certificates/:/agate/.certificates/ -e GEMINI_HOST=my.gemini.space -e GEMINI_LANG=en-US agate:latest
+```
 
 You have to replace `/var/www/gmi/` with the folder where you'd like to have gemtext files and `/var/www/gmi/.certificates/` with the folder where you'd like to have your certificates stored. You also have to have to replace `my.gemini.space` with your domain name and if plan to speak in a different language than english in your gemini space than you should replace `en-US` with your countries language code (for example de-DE or fr-CA).
 
