@@ -1,5 +1,5 @@
 FROM alpine:latest
-RUN wget https://github.com/mbrubeck/agate/releases/download/v3.0.2/agate.$(uname -m)-unknown-linux-gnu.gz && gunzip agate.$(uname -m)-unknown-linux-gnu.gz && mv agate.$(uname -m)-unknown-linux-gnu /agate && ls && chmod +x /agate
+RUN apk add cargo && wget https://github.com/mbrubeck/agate/archive/refs/tags/v3.0.2.tar.gz && tar xzf v3.0.2.tar.gz && mv /agate-3.0.2 /agate && cd agate && cargo build --release
 CMD /agate --content /gmi/ \
 	--hostname $GEMINI_HOST \
 	--lang $GEMINI_LANG
