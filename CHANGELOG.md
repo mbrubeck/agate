@@ -39,6 +39,7 @@ Thank you to @ddevault for contributing to this release.
 * The ability to specify a certificate and key with `--cert` and `--key` respectively has been replaced with the `--certs` option. (#40)
   Certificates are now stored in a special directory. To migrate to this version, the keys should be stored in the `.certificates` directory (or any other directory you specify).
   This enables us to use multiple certificates for multiple domains.
+  Note that if you want to continue to use your old certificates (recommended because of TOFU), they probably lack the `subjectAltName` directive so your old certificates should be placed at the top level of the certificates directory. Otherwise you will get an error similar to this: "The certificate file for example.com is malformed: unexpected error: The server certificate is not valid for the given name"
 * The certificate and key file format has been changed from PEM to DER. This simplifies loading certificate and key files without relying on unstable portions of other crates.
   If you want to continue using your existing certificates and keys, please convert them to DER format. You should be able to use these commands if you have openssl installed:
 ```
