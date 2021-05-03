@@ -174,6 +174,8 @@ All requests will be logged using this format:
 ```
 The "error:" part will only be logged if an error occurred. This should only be used for informative purposes as the status code should provide the information that an error occurred. If the error consisted in the connection not being established (e.g. because of TLS errors), the status code `00` will be used.
 
+By default, Agate will not log the remote IP addresses because that might be an issue because IPs are considered private data under the EU's GDPR. To enable logging of IP addresses, you can use the `--log-ip` option.
+
 There are some lines apart from these that might occur in logs depending on the selected log level. For example the initial "Listening on..." line or information about listing a particular directory.
 
 ## Security considerations
