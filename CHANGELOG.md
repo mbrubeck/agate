@@ -16,6 +16,7 @@ Thank you to @06kellyjac, @cpnfeeny, @lifelike, @skittlesvampir and @steko for c
   The previous handling could be exploited as a DoS attack vector. (#59)
 * Two tests were running on the same port, causing them to fail nondeterministically. (#51)
 * Rephrased the changelog for 3.0.0 on continuing to use older certificates. (#55)
+* Updated dependencies.
 
 ## [3.0.2] - 2021-04-08
 Thank you to @kvibber, @lifelike and @pasdechance for contributing to this release.
