@@ -237,6 +237,7 @@ fn args() -> Result<Args> {
     let certs = if reload_certs {
         certificates::CertStore::load_from(&certs_path)?
     } else {
+        // there must already have been certificates loaded
         certs.unwrap()
     };
 
@@ -296,20 +297,25 @@ impl RequestHandle {
     /// Creates a new request handle for the given stream. If establishing the TLS
     /// session fails, returns a corresponding log line.
     async fn new(stream: TcpStream, metadata: Arc<Mutex<FileOptions>>) -> Result<Self, String> {
-        let log_line = format!(
-            "{} {}",
-            stream.local_addr().unwrap(),
-            if ARGS.log_ips {
-                stream
-                    .peer_addr()
-                    .expect("could not get peer address")
-                    .ip()
-                    .to_string()
-            } else {
-                // Do not log IP address, but something else so columns still line up.
-                "-".into()
-            }
-        );
+        let local_addr = stream.local_addr().unwrap().to_string();
+
+        // try to get the remote IP address if desired
+        let peer_addr = if ARGS.log_ips {
+            stream
+                .peer_addr()
+                .or(Err(format!(
+                    // use nonexistent status code 01 if peer IP is unknown
+                    "{} - \"\" 01 \"IP error\" error:could not get peer address",
+                    local_addr,
+                )))?
+                .ip()
+                .to_string()
+        } else {
+            // Do not log IP address, but something else so columns still line up.
+            "-".into()
+        };
+
+        let log_line = format!("{} {}", local_addr, peer_addr,);
 
         match TLS.accept(stream).await {
             Ok(stream) => Ok(Self {

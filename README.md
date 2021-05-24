@@ -174,9 +174,13 @@ All requests will be logged using this format:
 ```
 The "error:" part will only be logged if an error occurred. This should only be used for informative purposes as the status code should provide the information that an error occurred. If the error consisted in the connection not being established (e.g. because of TLS errors), the status code `00` will be used.
 
-By default, Agate will not log the remote IP addresses because that might be an issue because IPs are considered private data under the EU's GDPR. To enable logging of IP addresses, you can use the `--log-ip` option.
+By default, Agate will not log the remote IP addresses because that might be an issue because IPs are considered private data under the EU's GDPR. To enable logging of IP addresses, you can use the `--log-ip` option. Note that in this case some error conditions might still force Agate to log a dash instead of an IP address.
 
 There are some lines apart from these that might occur in logs depending on the selected log level. For example the initial "Listening on..." line or information about listing a particular directory.
+
+Agate uses some status codes that are not valid Gemini status codes when logging errors:
+* 00 - there was an error establishing the TLS connection
+* 01 - there was an error in fetching the peer's IP address
 
 ## Security considerations
 

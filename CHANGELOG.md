@@ -6,10 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-Thank you to @skittlesvampir for contributing to this release.
+Thank you to @06kellyjac, @cpnfeeny, @lifelike, @skittlesvampir and @steko for contributing to this release.
 
 ### Added
-* Dockerfile for compiling Agate from source (#52)
+* Dockerfile for compiling Agate from source (#52, #53, #56, #57)
+
+### Fixed
+* If the remote IP address can not be fetched, log an error instead of panicking.
+  The previous handling could be exploited as a DoS attack vector. (#59)
+* Two tests were running on the same port, causing them to fail nondeterministically. (#51)
+* Rephrased the changelog for 3.0.0 on continuing to use older certificates. (#55)
 
 ## [3.0.2] - 2021-04-08
 Thank you to @kvibber, @lifelike and @pasdechance for contributing to this release.
