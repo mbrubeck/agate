@@ -146,7 +146,7 @@ If you want to serve the same content for multiple domains, you can instead disa
 
 Agate has support for using multiple certificates with the `--certs` option. Agate will thus always require that a client uses SNI, which should not be a problem since the Gemini specification also requires SNI to be used.
 
-Certificates are by default stored in the `.certificates` directory. This is a hidden directory for the purpose that uncautious people may set the content root directory to the currrent director which may also contain the certificates directory. In this case, the certificates and private keys would still be hidden. The certificates are only loaded when Agate is started and are not reloaded while running. The certificates directory may directly contain a key and certificate pair, this is the default pair used if no other matching keys are present. The certificates directory may also contain subdirectories for specific domains, for example a folder for `example.org` and `portal.example.org`. Note that the subfolders for subdomains (like `portal.example.org`) should not be inside other subfolders but directly in the certificates directory. Agate will select the certificate/key pair whose name matches most closely. For example take the following directory structure:
+Certificates are by default stored in the `.certificates` directory. This is a hidden directory for the purpose that uncautious people may set the content root directory to the current directory which may also contain the certificates directory. In this case, the certificates and private keys would still be hidden. The certificates are only loaded when Agate is started and are not reloaded while running. The certificates directory may directly contain a key and certificate pair, this is the default pair used if no other matching keys are present. The certificates directory may also contain subdirectories for specific domains, for example a folder for `example.org` and `portal.example.org`. Note that the subfolders for subdomains (like `portal.example.org`) should not be inside other subfolders but directly in the certificates directory. Agate will select the certificate/key pair whose name matches most closely. For example take the following directory structure:
 
 ```
 .certificates
@@ -178,7 +178,13 @@ All requests will be logged using this format:
 ```
 The "error:" part will only be logged if an error occurred. This should only be used for informative purposes as the status code should provide the information that an error occurred. If the error consisted in the connection not being established (e.g. because of TLS errors), the status code `00` will be used.
 
+By default, Agate will not log the remote IP addresses because that might be an issue because IPs are considered private data under the EU's GDPR. To enable logging of IP addresses, you can use the `--log-ip` option. Note that in this case some error conditions might still force Agate to log a dash instead of an IP address.
+
 There are some lines apart from these that might occur in logs depending on the selected log level. For example the initial "Listening on..." line or information about listing a particular directory.
+
+Agate uses some status codes that are not valid Gemini status codes when logging errors:
+* 00 - there was an error establishing the TLS connection
+* 01 - there was an error in fetching the peer's IP address
 
 ## Security considerations
 
@@ -191,6 +197,19 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning.
 => https://keepachangelog.com/en/1.0.0/ Keep a Changelog home page
 => https://semver.org/spec/v2.0.0.html Semantic versioning standard v2.0.0
+
+## [3.0.3] - 2021-05-24
+Thank you to @06kellyjac, @cpnfeeny, @lifelike, @skittlesvampir and @steko for contributing to this release.
+
+### Added
+* Dockerfile for compiling Agate from source (#52, #53, #56, #57)
+
+### Fixed
+* If the remote IP address can not be fetched, log an error instead of panicking.
+  The previous handling could be exploited as a DoS attack vector. (#59)
+* Two tests were running on the same port, causing them to fail nondeterministically. (#51)
+* Rephrased the changelog for 3.0.0 on continuing to use older certificates. (#55)
+* Updated dependencies.
 
 ## [3.0.2] - 2021-04-08
 Thank you to @kvibber, @lifelike and @pasdechance for contributing to this release.
@@ -220,6 +239,7 @@ Thank you to @ddevault for contributing to this release.
 * The ability to specify a certificate and key with `--cert` and `--key` respectively has been replaced with the `--certs` option. (#40)
   Certificates are now stored in a special directory. To migrate to this version, the keys should be stored in the `.certificates` directory (or any other directory you specify).
   This enables us to use multiple certificates for multiple domains.
+  Note that if you want to continue to use your old certificates (recommended because of TOFU), they probably lack the `subjectAltName` directive so your old certificates should be placed at the top level of the certificates directory. Otherwise you will get an error similar to this: "The certificate file for example.com is malformed: unexpected error: The server certificate is not valid for the given name"
 * The certificate and key file format has been changed from PEM to DER. This simplifies loading certificate and key files without relying on unstable portions of other crates.
   If you want to continue using your existing certificates and keys, please convert them to DER format. You should be able to use these commands if you have openssl installed:
 ```

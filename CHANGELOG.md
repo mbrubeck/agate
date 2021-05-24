@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [3.0.3] - 2021-05-24
 Thank you to @06kellyjac, @cpnfeeny, @lifelike, @skittlesvampir and @steko for contributing to this release.
 
 ### Added
@@ -247,7 +249,8 @@ Thank you to @m040601 for contributing to this release.
 
 ## [1.0.0] - 2020-05-21
 
-[Unreleased]: https://github.com/mbrubeck/agate/compare/v3.0.2...HEAD
+[Unreleased]: https://github.com/mbrubeck/agate/compare/v3.0.3...HEAD
+[3.0.3]: https://github.com/mbrubeck/agate/compare/v3.0.2...v3.0.3
 [3.0.2]: https://github.com/mbrubeck/agate/compare/v3.0.1...v3.0.2
 [3.0.1]: https://github.com/mbrubeck/agate/compare/v3.0.0...v3.0.1
 [3.0.0]: https://github.com/mbrubeck/agate/compare/v2.5.3...v3.0.0
