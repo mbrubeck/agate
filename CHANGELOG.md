@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+Thank you to Oliver Simmons (@GoodClover) for contributing to this release.
+
+### Added
+* tests for symlink files (#60)
+  Symlinks were already working before.
+
+### Changed
+* Visiting a directory without `index.gmi` and `.directory-listing-ok` now returns a different error message to better show the cause of the error.
+  To retain the current behaviour of showing a `51 Not found, sorry.` error, add the following line to the respective directories' `.meta` file:
+```
+index.gmi: 51 Not found, sorry.
+```
 
 ## [3.0.3] - 2021-05-24
 Thank you to @06kellyjac, @cpnfeeny, @lifelike, @skittlesvampir and @steko for contributing to this release.

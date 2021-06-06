@@ -303,11 +303,13 @@ impl RequestHandle {
         let peer_addr = if ARGS.log_ips {
             stream
                 .peer_addr()
-                .or(Err(format!(
-                    // use nonexistent status code 01 if peer IP is unknown
-                    "{} - \"\" 01 \"IP error\" error:could not get peer address",
-                    local_addr,
-                )))?
+                .map_err(|_| {
+                    format!(
+                        // use nonexistent status code 01 if peer IP is unknown
+                        "{} - \"\" 01 \"IP error\" error:could not get peer address",
+                        local_addr,
+                    )
+                })?
                 .ip()
                 .to_string()
         } else {
@@ -456,9 +458,14 @@ impl RequestHandle {
                     // if the path ends with a slash or the path is empty, the links will work the same
                     // without a redirect
                     path.push("index.gmi");
-                    if !path.exists() && path.with_file_name(".directory-listing-ok").exists() {
-                        path.pop();
-                        return self.list_directory(&path).await;
+                    if !path.exists() {
+                        if path.with_file_name(".directory-listing-ok").exists() {
+                            path.pop();
+                            return self.list_directory(&path).await;
+                        } else {
+                            self.send_header(51, "Directory index disabled.").await?;
+                            return Ok(());
+                        }
                     }
                 } else {
                     // if client is not redirected, links may not work as expected without trailing slash
