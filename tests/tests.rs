@@ -146,6 +146,66 @@ fn index_page() {
 }
 
 #[test]
+/// - symlinked files are followed correctly
+fn symlink_page() {
+    let page = get(
+        &["--addr", "[::]:1986"],
+        addr(1986),
+        "gemini://localhost/symlink.gmi",
+    )
+    .expect("could not get page");
+
+    assert_eq!(
+        page.header,
+        Header {
+            status: Status::Success,
+            meta: "text/gemini".to_string(),
+        }
+    );
+
+    assert_eq!(
+        page.body,
+        Some(
+            std::fs::read_to_string(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/tests/data/content/index.gmi"
+            ))
+            .unwrap()
+        )
+    );
+}
+
+#[test]
+/// - symlinked directories are followed correctly
+fn symlink_directory() {
+    let page = get(
+        &["--addr", "[::]:1987"],
+        addr(1987),
+        "gemini://localhost/symlinked_dir/file.gmi",
+    )
+    .expect("could not get page");
+
+    assert_eq!(
+        page.header,
+        Header {
+            status: Status::Success,
+            meta: "text/gemini".to_string(),
+        }
+    );
+
+    assert_eq!(
+        page.body,
+        Some(
+            std::fs::read_to_string(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/tests/data/symlinked_dir/file.gmi"
+            ))
+            .unwrap()
+        )
+    );
+}
+
+#[test]
 /// - the `--addr` configuration works
 /// - MIME media types can be set in the configuration file
 fn meta() {
