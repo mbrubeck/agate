@@ -17,7 +17,7 @@ use {
         fs::{self, File},
         io::Write as _,
         net::SocketAddr,
-        path::{Path, PathBuf},
+        path::{self, Component, Path, PathBuf},
         sync::Arc,
     },
     tokio::{
@@ -433,12 +433,35 @@ impl RequestHandle {
 
         if let Some(mut segments) = url.path_segments() {
             // append percent-decoded path segments
-            path.extend(
-                segments
-                    .clone()
-                    .map(|segment| Ok(percent_decode_str(segment).decode_utf8()?.into_owned()))
-                    .collect::<Result<Vec<_>>>()?,
-            );
+            for segment in segments.clone() {
+                // To prevent directory traversal attacks, we need to
+                // check that each filesystem path component in the URL
+                // path segment is a normal component (not the root
+                // directory, the parent directory, a drive label, or
+                // another special component). Furthermore, since path
+                // separators (e.g. the escaped forward slash %2F) in a
+                // single URL path segment are non-structural, the URL
+                // path segment should not contain multiple filesystem
+                // path components.
+                let decoded = percent_decode_str(segment).decode_utf8()?;
+                let mut components = Path::new(decoded.as_ref()).components();
+                // the first component must be a normal component; if
+                // so, push it onto the PathBuf
+                match components.next() {
+                    None => (),
+                    Some(Component::Normal(c)) => path.push(c),
+                    Some(_) => return self.send_header(51, "Not found, sorry.").await,
+                }
+                // there must not be more than one component
+                if components.next().is_some() {
+                    return self.send_header(51, "Not found, sorry.").await;
+                }
+                // even if it's one component, there may be trailing path
+                // separators at the end
+                if decoded.ends_with(path::is_separator) {
+                    return self.send_header(51, "Not found, sorry.").await;
+                }
+            }
             // check if hiding files is disabled
             if !ARGS.serve_secret
                 // there is a configuration for this file, assume it should be served
