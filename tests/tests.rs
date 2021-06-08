@@ -2,6 +2,7 @@ use anyhow::anyhow;
 use gemini_fetch::{Header, Page, Status};
 use std::io::{BufRead, BufReader, Read};
 use std::net::{SocketAddr, ToSocketAddrs};
+use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use url::Url;
 
@@ -408,6 +409,40 @@ fn serve_secret() {
     .expect("could not get page");
 
     assert_eq!(page.header.status, Status::Success);
+}
+
+#[test]
+/// - directory traversal attacks using percent-encoded path separators
+///   fail (this addresses a previous vulnerability)
+fn directory_traversal_regression() {
+    let base = Url::parse("gemini://localhost/").unwrap();
+
+    let mut absolute = base.clone();
+    absolute
+        .path_segments_mut()
+        .unwrap()
+        .push(&env!("CARGO_MANIFEST_DIR")) // separators will be percent-encoded
+        .push("tests")
+        .push("data")
+        .push("directory_traversal.gmi");
+
+    let mut relative_escape_path = PathBuf::new();
+    relative_escape_path.push("testdir");
+    relative_escape_path.push("..");
+    relative_escape_path.push("..");
+    let mut relative = base.clone();
+    relative
+        .path_segments_mut()
+        .unwrap()
+        .push(relative_escape_path.to_str().unwrap()) // separators will be percent-encoded
+        .push("directory_traversal.gmi");
+
+    let urls = [absolute, relative];
+    for url in urls.iter() {
+        let page =
+            get(&["--addr", "[::]:1988"], addr(1988), url.as_str()).expect("could not get page");
+        assert_eq!(page.header.status, Status::NotFound);
+    }
 }
 
 #[test]
