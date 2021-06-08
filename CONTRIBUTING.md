@@ -23,6 +23,14 @@ We look forward to working with you!
 Please note that this project is released with a [Code of Conduct](./CODE_OF_CONDUCT.md).
 By participating in this project you agree to abide by its terms.
 
+## Reporting security issues
+
+If you find a security issue, please disclose it to Johann150 privately, e.g. per [email](mailto:johann+agate@qwrtqwefsday.eu). If you know how to fix the issue, please follow the contribution workflow as if you do not use GitHub, regardless of if you actually use it. I.e. patches should also be submitted privately.
+
+An effort will be made to respond to such issues quickly, at least responding with a "read receipt". If you do not hear back anything regarding the security issue within three days, try contacting other maintainers listed in the Cargo.toml file or on crates.io for this crate.
+
+There are no bug bounties. You can not expect any compensation apart from attribution in the changelog and/or for any patches you supply.
+
 ## Reporting Bugs and Suggesting Improvements
 
 Bugs (unwanted behaviour) and suggested improvements are tracked as [GitHub issues][github-issues].
@@ -48,6 +56,18 @@ This will help developers and maintainers to resolve your issue. Some things you
 ## Contribution Workflow
 
 Follow these steps to contribute to the project:
+
+### If you use git but not GitHub:
+
+1. Clone the repository where you want.
+1. Make the appropriate changes, meeting all [contribution quality standards](#quality-standards).
+1. Update the changelog with any added, removed, changed, or fixed functionality. Adhere to the changelog format.
+1. Mail the patches or a pull request to [Johann150](mailto:johann+agate@qwertqwefsday.eu).
+    - Patches are prefered for small changes.
+    - Pull requests have to contain the repository URL and branch name.
+1. You will be notified of any further actions (e.g. requested changes, merged) by the same address you sent from. So please make sure you can receive mail on that address.
+
+### If you use GitHub:
 
 1. Make a fork of the [Agate repository][agate-repo].
 1. Within your fork, create a branch for your contribution. Use a meaningful name.
