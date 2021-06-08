@@ -6,11 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-Thank you to Oliver Simmons (@GoodClover) for contributing to this release.
+
+## [3.1.0] - 2021-06-08
+Thank you to Matthew Ingwersen and Oliver Simmons (@GoodClover) for contributing to this release.
 
 ### Added
 * tests for symlink files (#60)
   Symlinks were already working before.
+
+### Fixed
+* A path traversal security issue was closed: Percent-encoded slashes were misunderstood.
 
 ### Changed
 * Visiting a directory without `index.gmi` and `.directory-listing-ok` now returns a different error message to better show the cause of the error.
@@ -261,7 +266,8 @@ Thank you to @m040601 for contributing to this release.
 
 ## [1.0.0] - 2020-05-21
 
-[Unreleased]: https://github.com/mbrubeck/agate/compare/v3.0.3...HEAD
+[Unreleased]: https://github.com/mbrubeck/agate/compare/v3.1.0...HEAD
+[3.1.0]: https://github.com/mbrubeck/agate/compare/v3.0.3...v3.1.0
 [3.0.3]: https://github.com/mbrubeck/agate/compare/v3.0.2...v3.0.3
 [3.0.2]: https://github.com/mbrubeck/agate/compare/v3.0.1...v3.0.2
 [3.0.1]: https://github.com/mbrubeck/agate/compare/v3.0.0...v3.0.1
