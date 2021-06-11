@@ -82,6 +82,7 @@ struct Args {
     log_ips: bool,
     only_tls13: bool,
     central_config: bool,
+    skip_port_check: bool,
 }
 
 fn args() -> Result<Args> {
@@ -139,6 +140,11 @@ fn args() -> Result<Args> {
         "e",
         "ed25519",
         "Generate keys using the Ed25519 signature algorithm instead of the default ECDSA.",
+    );
+    opts.optflag(
+        "",
+        "skip-port-check",
+        "Skip URL port check even when a hostname is specified.",
     );
 
     let matches = opts.parse(&args[1..]).map_err(|f| f.to_string())?;
@@ -263,6 +269,7 @@ fn args() -> Result<Args> {
         log_ips: matches.opt_present("log-ip"),
         only_tls13: matches.opt_present("only-tls13"),
         central_config: matches.opt_present("central-conf"),
+        skip_port_check: matches.opt_present("skip-port-check"),
     })
 }
 
@@ -413,10 +420,13 @@ impl RequestHandle {
         }
 
         // correct port
-        if let Some(port) = url.port() {
-            // Validate that the port in the URL is the same as for the stream this request came in on.
-            if port != self.stream.get_ref().0.local_addr().unwrap().port() {
-                return Err((53, "proxy request refused"));
+        if !ARGS.skip_port_check {
+            if let Some(port) = url.port() {
+                // Validate that the port in the URL is the same as for the stream this request
+                // came in on.
+                if port != self.stream.get_ref().0.local_addr().unwrap().port() {
+                    return Err((53, "Proxy request refused"));
+                }
             }
         }
         Ok(url)

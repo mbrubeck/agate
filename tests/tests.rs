@@ -373,6 +373,25 @@ fn port_check() {
 }
 
 #[test]
+/// - port is not checked if the skip option is passed.
+fn port_check_skipped() {
+    let page = get(
+        &[
+            "--addr",
+            "[::]:19720",
+            "--hostname",
+            "example.org",
+            "--skip-port-check",
+        ],
+        addr(19720),
+        "gemini://example.org:1971/",
+    )
+    .expect("could not get page");
+
+    assert_eq!(page.header.status, Status::Success);
+}
+
+#[test]
 /// - status for paths with hidden segments is "gone" if file does not exist
 fn secret_nonexistent() {
     let page = get(

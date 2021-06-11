@@ -138,6 +138,8 @@ Agate also supports different certificates for different hostnames, see the sect
 
 If you want to serve the same content for multiple domains, you can instead disable the hostname check by not specifying `--hostname`. In this case Agate will disregard a request's hostname apart from checking that there is one.
 
+When one or more `--hostname`s are specified, Agate will check that the hostnames and port in request URLs match the specified hostnames and the listening ports. If Agate is behind a proxy on another port and receives a request wil an URL specifying the proxy port, this port may not match one of Agate's listening ports and the request will be rejected: it is possible to disable the port check with `--skip-port-check`.
+
 ### Certificates
 
 Agate has support for using multiple certificates with the `--certs` option. Agate will thus always require that a client uses SNI, which should not be a problem since the Gemini specification also requires SNI to be used.
