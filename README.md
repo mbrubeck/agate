@@ -26,6 +26,10 @@ Using the nix package manager run `nix-env -i agate`
 
 _Note:_ agate is currently only in the unstable channel and will reach a release channel once the next release is tagged
 
+### Guix System
+
+[Deploy](https://dataswamp.org/~solene/2021-06-17-guix-gemini.html) agate with GNU Guix System by adding the [agate-service-type](https://guix.gnu.org/manual/en/html_node/Web-Services.html) to your system [services](http://guix.gnu.org/manual/en/html_node/Services.html). 
+
 ### Arch Linux
 
 Install the package [`agate-bin`](https://aur.archlinux.org/packages/agate-bin/)<sup>AUR</sup> for pre-compiled binary. Otherwise install the [`agate`](https://aur.archlinux.org/packages/agate/)<sup>AUR</sup> package to get agate compiled from source.
