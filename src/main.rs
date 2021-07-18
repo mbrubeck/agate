@@ -30,37 +30,51 @@ use {
     url::{Host, Url},
 };
 
-fn main() -> Result {
+fn main() {
     env_logger::Builder::from_env(
         // by default only turn on logging for agate
         env_logger::Env::default().default_filter_or("agate=info"),
     )
     .init();
-    Runtime::new()?.block_on(async {
-        let default = PresetMeta::Parameters(
-            ARGS.language
-                .as_ref()
-                .map_or(String::new(), |lang| format!(";lang={}", lang)),
-        );
-        let mimetypes = Arc::new(Mutex::new(FileOptions::new(default)));
-        let listener = TcpListener::bind(&ARGS.addrs[..]).await?;
-        log::info!("Listening on {:?}...", ARGS.addrs);
-        loop {
-            let (stream, _) = listener.accept().await?;
-            let arc = mimetypes.clone();
-            tokio::spawn(async {
-                match RequestHandle::new(stream, arc).await {
-                    Ok(handle) => match handle.handle().await {
-                        Ok(info) => log::info!("{}", info),
-                        Err(err) => log::warn!("{}", err),
-                    },
-                    Err(log_line) => {
-                        log::warn!("{}", log_line);
+    Runtime::new()
+        .expect("could not start tokio runtime")
+        .block_on(async {
+            let default = PresetMeta::Parameters(
+                ARGS.language
+                    .as_ref()
+                    .map_or(String::new(), |lang| format!(";lang={}", lang)),
+            );
+            let mimetypes = Arc::new(Mutex::new(FileOptions::new(default)));
+
+            let handles = ARGS.addrs.iter().map(|addr| {
+                let arc = mimetypes.clone();
+                tokio::spawn(async move {
+                    let listener = TcpListener::bind(addr)
+                        .await
+                        .unwrap_or_else(|e| panic!("Failed to listen on {}: {}", addr, e));
+                    log::info!("Started listener on {}", addr);
+                    loop {
+                        let (stream, _) = listener.accept().await.unwrap_or_else(|e| {
+                            panic!("could not accept new connection on {}: {}", addr, e)
+                        });
+                        let arc = arc.clone();
+                        tokio::spawn(async {
+                            match RequestHandle::new(stream, arc).await {
+                                Ok(handle) => match handle.handle().await {
+                                    Ok(info) => log::info!("{}", info),
+                                    Err(err) => log::warn!("{}", err),
+                                },
+                                Err(log_line) => {
+                                    log::warn!("{}", log_line);
+                                }
+                            }
+                        });
                     }
-                }
+                })
             });
-        }
-    })
+
+            futures_util::future::join_all(handles).await;
+        });
 }
 
 type Result<T = (), E = Box<dyn Error + Send + Sync>> = std::result::Result<T, E>;

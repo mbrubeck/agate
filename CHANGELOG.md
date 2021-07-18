@@ -6,10 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-Thank you to @jgarte for contributing to this release.
+Thank you to @jgarte and @alvaro-cuesta for contributing to this release.
 
 ### Added
 * running Agate using GNU Guix (#62)
+
+### Fixed
+* actually bind to multiple IP addresses. Despite the documentation saying so,
+  Agate would only bind to the first address that did not result in an error. (#63)
 
 ## [3.1.0] - 2021-06-08
 Thank you to Matthew Ingwersen and Oliver Simmons (@GoodClover) for contributing to this release.

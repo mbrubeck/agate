@@ -40,7 +40,7 @@ impl Server {
         let mut buffer = String::new();
         while matches!(reader.read_line(&mut buffer), Ok(i) if i>0) {
             print!("log: {}", buffer);
-            if buffer.contains("Listening") {
+            if buffer.contains("Started") {
                 break;
             }
 
