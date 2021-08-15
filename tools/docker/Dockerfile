@@ -1,5 +1,5 @@
 FROM alpine:latest
-RUN apk add cargo && wget https://github.com/mbrubeck/agate/archive/refs/tags/v3.0.2.tar.gz && tar xzf v3.0.2.tar.gz && mv /agate-3.0.2 /agate && cd agate && cargo build --release
+RUN apk add cargo && wget -O source.tar.gz $(wget -qO- https://api.github.com/repos/mbrubeck/agate/releases/latest | sed -nE 's/^.*"tarball_url"\s*:\s*"([^"]+)".*$/\1/p')&& tar xzf source.tar.gz && mv /mbrubeck-agate-* /agate && cd agate && cargo build --release
 RUN cp /agate/target/release/agate /usr/bin/agate
 WORKDIR /app
 COPY . /app
