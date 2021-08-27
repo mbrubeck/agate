@@ -30,7 +30,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: build
-      run: bash release.sh
+      run: bash .github/workflows/release.sh
     - name: upload release asset x86_64
       uses: actions/upload-release-asset@v1
       env:

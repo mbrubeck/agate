@@ -9,7 +9,7 @@ repository = "https://github.com/mbrubeck/agate"
 readme = "README.md"
 license = "MIT/Apache-2.0"
 edition = "2018"
-exclude = ["/tools", "/.github", "/release.sh", "/Cross.toml", "/content", "/CODE_OF_CONDUCT.md", "/CONTRIBUTING.md", "/CHANGELOG.md"]
+exclude = ["/tools", "/.github", "/Cross.toml", "/content", "/CODE_OF_CONDUCT.md", "/CONTRIBUTING.md", "/CHANGELOG.md"]
 
 [dependencies]
 configparser = "2.0"
