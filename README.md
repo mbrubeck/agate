@@ -1,5 +1,9 @@
 # Agate
 
+[![Crates.io](https://img.shields.io/crates/v/agate.svg)](https://crates.io/crates/agate)
+[![Test Status](https://github.com/mbrubeck/agate/workflows/Tests/badge.svg)](https://github.com/mbrubeck/agate/actions?workflow=Tests)
+[![Dependency Status](https://deps.rs/repo/github/mbrubeck/agate/status.svg)](https://deps.rs/repo/github/mbrubeck/agate)
+
 ## Simple Gemini server for static files
 
 Agate is a server for the [Gemini] network protocol, built with the [Rust] programming language. Agate has very few features, and can only serve static files. It uses async I/O, and should be quite efficient even when running on low-end hardware and serving many concurrent requests.
