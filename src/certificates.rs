@@ -1,7 +1,7 @@
 use {
     rustls::{
-        sign::{any_supported_type, CertifiedKey},
-        ResolvesServerCert,
+        server::{ClientHello, ResolvesServerCert},
+        sign::{any_supported_type, CertifiedKey, SignError},
     },
     std::{
         ffi::OsStr,
@@ -17,7 +17,7 @@ use {
 pub(crate) struct CertStore {
     /// Stores the certificates and the domains they apply to, sorted by domain
     /// names, longest matches first
-    certs: Vec<(String, CertifiedKey)>,
+    certs: Vec<(String, Arc<CertifiedKey>)>,
 }
 
 pub static CERT_FILE_NAME: &str = "cert.der";
@@ -33,10 +33,7 @@ pub enum CertLoadError {
     BadDomain(String),
     /// the key file for the specified domain is bad (e.g. does not contain a
     /// key or is invalid)
-    BadKey(String),
-    /// The certificate file for the specified domain is bad (e.g. invalid)
-    /// The second parameter is the error message.
-    BadCert(String, String),
+    BadKey(String, SignError),
     /// the key file for the specified domain is missing (but a certificate
     /// file was present)
     MissingKey(String),
@@ -59,10 +56,7 @@ impl Display for CertLoadError {
                 domain
             ),
             Self::BadDomain(domain) => write!(f, "The domain name {} cannot be processed.", domain),
-            Self::BadKey(domain) => write!(f, "The key file for {} is malformed.", domain),
-            Self::BadCert(domain, e) => {
-                write!(f, "The certificate file for {} is malformed: {}", domain, e)
-            }
+            Self::BadKey(domain, err) => write!(f, "The key file for {} is malformed: {:?}", domain, err),
             Self::MissingKey(domain) => write!(f, "The key file for {} is missing.", domain),
             Self::MissingCert(domain) => {
                 write!(f, "The certificate file for {} is missing.", domain)
@@ -106,9 +100,9 @@ fn load_domain(certs_dir: &Path, domain: String) -> Result<CertifiedKey, CertLoa
     // transform key to correct format
     let key = match any_supported_type(&key) {
         Ok(key) => key,
-        Err(()) => return Err(CertLoadError::BadKey(domain)),
+        Err(e) => return Err(CertLoadError::BadKey(domain, e)),
     };
-    Ok(CertifiedKey::new(vec![cert], Arc::new(key)))
+    Ok(CertifiedKey::new(vec![cert], key))
 }
 
 impl CertStore {
@@ -130,11 +124,8 @@ impl CertStore {
             Err(CertLoadError::Empty)
             | Err(CertLoadError::NoReadCertDir)
             | Err(CertLoadError::BadDomain(_)) => unreachable!(),
-            Err(CertLoadError::BadKey(_)) => {
-                return Err(CertLoadError::BadKey("fallback".to_string()))
-            }
-            Err(CertLoadError::BadCert(_, e)) => {
-                return Err(CertLoadError::BadCert("fallback".to_string(), e))
+            Err(CertLoadError::BadKey(_, e)) => {
+                return Err(CertLoadError::BadKey("fallback".to_string(), e))
             }
             Err(CertLoadError::MissingKey(_)) => {
                 return Err(CertLoadError::MissingKey("fallback".to_string()))
@@ -145,7 +136,7 @@ impl CertStore {
             // For the fallback keys there is no domain name to verify them
             // against, so we can skip that step and only have to do it for the
             // other keys below.
-            Ok(key) => certs.push((String::new(), key)),
+            Ok(key) => certs.push((String::new(), Arc::new(key))),
         }
 
         for file in certs_dir
@@ -169,10 +160,8 @@ impl CertStore {
             };
 
             let key = load_domain(certs_dir, filename.clone())?;
-            key.cross_check_end_entity_cert(Some(dns_name))
-                .map_err(|e| CertLoadError::BadCert(filename.clone(), e.to_string()))?;
 
-            certs.push((filename, key));
+            certs.push((filename, Arc::new(key)));
         }
 
         if certs.is_empty() {
@@ -211,7 +200,7 @@ impl CertStore {
 }
 
 impl ResolvesServerCert for CertStore {
-    fn resolve(&self, client_hello: rustls::ClientHello<'_>) -> Option<CertifiedKey> {
+    fn resolve(&self, client_hello: ClientHello<'_>) -> Option<Arc<CertifiedKey>> {
         if let Some(name) = client_hello.server_name() {
             let name: &str = name.into();
             // The certificate list is sorted so the longest match will always
