@@ -13,7 +13,7 @@ exclude = ["/tools", "/.github", "/Cross.toml", "/content", "/CODE_OF_CONDUCT.md
 
 [dependencies]
 configparser = "2.0"
-env_logger = { version = "0.8", default-features = false, features = ["atty", "humantime", "termcolor"] }
+env_logger = { version = "0.9", default-features = false, features = ["atty", "humantime", "termcolor"] }
 futures-util = "0.3"
 getopts = "0.2.21"
 glob = "0.3"
