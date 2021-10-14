@@ -198,6 +198,17 @@ The format is based on Keep a Changelog and this project adheres to Semantic Ver
 => https://keepachangelog.com/en/1.0.0/ Keep a Changelog home page
 => https://semver.org/spec/v2.0.0.html Semantic versioning standard v2.0.0
 
+## [3.1.1] - 2021-10-14
+Thank you to @jgarte and @alvaro-cuesta for contributing to this release.
+
+### Added
+* running Agate using GNU Guix (#62)
+
+### Fixed
+* actually bind to multiple IP addresses. Despite the documentation saying so,
+  Agate would only bind to the first address that did not result in an error. (#63)
+* updated dependencies
+
 ## [3.1.0] - 2021-06-08
 Thank you to Matthew Ingwersen and Oliver Simmons (@GoodClover) for contributing to this release.
 

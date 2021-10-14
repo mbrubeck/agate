@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [3.1.1] - 2021-10-14
 Thank you to @jgarte and @alvaro-cuesta for contributing to this release.
 
 ### Added
@@ -14,6 +14,7 @@ Thank you to @jgarte and @alvaro-cuesta for contributing to this release.
 ### Fixed
 * actually bind to multiple IP addresses. Despite the documentation saying so,
   Agate would only bind to the first address that did not result in an error. (#63)
+* updated dependencies
 
 ## [3.1.0] - 2021-06-08
 Thank you to Matthew Ingwersen and Oliver Simmons (@GoodClover) for contributing to this release.
@@ -274,7 +275,8 @@ Thank you to @m040601 for contributing to this release.
 
 ## [1.0.0] - 2020-05-21
 
-[Unreleased]: https://github.com/mbrubeck/agate/compare/v3.1.0...HEAD
+[Unreleased]: https://github.com/mbrubeck/agate/compare/v3.1.1...HEAD
+[3.1.1]: https://github.com/mbrubeck/agate/compare/v3.1.0...v3.1.1
 [3.1.0]: https://github.com/mbrubeck/agate/compare/v3.0.3...v3.1.0
 [3.0.3]: https://github.com/mbrubeck/agate/compare/v3.0.2...v3.0.3
 [3.0.2]: https://github.com/mbrubeck/agate/compare/v3.0.1...v3.0.2
