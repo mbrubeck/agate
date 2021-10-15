@@ -479,7 +479,7 @@ fn explicit_tls_version() {
     // try to connect using only TLS 1.2
     config.versions = vec![ProtocolVersion::TLSv1_2];
 
-    let dns_name = webpki::DNSNameRef::try_from_ascii_str("localhost").unwrap();
+    let dns_name = webpki::DnsNameRef::try_from_ascii_str("localhost").unwrap();
     let mut session = ClientSession::new(&std::sync::Arc::new(config), dns_name);
     let mut tcp = TcpStream::connect(addr(1976)).unwrap();
     let mut tls = rustls::Stream::new(&mut session, &mut tcp);
@@ -604,7 +604,7 @@ mod multicert {
             ))
             .unwrap();
 
-        let dns_name = webpki::DNSNameRef::try_from_ascii_str("example.com").unwrap();
+        let dns_name = webpki::DnsNameRef::try_from_ascii_str("example.com").unwrap();
         let mut session = ClientSession::new(&std::sync::Arc::new(config), dns_name);
         let mut tcp = TcpStream::connect(addr(1981)).unwrap();
         let mut tls = rustls::Stream::new(&mut session, &mut tcp);
@@ -637,7 +637,7 @@ mod multicert {
             ))
             .unwrap();
 
-        let dns_name = webpki::DNSNameRef::try_from_ascii_str("example.org").unwrap();
+        let dns_name = webpki::DnsNameRef::try_from_ascii_str("example.org").unwrap();
         let mut session = ClientSession::new(&std::sync::Arc::new(config), dns_name);
         let mut tcp = TcpStream::connect(addr(1982)).unwrap();
         let mut tls = rustls::Stream::new(&mut session, &mut tcp);

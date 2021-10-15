@@ -9,7 +9,6 @@ use {
         path::Path,
         sync::Arc,
     },
-    webpki::DNSNameRef,
 };
 
 /// A struct that holds all loaded certificates and the respective domain
@@ -29,8 +28,6 @@ pub enum CertLoadError {
     NoReadCertDir,
     /// no certificates or keys were found
     Empty,
-    /// the specified domain name cannot be processed correctly
-    BadDomain(String),
     /// the key file for the specified domain is bad (e.g. does not contain a
     /// key or is invalid)
     BadKey(String, SignError),
@@ -50,12 +47,6 @@ impl Display for CertLoadError {
         match self {
             Self::NoReadCertDir => write!(f, "Could not read from certificate directory."),
             Self::Empty => write!(f, "No keys or certificates were found in the given directory.\nSpecify the --hostname option to generate these automatically."),
-            Self::BadDomain(domain) if !domain.is_ascii() => write!(
-                f,
-                "The domain name {} cannot be processed, it must be punycoded.",
-                domain
-            ),
-            Self::BadDomain(domain) => write!(f, "The domain name {} cannot be processed.", domain),
             Self::BadKey(domain, err) => write!(f, "The key file for {} is malformed: {:?}", domain, err),
             Self::MissingKey(domain) => write!(f, "The key file for {} is missing.", domain),
             Self::MissingCert(domain) => {
@@ -121,9 +112,7 @@ impl CertStore {
         // certificate directory.
         match load_domain(certs_dir, String::new()) {
             Err(CertLoadError::EmptyDomain(_)) => { /* there are no fallback keys */ }
-            Err(CertLoadError::Empty)
-            | Err(CertLoadError::NoReadCertDir)
-            | Err(CertLoadError::BadDomain(_)) => unreachable!(),
+            Err(CertLoadError::Empty) | Err(CertLoadError::NoReadCertDir) => unreachable!(),
             Err(CertLoadError::BadKey(_, e)) => {
                 return Err(CertLoadError::BadKey("fallback".to_string(), e))
             }
@@ -153,11 +142,6 @@ impl CertStore {
                 .and_then(OsStr::to_str)
                 .unwrap()
                 .to_string();
-
-            let dns_name = match DNSNameRef::try_from_ascii_str(&filename) {
-                Ok(name) => name,
-                Err(_) => return Err(CertLoadError::BadDomain(filename)),
-            };
 
             let key = load_domain(certs_dir, filename.clone())?;
 
