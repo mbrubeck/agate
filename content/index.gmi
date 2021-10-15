@@ -198,6 +198,15 @@ The format is based on Keep a Changelog and this project adheres to Semantic Ver
 => https://keepachangelog.com/en/1.0.0/ Keep a Changelog home page
 => https://semver.org/spec/v2.0.0.html Semantic versioning standard v2.0.0
 
+## [3.1.2] - 2021-10-15
+Thank you to @etam for contributing to this release.
+
+### Fixed
+* when starting up on a system that automatically listens in dual stack mode (e.g. some
+  linux distributions seem to do this), detect a second unspecified address to not cause
+  the "address in use" error with the default listening addresses
+* updated a dependency
+
 ## [3.1.1] - 2021-10-14
 Thank you to @jgarte and @alvaro-cuesta for contributing to this release.
 
