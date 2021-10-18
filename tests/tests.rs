@@ -1,5 +1,6 @@
 use anyhow::anyhow;
 use gemini_fetch::{Header, Page, Status};
+use std::convert::TryInto;
 use std::io::{BufRead, BufReader, Read};
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::path::PathBuf;
@@ -469,18 +470,24 @@ fn directory_traversal_regression() {
 ///   (lower versions do not have to be tested because rustls does not even
 ///   support them, making agate incapable of accepting them)
 fn explicit_tls_version() {
-    use rustls::{ClientSession, ProtocolVersion, TLSError};
+    use rustls::{ClientConnection, Error, RootCertStore};
     use std::io::Read;
     use std::net::TcpStream;
 
     let _server = Server::new(&["--addr", "[::]:1976", "-3"]);
 
-    let mut config = rustls::ClientConfig::new();
-    // try to connect using only TLS 1.2
-    config.versions = vec![ProtocolVersion::TLSv1_2];
+    let config = rustls::ClientConfig::builder()
+        .with_safe_default_cipher_suites()
+        .with_safe_default_kx_groups()
+        // try to connect using only TLS 1.2
+        .with_protocol_versions(&[&rustls::version::TLS12])
+        .unwrap()
+        .with_root_certificates(RootCertStore::empty())
+        .with_no_client_auth();
 
-    let dns_name = webpki::DnsNameRef::try_from_ascii_str("localhost").unwrap();
-    let mut session = ClientSession::new(&std::sync::Arc::new(config), dns_name);
+    let mut session =
+        ClientConnection::new(std::sync::Arc::new(config), "localhost".try_into().unwrap())
+            .unwrap();
     let mut tcp = TcpStream::connect(addr(1976)).unwrap();
     let mut tls = rustls::Stream::new(&mut session, &mut tcp);
 
@@ -490,9 +497,9 @@ fn explicit_tls_version() {
             .unwrap_err()
             .into_inner()
             .unwrap()
-            .downcast::<TLSError>()
+            .downcast::<Error>()
             .unwrap(),
-        TLSError::AlertReceived(rustls::internal::msgs::enums::AlertDescription::ProtocolVersion)
+        Error::AlertReceived(rustls::internal::msgs::enums::AlertDescription::ProtocolVersion)
     )
 }
 
@@ -586,15 +593,14 @@ mod multicert {
 
     #[test]
     fn example_com() {
-        use rustls::{Certificate, ClientSession};
+        use rustls::{Certificate, ClientConnection, RootCertStore};
         use std::io::Write;
         use std::net::TcpStream;
 
         let mut server = Server::new(&["--addr", "[::]:1981", "--certs", "multicert"]);
 
-        let mut config = rustls::ClientConfig::new();
-        config
-            .root_store
+        let mut certs = RootCertStore::empty();
+        certs
             .add(&Certificate(
                 include_bytes!(concat!(
                     env!("CARGO_MANIFEST_DIR"),
@@ -603,9 +609,16 @@ mod multicert {
                 .to_vec(),
             ))
             .unwrap();
+        let config = rustls::ClientConfig::builder()
+            .with_safe_defaults()
+            .with_root_certificates(certs)
+            .with_no_client_auth();
 
-        let dns_name = webpki::DnsNameRef::try_from_ascii_str("example.com").unwrap();
-        let mut session = ClientSession::new(&std::sync::Arc::new(config), dns_name);
+        let mut session = ClientConnection::new(
+            std::sync::Arc::new(config),
+            "example.com".try_into().unwrap(),
+        )
+        .unwrap();
         let mut tcp = TcpStream::connect(addr(1981)).unwrap();
         let mut tls = rustls::Stream::new(&mut session, &mut tcp);
 
@@ -619,15 +632,14 @@ mod multicert {
 
     #[test]
     fn example_org() {
-        use rustls::{Certificate, ClientSession};
+        use rustls::{Certificate, ClientConnection, RootCertStore};
         use std::io::Write;
         use std::net::TcpStream;
 
         let mut server = Server::new(&["--addr", "[::]:1982", "--certs", "multicert"]);
 
-        let mut config = rustls::ClientConfig::new();
-        config
-            .root_store
+        let mut certs = RootCertStore::empty();
+        certs
             .add(&Certificate(
                 include_bytes!(concat!(
                     env!("CARGO_MANIFEST_DIR"),
@@ -636,9 +648,16 @@ mod multicert {
                 .to_vec(),
             ))
             .unwrap();
+        let config = rustls::ClientConfig::builder()
+            .with_safe_defaults()
+            .with_root_certificates(certs)
+            .with_no_client_auth();
 
-        let dns_name = webpki::DnsNameRef::try_from_ascii_str("example.org").unwrap();
-        let mut session = ClientSession::new(&std::sync::Arc::new(config), dns_name);
+        let mut session = ClientConnection::new(
+            std::sync::Arc::new(config),
+            "example.org".try_into().unwrap(),
+        )
+        .unwrap();
         let mut tcp = TcpStream::connect(addr(1982)).unwrap();
         let mut tls = rustls::Stream::new(&mut session, &mut tcp);
 
