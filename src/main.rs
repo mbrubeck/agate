@@ -8,7 +8,7 @@ use {
     once_cell::sync::Lazy,
     percent_encoding::{percent_decode_str, percent_encode, AsciiSet, CONTROLS},
     rcgen::{Certificate, CertificateParams, DnType},
-    rustls::{NoClientAuth, ServerConfig},
+    rustls::server::ServerConfig,
     std::{
         borrow::Cow,
         error::Error,
@@ -318,11 +318,17 @@ fn check_path(s: String) -> Result<PathBuf, String> {
 static TLS: Lazy<TlsAcceptor> = Lazy::new(acceptor);
 
 fn acceptor() -> TlsAcceptor {
-    let mut config = ServerConfig::new(NoClientAuth::new());
-    if ARGS.only_tls13 {
-        config.versions = vec![rustls::ProtocolVersion::TLSv1_3];
+    let config = if ARGS.only_tls13 {
+        ServerConfig::builder()
+            .with_safe_default_cipher_suites()
+            .with_safe_default_kx_groups()
+            .with_protocol_versions(&[&rustls::version::TLS13])
+            .expect("could not build server config")
+    } else {
+        ServerConfig::builder().with_safe_defaults()
     }
-    config.cert_resolver = ARGS.certs.clone();
+    .with_no_client_auth()
+    .with_cert_resolver(ARGS.certs.clone());
     TlsAcceptor::from(Arc::new(config))
 }
 
