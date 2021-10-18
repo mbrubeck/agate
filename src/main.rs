@@ -16,7 +16,7 @@ use {
         fmt::Write,
         fs::{self, File},
         io::Write as _,
-        net::SocketAddr,
+        net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr},
         path::{self, Component, Path, PathBuf},
         sync::Arc,
     },
@@ -46,12 +46,28 @@ fn main() {
             );
             let mimetypes = Arc::new(Mutex::new(FileOptions::new(default)));
 
+            // some systems automatically listen in dual stack if the IPv6 unspecified
+            // address is used, so don't fail if the second unspecified address gets
+            // an error when trying to start
+            let mut listening_unspecified = false;
+
             let handles = ARGS.addrs.iter().map(|addr| {
                 let arc = mimetypes.clone();
-                tokio::spawn(async move {
-                    let listener = TcpListener::bind(addr)
-                        .await
-                        .unwrap_or_else(|e| panic!("Failed to listen on {}: {}", addr, e));
+                let was_listening_unspecified = listening_unspecified;
+                let handle = tokio::spawn(async move {
+                    let listener = match TcpListener::bind(addr).await {
+                        Err(e) => {
+                            if !(addr.ip().is_unspecified() && was_listening_unspecified) {
+                                panic!("Failed to listen on {}: {}", addr, e)
+                            } else {
+                                // already listening on the other unspecified address
+                                log::warn!("Could not start listener on {}, but already listening on another unspecified address. Probably your system automatically listens in dual stack?", addr);
+                                return;
+                            }
+                        }
+                        Ok(listener) => listener,
+                    };
+
                     log::info!("Started listener on {}", addr);
                     loop {
                         let (stream, _) = listener.accept().await.unwrap_or_else(|e| {
@@ -70,7 +86,9 @@ fn main() {
                             }
                         });
                     }
-                })
+                });
+                listening_unspecified |= addr.ip().is_unspecified();
+                handle
             });
 
             futures_util::future::join_all(handles).await;
@@ -268,8 +286,8 @@ fn args() -> Result<Args> {
     }
     if addrs.is_empty() {
         addrs = vec![
-            "[::]:1965".parse().unwrap(),
-            "0.0.0.0:1965".parse().unwrap(),
+            SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), 1965),
+            SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), 1965),
         ];
     }
 

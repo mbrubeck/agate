@@ -440,7 +440,7 @@ fn directory_traversal_regression() {
     absolute
         .path_segments_mut()
         .unwrap()
-        .push(&env!("CARGO_MANIFEST_DIR")) // separators will be percent-encoded
+        .push(env!("CARGO_MANIFEST_DIR")) // separators will be percent-encoded
         .push("tests")
         .push("data")
         .push("directory_traversal.gmi");
@@ -449,7 +449,7 @@ fn directory_traversal_regression() {
     relative_escape_path.push("testdir");
     relative_escape_path.push("..");
     relative_escape_path.push("..");
-    let mut relative = base.clone();
+    let mut relative = base;
     relative
         .path_segments_mut()
         .unwrap()
