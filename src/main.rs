@@ -300,7 +300,7 @@ fn check_path(s: String) -> Result<PathBuf, String> {
 static TLS: Lazy<TlsAcceptor> = Lazy::new(acceptor);
 
 fn acceptor() -> TlsAcceptor {
-    let mut config = if ARGS.only_tls13 {
+    let config = if ARGS.only_tls13 {
         ServerConfig::builder()
             .with_safe_default_cipher_suites()
             .with_safe_default_kx_groups()
@@ -310,7 +310,7 @@ fn acceptor() -> TlsAcceptor {
         ServerConfig::builder().with_safe_defaults()
     }
     .with_no_client_auth()
-    .with_cert_resolver(ARGS.certs);
+    .with_cert_resolver(ARGS.certs.clone());
     TlsAcceptor::from(Arc::new(config))
 }
 

@@ -186,7 +186,7 @@ impl CertStore {
 impl ResolvesServerCert for CertStore {
     fn resolve(&self, client_hello: ClientHello<'_>) -> Option<Arc<CertifiedKey>> {
         if let Some(name) = client_hello.server_name() {
-            let name: &str = name.into();
+            let name: &str = name;
             // The certificate list is sorted so the longest match will always
             // appear first. We have to find the first that is either this
             // domain or a parent domain of the current one.

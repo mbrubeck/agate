@@ -20,7 +20,7 @@ dependencies = [
  "rcgen",
  "rustls 0.20.0",
  "tokio",
- "tokio-rustls",
+ "tokio-rustls 0.23.0",
  "url",
  "webpki 0.22.0",
 ]
@@ -169,7 +169,7 @@ dependencies = [
  "rustls 0.19.1",
  "thiserror",
  "tokio",
- "tokio-rustls",
+ "tokio-rustls 0.22.0",
  "url",
  "webpki 0.21.4",
  "webpki-roots",
@@ -591,6 +591,17 @@ dependencies = [
  "rustls 0.19.1",
  "tokio",
  "webpki 0.21.4",
+]
+
+[[package]]
+name = "tokio-rustls"
+version = "0.23.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d49194a46b06a69f2498a34a595ab4a9c1babd2642ffa3dbccf6c6778d1426f2"
+dependencies = [
+ "rustls 0.20.0",
+ "tokio",
+ "webpki 0.22.0",
 ]
 
 [[package]]
