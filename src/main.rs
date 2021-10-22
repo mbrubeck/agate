@@ -51,24 +51,27 @@ fn main() {
             // an error when trying to start
             let mut listening_unspecified = false;
 
-            let handles = ARGS.addrs.iter().map(|addr| {
+            let mut handles = vec![];
+            for addr in &ARGS.addrs {
                 let arc = mimetypes.clone();
-                let was_listening_unspecified = listening_unspecified;
-                let handle = tokio::spawn(async move {
-                    let listener = match TcpListener::bind(addr).await {
-                        Err(e) => {
-                            if !(addr.ip().is_unspecified() && was_listening_unspecified) {
-                                panic!("Failed to listen on {}: {}", addr, e)
-                            } else {
-                                // already listening on the other unspecified address
-                                log::warn!("Could not start listener on {}, but already listening on another unspecified address. Probably your system automatically listens in dual stack?", addr);
-                                return;
-                            }
-                        }
-                        Ok(listener) => listener,
-                    };
 
+                let listener = match TcpListener::bind(addr).await {
+                    Err(e) => {
+                        if !(addr.ip().is_unspecified() && listening_unspecified) {
+                            panic!("Failed to listen on {}: {}", addr, e)
+                        } else {
+                            // already listening on the other unspecified address
+                            log::warn!("Could not start listener on {}, but already listening on another unspecified address. Probably your system automatically listens in dual stack?", addr);
+                            continue;
+                        }
+                    }
+                    Ok(listener) => listener,
+                };
+                listening_unspecified |= addr.ip().is_unspecified();
+
+                handles.push(tokio::spawn(async move {
                     log::info!("Started listener on {}", addr);
+
                     loop {
                         let (stream, _) = listener.accept().await.unwrap_or_else(|e| {
                             panic!("could not accept new connection on {}: {}", addr, e)
@@ -86,10 +89,8 @@ fn main() {
                             }
                         });
                     }
-                });
-                listening_unspecified |= addr.ip().is_unspecified();
-                handle
-            });
+                }))
+            };
 
             futures_util::future::join_all(handles).await;
         });
