@@ -151,8 +151,8 @@ fn index_page() {
 /// - symlinked files are followed correctly
 fn symlink_page() {
     let page = get(
-        &["--addr", "[::]:1986"],
-        addr(1986),
+        &["--addr", "[::]:1966"],
+        addr(1966),
         "gemini://localhost/symlink.gmi",
     )
     .expect("could not get page");
@@ -181,8 +181,8 @@ fn symlink_page() {
 /// - symlinked directories are followed correctly
 fn symlink_directory() {
     let page = get(
-        &["--addr", "[::]:1987"],
-        addr(1987),
+        &["--addr", "[::]:1967"],
+        addr(1967),
         "gemini://localhost/symlinked_dir/file.gmi",
     )
     .expect("could not get page");
@@ -212,8 +212,8 @@ fn symlink_directory() {
 /// - MIME media types can be set in the configuration file
 fn meta() {
     let page = get(
-        &["--addr", "[::]:1966"],
-        addr(1966),
+        &["--addr", "[::]:1968"],
+        addr(1968),
         "gemini://localhost/test",
     )
     .expect("could not get page");
@@ -232,8 +232,8 @@ fn meta() {
 /// - MIME media type parameters can be set in the configuration file
 fn meta_param() {
     let page = get(
-        &["--addr", "[::]:1967"],
-        addr(1967),
+        &["--addr", "[::]:1969"],
+        addr(1969),
         "gemini://localhost/test.gmi",
     )
     .expect("could not get page");
@@ -252,8 +252,8 @@ fn meta_param() {
 /// - distributed configuration file is used when `-C` flag not used
 fn glob() {
     let page = get(
-        &["--addr", "[::]:1968"],
-        addr(1968),
+        &["--addr", "[::]:1970"],
+        addr(1970),
         "gemini://localhost/testdir/a.nl.gmi",
     )
     .expect("could not get page");
@@ -272,8 +272,8 @@ fn glob() {
 /// - central configuration file is used when `-C` flag is used
 fn doubleglob() {
     let page = get(
-        &["--addr", "[::]:1969", "-C"],
-        addr(1969),
+        &["--addr", "[::]:1971", "-C"],
+        addr(1971),
         "gemini://localhost/testdir/a.nl.gmi",
     )
     .expect("could not get page");
@@ -291,8 +291,8 @@ fn doubleglob() {
 /// - full header lines can be set in the configuration file
 fn full_header_preset() {
     let page = get(
-        &["--addr", "[::]:1970"],
-        addr(1970),
+        &["--addr", "[::]:1972"],
+        addr(1972),
         "gemini://localhost/gone.txt",
     )
     .expect("could not get page");
@@ -310,8 +310,8 @@ fn full_header_preset() {
 /// - URLS with fragments are rejected
 fn fragment() {
     let page = get(
-        &["--addr", "[::]:1983", "--hostname", "example.com"],
-        addr(1983),
+        &["--addr", "[::]:1973", "--hostname", "example.com"],
+        addr(1973),
         "gemini://example.com/#fragment",
     )
     .expect("could not get page");
@@ -323,8 +323,8 @@ fn fragment() {
 /// - URLS with username are rejected
 fn username() {
     let page = get(
-        &["--addr", "[::]:1984", "--hostname", "example.com"],
-        addr(1984),
+        &["--addr", "[::]:1974", "--hostname", "example.com"],
+        addr(1974),
         "gemini://user@example.com/",
     )
     .expect("could not get page");
@@ -336,8 +336,8 @@ fn username() {
 /// - URLS with password are rejected
 fn password() {
     let page = get(
-        &["--addr", "[::]:1985", "--hostname", "example.com"],
-        addr(1985),
+        &["--addr", "[::]:1975", "--hostname", "example.com"],
+        addr(1975),
         "gemini://:secret@example.com/",
     )
     .expect("could not get page");
@@ -350,8 +350,8 @@ fn password() {
 /// - status for wrong host is "proxy request refused"
 fn hostname_check() {
     let page = get(
-        &["--addr", "[::]:1971", "--hostname", "example.org"],
-        addr(1971),
+        &["--addr", "[::]:1976", "--hostname", "example.org"],
+        addr(1976),
         "gemini://example.com/",
     )
     .expect("could not get page");
@@ -364,8 +364,8 @@ fn hostname_check() {
 /// - status for wrong port is "proxy request refused"
 fn port_check() {
     let page = get(
-        &["--addr", "[::]:1972", "--hostname", "example.org"],
-        addr(1972),
+        &["--addr", "[::]:1977", "--hostname", "example.org"],
+        addr(1977),
         "gemini://example.org:1971/",
     )
     .expect("could not get page");
@@ -379,12 +379,12 @@ fn port_check_skipped() {
     let page = get(
         &[
             "--addr",
-            "[::]:19720",
+            "[::]:1978",
             "--hostname",
             "example.org",
             "--skip-port-check",
         ],
-        addr(19720),
+        addr(1978),
         "gemini://example.org:1971/",
     )
     .expect("could not get page");
@@ -396,8 +396,8 @@ fn port_check_skipped() {
 /// - status for paths with hidden segments is "gone" if file does not exist
 fn secret_nonexistent() {
     let page = get(
-        &["--addr", "[::]:1973"],
-        addr(1973),
+        &["--addr", "[::]:1979"],
+        addr(1979),
         "gemini://localhost/.secret",
     )
     .expect("could not get page");
@@ -409,8 +409,8 @@ fn secret_nonexistent() {
 /// - status for paths with hidden segments is "gone" if file exists
 fn secret_exists() {
     let page = get(
-        &["--addr", "[::]:1974"],
-        addr(1974),
+        &["--addr", "[::]:1980"],
+        addr(1980),
         "gemini://localhost/.meta",
     )
     .expect("could not get page");
@@ -422,8 +422,8 @@ fn secret_exists() {
 /// - secret file served if `--serve-secret` is enabled
 fn serve_secret() {
     let page = get(
-        &["--addr", "[::]:1975", "--serve-secret"],
-        addr(1975),
+        &["--addr", "[::]:1981", "--serve-secret"],
+        addr(1981),
         "gemini://localhost/.meta",
     )
     .expect("could not get page");
@@ -460,7 +460,7 @@ fn directory_traversal_regression() {
     let urls = [absolute, relative];
     for url in urls.iter() {
         let page =
-            get(&["--addr", "[::]:1988"], addr(1988), url.as_str()).expect("could not get page");
+            get(&["--addr", "[::]:1982"], addr(1982), url.as_str()).expect("could not get page");
         assert_eq!(page.header.status, Status::NotFound);
     }
 }
@@ -474,7 +474,7 @@ fn explicit_tls_version() {
     use std::io::Read;
     use std::net::TcpStream;
 
-    let _server = Server::new(&["--addr", "[::]:1976", "-3"]);
+    let _server = Server::new(&["--addr", "[::]:1983", "-3"]);
 
     let config = rustls::ClientConfig::builder()
         .with_safe_default_cipher_suites()
@@ -488,7 +488,7 @@ fn explicit_tls_version() {
     let mut session =
         ClientConnection::new(std::sync::Arc::new(config), "localhost".try_into().unwrap())
             .unwrap();
-    let mut tcp = TcpStream::connect(addr(1976)).unwrap();
+    let mut tcp = TcpStream::connect(addr(1983)).unwrap();
     let mut tls = rustls::Stream::new(&mut session, &mut tcp);
 
     let mut buf = [0; 10];
@@ -513,13 +513,13 @@ mod vhosts {
         let page = get(
             &[
                 "--addr",
-                "[::]:1977",
+                "[::]:1984",
                 "--hostname",
                 "example.com",
                 "--hostname",
                 "example.org",
             ],
-            addr(1977),
+            addr(1984),
             "gemini://example.com/",
         )
         .expect("could not get page");
@@ -544,13 +544,13 @@ mod vhosts {
         let page = get(
             &[
                 "--addr",
-                "[::]:1978",
+                "[::]:1985",
                 "--hostname",
                 "example.com",
                 "--hostname",
                 "example.org",
             ],
-            addr(1978),
+            addr(1985),
             "gemini://example.org/",
         )
         .expect("could not get page");
@@ -576,7 +576,7 @@ mod multicert {
     #[test]
     #[should_panic]
     fn cert_missing() {
-        let mut server = Server::new(&["--addr", "[::]:1979", "--certs", "cert_missing"]);
+        let mut server = Server::new(&["--addr", "[::]:1986", "--certs", "cert_missing"]);
 
         // wait for the server to stop, it should crash
         let _ = server.server.wait();
@@ -585,7 +585,7 @@ mod multicert {
     #[test]
     #[should_panic]
     fn key_missing() {
-        let mut server = Server::new(&["--addr", "[::]:1980", "--certs", "key_missing"]);
+        let mut server = Server::new(&["--addr", "[::]:1987", "--certs", "key_missing"]);
 
         // wait for the server to stop, it should crash
         let _ = server.server.wait();
@@ -597,7 +597,7 @@ mod multicert {
         use std::io::Write;
         use std::net::TcpStream;
 
-        let mut server = Server::new(&["--addr", "[::]:1981", "--certs", "multicert"]);
+        let mut server = Server::new(&["--addr", "[::]:1988", "--certs", "multicert"]);
 
         let mut certs = RootCertStore::empty();
         certs
@@ -619,7 +619,7 @@ mod multicert {
             "example.com".try_into().unwrap(),
         )
         .unwrap();
-        let mut tcp = TcpStream::connect(addr(1981)).unwrap();
+        let mut tcp = TcpStream::connect(addr(1988)).unwrap();
         let mut tls = rustls::Stream::new(&mut session, &mut tcp);
 
         write!(tls, "gemini://example.com/\r\n").unwrap();
@@ -636,7 +636,7 @@ mod multicert {
         use std::io::Write;
         use std::net::TcpStream;
 
-        let mut server = Server::new(&["--addr", "[::]:1982", "--certs", "multicert"]);
+        let mut server = Server::new(&["--addr", "[::]:1989", "--certs", "multicert"]);
 
         let mut certs = RootCertStore::empty();
         certs
@@ -658,7 +658,7 @@ mod multicert {
             "example.org".try_into().unwrap(),
         )
         .unwrap();
-        let mut tcp = TcpStream::connect(addr(1982)).unwrap();
+        let mut tcp = TcpStream::connect(addr(1989)).unwrap();
         let mut tls = rustls::Stream::new(&mut session, &mut tcp);
 
         write!(tls, "gemini://example.org/\r\n").unwrap();
