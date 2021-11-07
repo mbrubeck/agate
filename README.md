@@ -73,7 +73,8 @@ Agate by default supports TLSv1.2 and TLSv1.3. You can disable support for TLSv1
 ### Directory listing
 
 You can enable a basic directory listing for a directory by putting a file called `.directory-listing-ok` in that directory. This does not have an effect on sub-directories.
-The directory listing will hide files and directories whose name starts with a dot (e.g. the `.directory-listing-ok` file itself or also the `.meta` configuration file).
+This file must be UTF-8 encoded text; it may be empty. Any text in the file will be prepended to the directory listing.
+The directory listing will hide files and directories whose name starts with a dot (e.g. the `.directory-listing-ok` file itself, the `.meta` configuration file, or the `..` directory).
 
 A file called `index.gmi` will always take precedence over a directory listing.
 

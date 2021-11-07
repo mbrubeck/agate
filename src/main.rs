@@ -529,15 +529,12 @@ impl RequestHandle {
                 if url.path().ends_with('/') || url.path().is_empty() {
                     // if the path ends with a slash or the path is empty, the links will work the same
                     // without a redirect
+                    // use `push` instead of `join` because the changed path is used later
                     path.push("index.gmi");
                     if !path.exists() {
-                        if path.with_file_name(".directory-listing-ok").exists() {
-                            path.pop();
-                            return self.list_directory(&path).await;
-                        } else {
-                            self.send_header(51, "Directory index disabled.").await?;
-                            return Ok(());
-                        }
+                        path.pop();
+                        // try listing directory
+                        return self.list_directory(&path).await;
                     }
                 } else {
                     // if client is not redirected, links may not work as expected without trailing slash
@@ -601,8 +598,20 @@ impl RequestHandle {
             .add(b'{')
             .add(b'}');
 
+        // check if directory listing is enabled by geting preamble
+        let preamble = if let Ok(txt) = std::fs::read_to_string(path.join(".directory-listing-ok"))
+        {
+            txt
+        } else {
+            self.send_header(51, "Directory index disabled.").await?;
+            return Ok(());
+        };
+
         log::info!("Listing directory {:?}", path);
+
         self.send_header(20, "text/gemini").await?;
+        self.stream.write_all(preamble.as_bytes()).await?;
+
         let mut entries = tokio::fs::read_dir(path).await?;
         let mut lines = vec![];
         while let Some(entry) = entries.next_entry().await? {
