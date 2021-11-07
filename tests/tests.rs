@@ -669,3 +669,53 @@ mod multicert {
         server.stop().unwrap();
     }
 }
+
+mod directory_listing {
+    use super::*;
+
+    #[test]
+    /// - shows directory listing when enabled
+    /// - shows directory listing preamble correctly
+    /// - encodes link URLs correctly
+    fn with_preamble() {
+        let page = get(
+            &["--addr", "[::]:1990", "--content", "dirlist-preamble"],
+            addr(1990),
+            "gemini://localhost/",
+        )
+        .expect("could not get page");
+
+        assert_eq!(
+            page.header,
+            Header {
+                status: Status::Success,
+                meta: "text/gemini".into(),
+            }
+        );
+
+        assert_eq!(
+            page.body,
+            Some("This is a directory listing\n=> %23yeah #yeah\n=> a\n=> b\n=> huh%3F huh?\n=> wao%20spaces wao spaces\n".into())
+        );
+    }
+
+    #[test]
+    fn empty_preamble() {
+        let page = get(
+            &["--addr", "[::]:1991", "--content", "dirlist"],
+            addr(1991),
+            "gemini://localhost/",
+        )
+        .expect("could not get page");
+
+        assert_eq!(
+            page.header,
+            Header {
+                status: Status::Success,
+                meta: "text/gemini".into(),
+            }
+        );
+
+        assert_eq!(page.body, Some("=> a\n=> b\n".into()),);
+    }
+}
