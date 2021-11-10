@@ -6,14 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-Thank you to @joseph-marques for contributing to this release.
+Thank you to @balazsbtond and @joseph-marques for contributing to this release.
 
 ### Added
 * you can add header text to a directory listing. See the updated readme for details.
 
 ### Fixed
 * updated dependencies
-
+* error pages also send close_notify
 
 ## [3.1.3] - 2021-10-25
 Thank you to @FoxKyong for contributing to this release.
