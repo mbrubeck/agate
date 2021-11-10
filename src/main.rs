@@ -386,12 +386,12 @@ impl RequestHandle {
             Err((status, msg)) => self.send_header(status, msg).await,
         };
 
-        if let Err(e) = result {
-            Err(format!("{} error:{}", self.log_line, e))
-        } else if let Err(e) = self.stream.shutdown().await {
-            Err(format!("{} error:{}", self.log_line, e))
-        } else {
-            Ok(self.log_line)
+        let close_result = self.stream.shutdown().await;
+
+        match (result, close_result) {
+            (Err(e), _) => Err(format!("{} error:{}", self.log_line, e)),
+            (Ok(_), Err(e)) => Err(format!("{} error:{}", self.log_line, e)),
+            (Ok(_), Ok(_)) => Ok(self.log_line),
         }
     }
 
