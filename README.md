@@ -66,6 +66,12 @@ When a client requests the URL `gemini://example.com/foo/bar`, Agate will respon
 
 ## Configuration
 
+### Automatic Ceritificate generation
+
+If the `--hostname` argument is used, Agate will generate keys and self signed certificates for each hostname specified. For Gemini it is recommended by the specification to use self signed certificates because Gemini uses the TOFU (Trust on first use) principle for certificates. Because of this, the generated certificates will also have a long expiration time of `4096-01-01`.
+
+For manual configuration of keys and certificates see the [section on certificates](#certificates) below.
+
 ### TLS versions
 
 Agate by default supports TLSv1.2 and TLSv1.3. You can disable support for TLSv1.2 by using the flag `--only-tls13` (or its short version `-3`). This is *NOT RECOMMENDED* as it may break compatibility with some clients. The Gemini specification requires compatibility with TLSv1.2 "for now" because not all platforms have good support for TLSv1.3 (cf. §4.1 of the specification).
@@ -173,7 +179,6 @@ This would be understood like this:
 Using a directory named just `.` causes undefined behaviour as this would have the same meaning as the top level certificate/key pair (pair (1) in the example above).
 
 The files for a certificate/key pair have to be named `cert.der` and `key.der` respectively. The certificate has to be a X.509 certificate in a DER format file and has to include a subject alt name of the domain name. The private key has to be in DER format and must be either an RSA, ECDSA or Ed25519 key.
-If the `--hostname` argument is used, Agate will generate certificates and Ed25519 certificates for each hostname specified.
 
 ## Logging
 
