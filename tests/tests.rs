@@ -695,7 +695,7 @@ mod directory_listing {
 
         assert_eq!(
             page.body,
-            Some("This is a directory listing\n=> %23yeah #yeah\n=> a\n=> b\n=> huh%3F huh?\n=> wao%20spaces wao spaces\n".into())
+            Some("This is a directory listing\n=> a\n=> b\n=> wao%20spaces wao spaces\n".into())
         );
     }
 
