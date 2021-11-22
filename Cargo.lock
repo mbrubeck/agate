@@ -18,7 +18,7 @@ dependencies = [
  "once_cell",
  "percent-encoding",
  "rcgen",
- "rustls 0.20.1",
+ "rustls 0.20.2",
  "tokio",
  "tokio-rustls 0.23.1",
  "url",
@@ -457,9 +457,9 @@ dependencies = [
 
 [[package]]
 name = "rustls"
-version = "0.20.1"
+version = "0.20.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dac4581f0fc0e0efd529d069e8189ec7b90b8e7680e21beb35141bdc45f36040"
+checksum = "d37e5e2290f3e040b594b1a9e04377c2c671f1a1cfd9bfdef82106ac1c113f84"
 dependencies = [
  "log",
  "ring",
@@ -599,7 +599,7 @@ version = "0.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4baa378e417d780beff82bf54ceb0d195193ea6a00c14e22359e7f39456b5689"
 dependencies = [
- "rustls 0.20.1",
+ "rustls 0.20.2",
  "tokio",
  "webpki 0.22.0",
 ]
