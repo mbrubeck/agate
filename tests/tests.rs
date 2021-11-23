@@ -509,6 +509,8 @@ mod vhosts {
     #[test]
     /// - simple vhosts are enabled when multiple hostnames are supplied
     /// - the vhosts access the correct files
+    /// - the hostname comparison is case insensitive
+    /// - the hostname is converted to lower case to access certificates
     fn example_com() {
         let page = get(
             &[
@@ -520,7 +522,7 @@ mod vhosts {
                 "example.org",
             ],
             addr(1984),
-            "gemini://example.com/",
+            "gemini://Example.com/",
         )
         .expect("could not get page");
 

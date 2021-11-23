@@ -226,6 +226,7 @@ fn args() -> Result<Args> {
 
     let mut hostnames = vec![];
     for s in matches.opt_strs("hostname") {
+        // normalize hostname, add punycoding if necessary
         let hostname = Host::parse(&s)?;
 
         // check if we have a certificate for that domain
@@ -434,7 +435,7 @@ impl RequestHandle {
         // log literal request (might be different from or not an actual URL)
         write!(self.log_line, " \"{}\"", request).unwrap();
 
-        let url = Url::parse(request).or(Err((59, "Invalid URL")))?;
+        let mut url = Url::parse(request).or(Err((59, "Invalid URL")))?;
 
         // Validate the URL:
         // correct scheme
@@ -448,14 +449,25 @@ impl RequestHandle {
         }
 
         // correct host
-        if let Some(host) = url.host() {
+        if let Some(domain) = url.domain() {
+            // because the gemini scheme is not special enough for WHATWG, normalize
+            // it ourselves
+            let host = Host::parse(
+                &percent_decode_str(domain)
+                    .decode_utf8()
+                    .expect("invalid domain?"),
+            )
+            .expect("invalid domain?");
+            // TODO: simplify when <https://github.com/servo/rust-url/issues/586> resolved
+            url.set_host(Some(&host.to_string()))
+                .expect("invalid domain?");
             // do not use "contains" here since it requires the same type and does
             // not allow to check for Host<&str> if the vec contains Hostname<String>
             if !ARGS.hostnames.is_empty() && !ARGS.hostnames.iter().any(|h| h == &host) {
                 return Err((53, "Proxy request refused"));
             }
         } else {
-            return Err((59, "URL does not contain a host"));
+            return Err((59, "URL does not contain a domain"));
         }
 
         // correct port
