@@ -26,6 +26,15 @@ Using the nix package manager run `nix-env -i agate`
 
 _Note:_ agate is currently only in the unstable channel and will reach a release channel once the next release is tagged
 
+### Guix System
+
+Deploy agate with GNU Guix System by adding the agate-service-type to your system services.
+=> https://dataswamp.org/~solene/2021-06-17-guix-gemini.html refer to this article
+
+see also
+=> https://guix.gnu.org/manual/en/html_node/Web-Services.html Guix Manual Web-Services
+=> https://guix.gnu.org/manual/en/html_node/Services.html Guix Manual Services
+
 ### Arch Linux
 
 Install the package "agate-bin" from AUR for pre-compiled binary. Otherwise install the "agate" package from AUR to get agate compiled from source.
@@ -42,7 +51,7 @@ Download the source code and run `cargo build --release` inside the source repos
 You can use the install script in the `tools` directory for the remaining steps if there is one for your system. If there is none, please consider contributing one to make it easier for less tech-savvy users!
 ***
 
-2. Run the server. You can use the following arguments to specify the locations of the content directory, IP address and port to listen on, host name to expect in request URLs, and default language code to include in the MIME type for for text/gemini files: (Replace the hostname `example.com` with the address of your Gemini server.)
+2. Run the server. You can use the following arguments to specify the locations of the content directory, IP address and port to listen on, host name to expect in request URLs, and default language code to include in the MIME type for text/gemini files: (Replace the hostname `example.com` with the address of your Gemini server.)
 If you have not done it yourself, Agate will generate a private key and certificate for you on the first run, using the specified hostname(s). See the section Certificates below for more.
 
 ```
@@ -59,6 +68,12 @@ When a client requests the URL `gemini://example.com/foo/bar`, Agate will respon
 
 ## Configuration
 
+### Automatic Certificate generation
+
+If the `--hostname` argument is used, Agate will generate keys and self signed certificates for each hostname specified. For Gemini it is recommended by the specification to use self signed certificates because Gemini uses the TOFU (Trust on first use) principle for certificates. Because of this, the generated certificates will also have a long expiration time of `4096-01-01`.
+
+For manual configuration of keys and certificates see the section on certificates below.
+
 ### TLS versions
 
 Agate by default supports TLSv1.2 and TLSv1.3. You can disable support for TLSv1.2 by using the flag `--only-tls13` (or its short version `-3`). This is *NOT RECOMMENDED* as it may break compatibility with some clients. The Gemini specification requires compatibility with TLSv1.2 "for now" because not all platforms have good support for TLSv1.3 (cf. §4.1 of the specification).
@@ -66,7 +81,7 @@ Agate by default supports TLSv1.2 and TLSv1.3. You can disable support for TLSv1
 ### Directory listing
 
 You can enable a basic directory listing for a directory by putting a file called `.directory-listing-ok` in that directory. This does not have an effect on sub-directories.
-This file must be UTF-8 encoded text; it may be empty. Any text in the fil will be prepended to the directoy listing.
+This file must be UTF-8 encoded text; it may be empty. Any text in the file will be prepended to the directory listing.
 The directory listing will hide files and directories whose name starts with a dot (e.g. the `.directory-listing-ok` file itself, the `.meta` configuration file, or the `..` directory).
 
 A file called `index.gmi` will always take precedence over a directory listing.
@@ -132,7 +147,7 @@ any non-hidden file in the `nl` directory ending in `.gmi` (including in non-hid
 
 ### Logging Verbosity
 
-Agate uses the `env_logger` crate and allows you to set the logging verbosity by setting the default `RUST_LOG` environment variable. To turn off all logging use `RUST_LOG=off`. For more information, please see the documentation of `env_logger`.
+Agate uses the `env_logger` crate and allows you to set the logging verbosity by setting the `RUST_LOG` environment variable. To turn off all logging use `RUST_LOG=off`. For more information, please see the documentation of `env_logger`.
 => https://docs.rs/env_logger/0.8 documentation of `env_logger` crate
 
 ### Virtual Hosts
@@ -143,6 +158,8 @@ Agate also supports different certificates for different hostnames, see the sect
 
 If you want to serve the same content for multiple domains, you can instead disable the hostname check by not specifying `--hostname`. In this case Agate will disregard a request's hostname apart from checking that there is one.
 
+When one or more `--hostname`s are specified, Agate will check that the hostnames and port in request URLs match the specified hostnames and the listening ports. If Agate is behind a proxy on another port and receives a request with an URL specifying the proxy port, this port may not match one of Agate's listening ports and the request will be rejected: it is possible to disable the port check with `--skip-port-check`.
+
 ### Certificates
 
 Agate has support for using multiple certificates with the `--certs` option. Agate will thus always require that a client uses SNI, which should not be a problem since the Gemini specification also requires SNI to be used.
@@ -152,13 +169,13 @@ Certificates are by default stored in the `.certificates` directory. This is a h
 ```
 .certificates
 |-- cert.pem     (1)
-|-- key.rsa      (1)
+|-- key.der      (1)
 |-- example.org
 |   |-- cert.pem (2)
-|   `-- key.rsa  (2)
+|   `-- key.der  (2)
 `-- portal.example.org
     |-- cert.pem (3)
-    `-- key.rsa  (3)
+    `-- key.der  (3)
 ```
 
 This would be understood like this:
@@ -169,7 +186,6 @@ This would be understood like this:
 Using a directory named just `.` causes undefined behaviour as this would have the same meaning as the top level certificate/key pair (pair (1) in the example above).
 
 The files for a certificate/key pair have to be named `cert.der` and `key.der` respectively. The certificate has to be a X.509 certificate in a DER format file and has to include a subject alt name of the domain name. The private key has to be in DER format and must be either an RSA, ECDSA or Ed25519 key.
-If the `--hostname` argument is used, Agate will generate certificates and Ed25519 certificates for each hostname specified.
 
 ## Logging
 
@@ -199,15 +215,23 @@ The format is based on Keep a Changelog and this project adheres to Semantic Ver
 => https://keepachangelog.com/en/1.0.0/ Keep a Changelog home page
 => https://semver.org/spec/v2.0.0.html Semantic versioning standard v2.0.0
 
+## [3.2.1] - 2021-12-02
+Thank you to @MatthiasPortzel for contributing to this release.
+
+### Fixed
+* host name comparisons are now case insensitive (#115)
+* made automatic certificate generation more prominent in the README
+* updated dependencies
+
 ## [3.2.0] - 2021-11-15
 Thank you to @balazsbtond and @joseph-marques for contributing to this release.
 
 ### Added
-* you can add header text to a directory listing. See the updated instructions above for details.
+* you can add header text to a directory listing. See the updated instructions above for details. (#98)
 
 ### Fixed
 * updated dependencies
-* error pages also send close_notify
+* error pages also send close_notify (#100)
 
 ## [3.1.3] - 2021-10-25
 Thank you to @FoxKyong for contributing to this release.
@@ -215,6 +239,7 @@ Thank you to @FoxKyong for contributing to this release.
 ### Fixed
 * the fix for dual stack listening from 3.1.2 was executed asynchronously and would thus
   sometimes fail. starting the listeners on different socket addresses is now synchronous
+  (#79)
 
 ## [3.1.2] - 2021-10-15
 Thank you to @etam for contributing to this release.

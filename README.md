@@ -66,7 +66,7 @@ When a client requests the URL `gemini://example.com/foo/bar`, Agate will respon
 
 ## Configuration
 
-### Automatic Ceritificate generation
+### Automatic Certificate generation
 
 If the `--hostname` argument is used, Agate will generate keys and self signed certificates for each hostname specified. For Gemini it is recommended by the specification to use self signed certificates because Gemini uses the TOFU (Trust on first use) principle for certificates. Because of this, the generated certificates will also have a long expiration time of `4096-01-01`.
 
@@ -151,7 +151,7 @@ Agate also supports different certificates for different hostnames, see the sect
 
 If you want to serve the same content for multiple domains, you can instead disable the hostname check by not specifying `--hostname`. In this case Agate will disregard a request's hostname apart from checking that there is one.
 
-When one or more `--hostname`s are specified, Agate will check that the hostnames and port in request URLs match the specified hostnames and the listening ports. If Agate is behind a proxy on another port and receives a request wil an URL specifying the proxy port, this port may not match one of Agate's listening ports and the request will be rejected: it is possible to disable the port check with `--skip-port-check`.
+When one or more `--hostname`s are specified, Agate will check that the hostnames and port in request URLs match the specified hostnames and the listening ports. If Agate is behind a proxy on another port and receives a request with an URL specifying the proxy port, this port may not match one of Agate's listening ports and the request will be rejected: it is possible to disable the port check with `--skip-port-check`.
 
 ### Certificates
 

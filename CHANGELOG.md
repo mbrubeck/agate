@@ -7,15 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.1] - 2021-12-02
+Thank you to @MatthiasPortzel for contributing to this release.
+
+### Fixed
+* host name comparisons are now case insensitive (#115)
+* made automatic certificate configuration more prominent in the README
+* updated dependencies
+
 ## [3.2.0] - 2021-11-15
 Thank you to @balazsbtond and @joseph-marques for contributing to this release.
 
 ### Added
-* you can add header text to a directory listing. See the updated readme for details.
+* you can add header text to a directory listing. See the updated readme for details. (#98)
 
 ### Fixed
 * updated dependencies
-* error pages also send close_notify
+* error pages also send close_notify (#100)
 
 ## [3.1.3] - 2021-10-25
 Thank you to @FoxKyong for contributing to this release.
@@ -23,6 +31,7 @@ Thank you to @FoxKyong for contributing to this release.
 ### Fixed
 * the fix for dual stack listening from 3.1.2 was executed asynchronously and would thus
   sometimes fail. starting the listeners on different socket addresses is now synchronous
+  (#79)
 
 ## [3.1.2] - 2021-10-15
 Thank you to @etam for contributing to this release.
@@ -30,7 +39,7 @@ Thank you to @etam for contributing to this release.
 ### Fixed
 * when starting up on a system that automatically listens in dual stack mode (e.g. some
   linux distributions seem to do this), detect a second unspecified address to not cause
-  the "address in use" error with the default listening addresses
+  the "address in use" error with the default listening addresses (#79)
 * updated a dependency
 
 ## [3.1.1] - 2021-10-14
@@ -303,7 +312,8 @@ Thank you to @m040601 for contributing to this release.
 
 ## [1.0.0] - 2020-05-21
 
-[Unreleased]: https://github.com/mbrubeck/agate/compare/v3.2.0...HEAD
+[Unreleased]: https://github.com/mbrubeck/agate/compare/v3.2.1...HEAD
+[3.2.1]: https://github.com/mbrubeck/agate/compare/v3.2.0...v3.2.1
 [3.2.0]: https://github.com/mbrubeck/agate/compare/v3.1.3...v3.2.0
 [3.1.3]: https://github.com/mbrubeck/agate/compare/v3.1.2...v3.1.3
 [3.1.2]: https://github.com/mbrubeck/agate/compare/v3.1.1...v3.1.2
