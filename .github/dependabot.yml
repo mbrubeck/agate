@@ -5,8 +5,6 @@ updates:
     directory: /
     schedule:
       interval: daily
-      time: "10:00"
-      timezone: EST
     open-pull-requests-limit: 10
     commit-message:
       prefix: chore
@@ -15,12 +13,9 @@ updates:
     directory: /
     schedule:
       interval: daily
-      time: "06:00"
-      timezone: EST
     open-pull-requests-limit: 10
     allow:
-      # direct and indirect updates
-      - dependency-type: "all"
+      - dependency-type: "direct"
     commit-message:
       prefix: chore
       include: scope
