@@ -89,7 +89,7 @@ jobs:
         asset_path: agate.zip
         asset_content_type: application/zip
 
-  build_macos:
+  build_macos_x86_64:
     runs-on: macos-latest
     needs: create_release
     steps:
@@ -108,4 +108,27 @@ jobs:
         upload_url: ${{ needs.create_release.outputs.upload_url }}
         asset_path: ./agate.gz
         asset_name: agate.x86_64-apple-darwin.gz
+        asset_content_type: application/gzip
+
+  build_macos_arm:
+    runs-on: macos-latest
+    needs: create_release
+    steps:
+    - uses: actions/checkout@v1
+    - name: install toolchain
+      run: rustup target add aarch64-apple-darwin
+    - name: Build
+      run: SDKROOT=$(xcrun -sdk macosx --show-sdk-path) MACOSX_DEPLOYMENT_TARGET=$(xcrun -sdk macosx --show-sdk-platform-version) cargo build --verbose --release --target=aarch64-apple-darwin
+    - name: strip names
+      run: strip target/aarch64-apple-darwin/release/agate
+    - name: compress
+      run: gzip -c target/aarch64-apple-darwin/release/agate > ./agate.gz
+    - name: upload release asset darwin
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create_release.outputs.upload_url }}
+        asset_path: ./agate.gz
+        asset_name: agate.aarch64-apple-darwin.gz
         asset_content_type: application/gzip
