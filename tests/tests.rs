@@ -333,6 +333,48 @@ fn username() {
 }
 
 #[test]
+/// - URLS with invalid hostnames are rejected
+fn percent_encode() {
+    use rustls::{Certificate, ClientConnection, RootCertStore};
+    use std::io::Write;
+    use std::net::TcpStream;
+
+    let mut server = Server::new(&["--addr", "[::]:1988", "--certs", "multicert"]);
+
+    let mut certs = RootCertStore::empty();
+    certs
+        .add(&Certificate(
+            include_bytes!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/tests/data/multicert/example.com/cert.der"
+            ))
+            .to_vec(),
+        ))
+        .unwrap();
+    let config = rustls::ClientConfig::builder()
+        .with_safe_defaults()
+        .with_root_certificates(certs)
+        .with_no_client_auth();
+
+    let mut session = ClientConnection::new(
+        std::sync::Arc::new(config),
+        "example.com".try_into().unwrap(),
+    )
+    .unwrap();
+    let mut tcp = TcpStream::connect(addr(1988)).unwrap();
+    let mut tls = rustls::Stream::new(&mut session, &mut tcp);
+
+    write!(tls, "gemini://%/\r\n").unwrap();
+
+    let mut buf = [0; 10];
+    let _ = tls.read(&mut buf);
+
+    assert_eq!(&buf[0..2], b"59");
+
+    server.stop().unwrap();
+}
+
+#[test]
 /// - URLS with password are rejected
 fn password() {
     let page = get(
