@@ -455,9 +455,9 @@ impl RequestHandle {
             let host = Host::parse(
                 &percent_decode_str(domain)
                     .decode_utf8()
-                    .expect("invalid domain?"),
+                    .or(Err((59, "Invalid URL")))?,
             )
-            .expect("invalid domain?");
+            .or(Err((59, "Invalid URL")))?;
             // TODO: simplify when <https://github.com/servo/rust-url/issues/586> resolved
             url.set_host(Some(&host.to_string()))
                 .expect("invalid domain?");
