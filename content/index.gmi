@@ -215,7 +215,14 @@ The format is based on Keep a Changelog and this project adheres to Semantic Ver
 => https://keepachangelog.com/en/1.0.0/ Keep a Changelog home page
 => https://semver.org/spec/v2.0.0.html Semantic versioning standard v2.0.0
 
-## [3.2.3] - 2022-01-25
+## [3.2.3] - 2022-02-04
+Thank you to T. Spivey for contributing to this release.
+
+### Fixed
+* improper IRIs are handled instead of crashing (bug reported via email)
+* updated dependencies
+
+## [3.2.2] - 2022-01-25
 Thank you to @Suzie97 for contributing to this release.
 
 ### Added

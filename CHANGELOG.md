@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [3.2.3] - 2022-02-04
+Thank you to T. Spivey for contributing to this release.
+
+### Fixed
+* improper IRIs are handled instead of crashing (bug reported via email)
+* updated dependencies
+
 ## [3.2.2] - 2022-01-25
 Thank you to @Suzie97 for contributing to this release.
 
@@ -13,7 +22,6 @@ Thank you to @Suzie97 for contributing to this release.
 
 ### Fixed
 * updated dependencies
-
 
 ## [3.2.1] - 2021-12-02
 Thank you to @MatthiasPortzel for contributing to this release.
@@ -320,7 +328,8 @@ Thank you to @m040601 for contributing to this release.
 
 ## [1.0.0] - 2020-05-21
 
-[Unreleased]: https://github.com/mbrubeck/agate/compare/v3.2.2...HEAD
+[Unreleased]: https://github.com/mbrubeck/agate/compare/v3.2.3...HEAD
+[3.2.3]: https://github.com/mbrubeck/agate/compare/v3.2.2...v3.2.3
 [3.2.2]: https://github.com/mbrubeck/agate/compare/v3.2.1...v3.2.2
 [3.2.1]: https://github.com/mbrubeck/agate/compare/v3.2.0...v3.2.1
 [3.2.0]: https://github.com/mbrubeck/agate/compare/v3.1.3...v3.2.0

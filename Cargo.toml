@@ -1,6 +1,6 @@
 [package]
 name = "agate"
-version = "3.2.2"
+version = "3.2.3"
 authors = ["Matt Brubeck <mbrubeck@limpet.net>", "Johann150 <johann+agate@qwertqwefsday.eu>"]
 description = "Very simple server for the Gemini hypertext protocol"
 keywords = ["server", "gemini", "hypertext", "internet", "protocol"]
@@ -8,7 +8,7 @@ categories = ["network-programming"]
 repository = "https://github.com/mbrubeck/agate"
 readme = "README.md"
 license = "MIT/Apache-2.0"
-edition = "2018"
+edition = "2021"
 exclude = ["/tools", "/.github", "/Cross.toml", "/content", "/CODE_OF_CONDUCT.md", "/CONTRIBUTING.md", "/CHANGELOG.md", "/tests"]
 
 [dependencies]
