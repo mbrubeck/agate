@@ -11,33 +11,12 @@ use url::Url;
 static BINARY_PATH: &str = env!("CARGO_BIN_EXE_agate");
 
 static DEFAULT_PORT: u16 = 1965;
-// this is our atomic port that increments for each test that needs one
-// doing it this way avoids port collisions from manually setting ports
-static PORT: AtomicU16 = AtomicU16::new(DEFAULT_PORT + 1);
-
-// this is only used by index_page as it uses the default port
-// use gen_addr_port
-fn addr(port: u16) -> SocketAddr {
-    use std::net::{IpAddr, Ipv4Addr};
-
-    (IpAddr::V4(Ipv4Addr::LOCALHOST), port)
-        .to_socket_addrs()
-        .unwrap()
-        .next()
-        .unwrap()
-}
-
-fn gen_addr_port() -> (SocketAddr, u16) {
-    let port = PORT.fetch_add(1, Ordering::SeqCst);
-    (addr(port), port)
-}
-
-fn gen_port() -> u16 {
-    let (_, port) = gen_addr_port();
-    port
-}
+/// this is our atomic port that increments for each test that needs one
+/// doing it this way avoids port collisions from manually setting ports
+static PORT: AtomicU16 = AtomicU16::new(DEFAULT_PORT);
 
 struct Server {
+    addr: SocketAddr,
     server: std::process::Child,
     // is set when output is collected by stop()
     output: Option<Result<(), String>>,
@@ -45,10 +24,24 @@ struct Server {
 
 impl Server {
     pub fn new(args: &[&str]) -> Self {
+        use std::net::{IpAddr, Ipv4Addr};
+
+        // generate unique port/address so tests do not clash
+        let addr = (
+            IpAddr::V4(Ipv4Addr::LOCALHOST),
+            PORT.fetch_add(1, Ordering::SeqCst),
+        )
+            .to_socket_addrs()
+            .unwrap()
+            .next()
+            .unwrap();
+
         // start the server
         let mut server = Command::new(BINARY_PATH)
             .stderr(Stdio::piped())
             .current_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/data"))
+            // add address information
+            .args(["--addr", &addr.to_string()])
             .args(args)
             .env("RUST_LOG", "debug")
             .spawn()
@@ -71,9 +64,14 @@ impl Server {
         }
 
         Self {
+            addr,
             server,
             output: None,
         }
+    }
+
+    pub fn get_addr(&self) -> SocketAddr {
+        self.addr
     }
 
     pub fn stop(&mut self) -> Result<(), String> {
@@ -128,13 +126,13 @@ impl Drop for Server {
     }
 }
 
-fn get(args: &[&str], addr: SocketAddr, url: &str) -> Result<Page, anyhow::Error> {
+fn get(args: &[&str], url: &str) -> Result<Page, anyhow::Error> {
     let mut server = Server::new(args);
 
     // actually perform the request
-    let page = tokio::runtime::Runtime::new()
-        .unwrap()
-        .block_on(async { Page::fetch_from(&Url::parse(url).unwrap(), addr, None).await });
+    let page = tokio::runtime::Runtime::new().unwrap().block_on(async {
+        Page::fetch_from(&Url::parse(url).unwrap(), server.get_addr(), None).await
+    });
 
     server.stop().map_err(|e| anyhow!(e)).and(page)
 }
@@ -143,7 +141,7 @@ fn get(args: &[&str], addr: SocketAddr, url: &str) -> Result<Page, anyhow::Error
 /// - serves index page for a directory
 /// - serves the correct content
 fn index_page() {
-    let page = get(&[], addr(DEFAULT_PORT), "gemini://localhost").expect("could not get page");
+    let page = get(&[], "gemini://localhost").expect("could not get page");
 
     assert_eq!(
         page.header,
@@ -168,13 +166,7 @@ fn index_page() {
 #[test]
 /// - symlinked files are followed correctly
 fn symlink_page() {
-    let (addr, port) = gen_addr_port();
-    let page = get(
-        &["--addr", &format!("[::]:{}", port)],
-        addr,
-        "gemini://localhost/symlink.gmi",
-    )
-    .expect("could not get page");
+    let page = get(&[], "gemini://localhost/symlink.gmi").expect("could not get page");
 
     assert_eq!(
         page.header,
@@ -199,13 +191,7 @@ fn symlink_page() {
 #[test]
 /// - symlinked directories are followed correctly
 fn symlink_directory() {
-    let (addr, port) = gen_addr_port();
-    let page = get(
-        &["--addr", &format!("[::]:{}", port)],
-        addr,
-        "gemini://localhost/symlinked_dir/file.gmi",
-    )
-    .expect("could not get page");
+    let page = get(&[], "gemini://localhost/symlinked_dir/file.gmi").expect("could not get page");
 
     assert_eq!(
         page.header,
@@ -231,13 +217,7 @@ fn symlink_directory() {
 /// - the `--addr` configuration works
 /// - MIME media types can be set in the configuration file
 fn meta() {
-    let (addr, port) = gen_addr_port();
-    let page = get(
-        &["--addr", &format!("[::]:{}", port)],
-        addr,
-        "gemini://localhost/test",
-    )
-    .expect("could not get page");
+    let page = get(&[], "gemini://localhost/test").expect("could not get page");
 
     assert_eq!(
         page.header,
@@ -252,13 +232,7 @@ fn meta() {
 /// - MIME type is correctly guessed for `.gmi` files
 /// - MIME media type parameters can be set in the configuration file
 fn meta_param() {
-    let (addr, port) = gen_addr_port();
-    let page = get(
-        &["--addr", &format!("[::]:{}", port)],
-        addr,
-        "gemini://localhost/test.gmi",
-    )
-    .expect("could not get page");
+    let page = get(&[], "gemini://localhost/test.gmi").expect("could not get page");
 
     assert_eq!(
         page.header,
@@ -273,13 +247,7 @@ fn meta_param() {
 /// - globs in the configuration file work correctly
 /// - distributed configuration file is used when `-C` flag not used
 fn glob() {
-    let (addr, port) = gen_addr_port();
-    let page = get(
-        &["--addr", &format!("[::]:{}", port)],
-        addr,
-        "gemini://localhost/testdir/a.nl.gmi",
-    )
-    .expect("could not get page");
+    let page = get(&[], "gemini://localhost/testdir/a.nl.gmi").expect("could not get page");
 
     assert_eq!(
         page.header,
@@ -294,13 +262,7 @@ fn glob() {
 /// - double globs (i.e. `**`) work correctly in the configuration file
 /// - central configuration file is used when `-C` flag is used
 fn doubleglob() {
-    let (addr, port) = gen_addr_port();
-    let page = get(
-        &["--addr", &format!("[::]:{}", port), "-C"],
-        addr,
-        "gemini://localhost/testdir/a.nl.gmi",
-    )
-    .expect("could not get page");
+    let page = get(&["-C"], "gemini://localhost/testdir/a.nl.gmi").expect("could not get page");
 
     assert_eq!(
         page.header,
@@ -314,13 +276,7 @@ fn doubleglob() {
 #[test]
 /// - full header lines can be set in the configuration file
 fn full_header_preset() {
-    let (addr, port) = gen_addr_port();
-    let page = get(
-        &["--addr", &format!("[::]:{}", port)],
-        addr,
-        "gemini://localhost/gone.txt",
-    )
-    .expect("could not get page");
+    let page = get(&[], "gemini://localhost/gone.txt").expect("could not get page");
 
     assert_eq!(
         page.header,
@@ -334,15 +290,8 @@ fn full_header_preset() {
 #[test]
 /// - URLS with fragments are rejected
 fn fragment() {
-    let (addr, port) = gen_addr_port();
     let page = get(
-        &[
-            "--addr",
-            &format!("[::]:{}", port),
-            "--hostname",
-            "example.com",
-        ],
-        addr,
+        &["--hostname", "example.com"],
         "gemini://example.com/#fragment",
     )
     .expect("could not get page");
@@ -353,18 +302,8 @@ fn fragment() {
 #[test]
 /// - URLS with username are rejected
 fn username() {
-    let (addr, port) = gen_addr_port();
-    let page = get(
-        &[
-            "--addr",
-            &format!("[::]:{}", port),
-            "--hostname",
-            "example.com",
-        ],
-        addr,
-        "gemini://user@example.com/",
-    )
-    .expect("could not get page");
+    let page = get(&["--hostname", "example.com"], "gemini://user@example.com/")
+        .expect("could not get page");
 
     assert_eq!(page.header.status, Status::BadRequest);
 }
@@ -376,11 +315,9 @@ fn percent_encode() {
     use std::io::Write;
     use std::net::TcpStream;
 
-    let (addr, port) = gen_addr_port();
-    // let page = get(
-    //     &["--addr", &format!("[::]:{}", port), "--hostname", "example.com"],
-    //     addr,
-    let mut server = Server::new(&["--addr", &format!("[::]:{}", port), "--certs", "multicert"]);
+    // Can't use `get` here because we are testing a URL thats invalid so
+    // the gemini fetching library can not process it.
+    let mut server = Server::new(&["--certs", "multicert"]);
 
     let mut certs = RootCertStore::empty();
     certs
@@ -402,7 +339,7 @@ fn percent_encode() {
         "example.com".try_into().unwrap(),
     )
     .unwrap();
-    let mut tcp = TcpStream::connect(addr).unwrap();
+    let mut tcp = TcpStream::connect(server.get_addr()).unwrap();
     let mut tls = rustls::Stream::new(&mut session, &mut tcp);
 
     write!(tls, "gemini://%/\r\n").unwrap();
@@ -418,15 +355,8 @@ fn percent_encode() {
 #[test]
 /// - URLS with password are rejected
 fn password() {
-    let (addr, port) = gen_addr_port();
     let page = get(
-        &[
-            "--addr",
-            &format!("[::]:{}", port),
-            "--hostname",
-            "example.com",
-        ],
-        addr,
+        &["--hostname", "example.com"],
         "gemini://:secret@example.com/",
     )
     .expect("could not get page");
@@ -438,18 +368,8 @@ fn password() {
 /// - hostname is checked when provided
 /// - status for wrong host is "proxy request refused"
 fn hostname_check() {
-    let (addr, port) = gen_addr_port();
-    let page = get(
-        &[
-            "--addr",
-            &format!("[::]:{}", port),
-            "--hostname",
-            "example.org",
-        ],
-        addr,
-        "gemini://example.com/",
-    )
-    .expect("could not get page");
+    let page =
+        get(&["--hostname", "example.org"], "gemini://example.com/").expect("could not get page");
 
     assert_eq!(page.header.status, Status::ProxyRequestRefused);
 }
@@ -458,18 +378,8 @@ fn hostname_check() {
 /// - port is checked when hostname is provided
 /// - status for wrong port is "proxy request refused"
 fn port_check() {
-    let (addr, port) = gen_addr_port();
-    let page = get(
-        &[
-            "--addr",
-            &format!("[::]:{}", port),
-            "--hostname",
-            "example.org",
-        ],
-        addr,
-        &format!("gemini://example.org:{}/", 0000),
-    )
-    .expect("could not get page");
+    let page =
+        get(&["--hostname", "example.org"], "gemini://example.org:1/").expect("could not get page");
 
     assert_eq!(page.header.status, Status::ProxyRequestRefused);
 }
@@ -477,17 +387,9 @@ fn port_check() {
 #[test]
 /// - port is not checked if the skip option is passed.
 fn port_check_skipped() {
-    let (addr, port) = gen_addr_port();
     let page = get(
-        &[
-            "--addr",
-            &format!("[::]:{}", port),
-            "--hostname",
-            "example.org",
-            "--skip-port-check",
-        ],
-        addr,
-        &format!("gemini://example.org:{}/", port),
+        &["--hostname", "example.org", "--skip-port-check"],
+        "gemini://example.org:1/",
     )
     .expect("could not get page");
 
@@ -497,13 +399,7 @@ fn port_check_skipped() {
 #[test]
 /// - status for paths with hidden segments is "gone" if file does not exist
 fn secret_nonexistent() {
-    let (addr, port) = gen_addr_port();
-    let page = get(
-        &["--addr", &format!("[::]:{}", port)],
-        addr,
-        "gemini://localhost/.secret",
-    )
-    .expect("could not get page");
+    let page = get(&[], "gemini://localhost/.secret").expect("could not get page");
 
     assert_eq!(page.header.status, Status::Gone);
 }
@@ -511,13 +407,7 @@ fn secret_nonexistent() {
 #[test]
 /// - status for paths with hidden segments is "gone" if file exists
 fn secret_exists() {
-    let (addr, port) = gen_addr_port();
-    let page = get(
-        &["--addr", &format!("[::]:{}", port)],
-        addr,
-        "gemini://localhost/.meta",
-    )
-    .expect("could not get page");
+    let page = get(&[], "gemini://localhost/.meta").expect("could not get page");
 
     assert_eq!(page.header.status, Status::Gone);
 }
@@ -525,13 +415,7 @@ fn secret_exists() {
 #[test]
 /// - secret file served if `--serve-secret` is enabled
 fn serve_secret() {
-    let (addr, port) = gen_addr_port();
-    let page = get(
-        &["--addr", &format!("[::]:{}", port), "--serve-secret"],
-        addr,
-        "gemini://localhost/.meta",
-    )
-    .expect("could not get page");
+    let page = get(&["--serve-secret"], "gemini://localhost/.meta").expect("could not get page");
 
     assert_eq!(page.header.status, Status::Success);
 }
@@ -562,11 +446,9 @@ fn directory_traversal_regression() {
         .push(relative_escape_path.to_str().unwrap()) // separators will be percent-encoded
         .push("directory_traversal.gmi");
 
-    let (addr, port) = gen_addr_port();
     let urls = [absolute, relative];
     for url in urls.iter() {
-        let page = get(&["--addr", &format!("[::]:{}", port)], addr, url.as_str())
-            .expect("could not get page");
+        let page = get(&[], url.as_str()).expect("could not get page");
         assert_eq!(page.header.status, Status::NotFound);
     }
 }
@@ -580,8 +462,7 @@ fn explicit_tls_version() {
     use std::io::Read;
     use std::net::TcpStream;
 
-    let (addr, port) = gen_addr_port();
-    let _server = Server::new(&["--addr", &format!("[::]:{}", port), "-3"]);
+    let server = Server::new(&["-3"]);
 
     let config = rustls::ClientConfig::builder()
         .with_safe_default_cipher_suites()
@@ -595,7 +476,7 @@ fn explicit_tls_version() {
     let mut session =
         ClientConnection::new(std::sync::Arc::new(config), "localhost".try_into().unwrap())
             .unwrap();
-    let mut tcp = TcpStream::connect(addr).unwrap();
+    let mut tcp = TcpStream::connect(server.get_addr()).unwrap();
     let mut tls = rustls::Stream::new(&mut session, &mut tcp);
 
     let mut buf = [0; 10];
@@ -619,17 +500,8 @@ mod vhosts {
     /// - the hostname comparison is case insensitive
     /// - the hostname is converted to lower case to access certificates
     fn example_com() {
-        let (addr, port) = gen_addr_port();
         let page = get(
-            &[
-                "--addr",
-                &format!("[::]:{}", port),
-                "--hostname",
-                "example.com",
-                "--hostname",
-                "example.org",
-            ],
-            addr,
+            &["--hostname", "example.com", "--hostname", "example.org"],
             "gemini://Example.com/",
         )
         .expect("could not get page");
@@ -651,17 +523,8 @@ mod vhosts {
     #[test]
     /// - the vhosts access the correct files
     fn example_org() {
-        let (addr, port) = gen_addr_port();
         let page = get(
-            &[
-                "--addr",
-                &format!("[::]:{}", port),
-                "--hostname",
-                "example.com",
-                "--hostname",
-                "example.org",
-            ],
-            addr,
+            &["--hostname", "example.com", "--hostname", "example.org"],
             "gemini://example.org/",
         )
         .expect("could not get page");
@@ -687,13 +550,7 @@ mod multicert {
     #[test]
     #[should_panic]
     fn cert_missing() {
-        let port = gen_port();
-        let mut server = Server::new(&[
-            "--addr",
-            &format!("[::]:{}", port),
-            "--certs",
-            "cert_missing",
-        ]);
+        let mut server = Server::new(&["--certs", "cert_missing"]);
 
         // wait for the server to stop, it should crash
         let _ = server.server.wait();
@@ -702,13 +559,7 @@ mod multicert {
     #[test]
     #[should_panic]
     fn key_missing() {
-        let port = gen_port();
-        let mut server = Server::new(&[
-            "--addr",
-            &format!("[::]:{}", port),
-            "--certs",
-            "key_missing",
-        ]);
+        let mut server = Server::new(&["--certs", "key_missing"]);
 
         // wait for the server to stop, it should crash
         let _ = server.server.wait();
@@ -720,9 +571,7 @@ mod multicert {
         use std::io::Write;
         use std::net::TcpStream;
 
-        let (addr, port) = gen_addr_port();
-        let mut server =
-            Server::new(&["--addr", &format!("[::]:{}", port), "--certs", "multicert"]);
+        let mut server = Server::new(&["--certs", "multicert"]);
 
         let mut certs = RootCertStore::empty();
         certs
@@ -744,7 +593,7 @@ mod multicert {
             "example.com".try_into().unwrap(),
         )
         .unwrap();
-        let mut tcp = TcpStream::connect(addr).unwrap();
+        let mut tcp = TcpStream::connect(server.get_addr()).unwrap();
         let mut tls = rustls::Stream::new(&mut session, &mut tcp);
 
         write!(tls, "gemini://example.com/\r\n").unwrap();
@@ -761,9 +610,7 @@ mod multicert {
         use std::io::Write;
         use std::net::TcpStream;
 
-        let (addr, port) = gen_addr_port();
-        let mut server =
-            Server::new(&["--addr", &format!("[::]:{}", port), "--certs", "multicert"]);
+        let mut server = Server::new(&["--certs", "multicert"]);
 
         let mut certs = RootCertStore::empty();
         certs
@@ -785,7 +632,7 @@ mod multicert {
             "example.org".try_into().unwrap(),
         )
         .unwrap();
-        let mut tcp = TcpStream::connect(addr).unwrap();
+        let mut tcp = TcpStream::connect(server.get_addr()).unwrap();
         let mut tls = rustls::Stream::new(&mut session, &mut tcp);
 
         write!(tls, "gemini://example.org/\r\n").unwrap();
@@ -805,18 +652,8 @@ mod directory_listing {
     /// - shows directory listing preamble correctly
     /// - encodes link URLs correctly
     fn with_preamble() {
-        let (addr, port) = gen_addr_port();
-        let page = get(
-            &[
-                "--addr",
-                &format!("[::]:{}", port),
-                "--content",
-                "dirlist-preamble",
-            ],
-            addr,
-            "gemini://localhost/",
-        )
-        .expect("could not get page");
+        let page = get(&["--content", "dirlist-preamble"], "gemini://localhost/")
+            .expect("could not get page");
 
         assert_eq!(
             page.header,
@@ -834,13 +671,8 @@ mod directory_listing {
 
     #[test]
     fn empty_preamble() {
-        let (addr, port) = gen_addr_port();
-        let page = get(
-            &["--addr", &format!("[::]:{}", port), "--content", "dirlist"],
-            addr,
-            "gemini://localhost/",
-        )
-        .expect("could not get page");
+        let page =
+            get(&["--content", "dirlist"], "gemini://localhost/").expect("could not get page");
 
         assert_eq!(
             page.header,
