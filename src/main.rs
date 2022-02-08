@@ -30,6 +30,8 @@ use {
     url::{Host, Url},
 };
 
+static DEFAULT_PORT: u16 = 1965;
+
 fn main() {
     env_logger::Builder::from_env(
         // by default only turn on logging for agate
@@ -136,7 +138,7 @@ fn args() -> Result<Args> {
     opts.optmulti(
         "",
         "addr",
-        "Address to listen on (default 0.0.0.0:1965 and [::]:1965; muliple occurences means listening on multiple interfaces)",
+        &format!("Address to listen on (default 0.0.0.0:{} and [::]:{}; muliple occurences means listening on multiple interfaces)", DEFAULT_PORT, DEFAULT_PORT),
         "IP:PORT",
     );
     opts.optmulti(
@@ -288,8 +290,8 @@ fn args() -> Result<Args> {
     }
     if addrs.is_empty() {
         addrs = vec![
-            SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), 1965),
-            SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), 1965),
+            SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), DEFAULT_PORT),
+            SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), DEFAULT_PORT),
         ];
     }
 
