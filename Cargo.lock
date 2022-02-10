@@ -357,9 +357,9 @@ dependencies = [
 
 [[package]]
 name = "rcgen"
-version = "0.9.0"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b19a6d05e859d1cb69223792dde3834d3637f1095b5a3e1663745df6fb57454b"
+checksum = "e2296a75ce93ea619bd9686d9f4b060f28845236e67d8666bcd02954e872b400"
 dependencies = [
  "pem",
  "ring",
