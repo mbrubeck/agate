@@ -4,6 +4,8 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
+use crate::StatusCode;
+
 static SIDECAR_FILENAME: &str = ".meta";
 
 /// A struct to store a string of metadata for each file retrieved from
@@ -56,7 +58,7 @@ pub(crate) enum PresetMeta {
     /// ```
     /// Agate will send this header line, CR, LF, and nothing else. Agate will
     /// not try to access the requested file.
-    FullHeader(u8, String),
+    FullHeader(StatusCode, String),
 }
 
 impl FileOptions {
@@ -162,6 +164,9 @@ impl FileOptions {
                     .collect::<String>()
                     .parse::<u8>()
                     // unwrap since we alread checked it's a number
+                    .unwrap()
+                    .try_into()
+                    // unwrap since we already checked it was in valid range
                     .unwrap();
                 // not taking a slice here because the separator
                 // might be a whitespace wider than a byte
