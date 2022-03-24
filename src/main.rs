@@ -30,6 +30,19 @@ use {
     url::{Host, Url},
 };
 
+/// The server was unable to parse the client's request, presumably due to a malformed request. (cf HTTP 400)
+const BAD_REQUEST: u8 = 59;
+/// The request was for a resource at a domain not served by the server and the server does not accept proxy requests.
+const PROXY_REQUEST_REFUSED: u8 = 53;
+/// The requested resource could not be found but may be available in the future. (cf HTTP 404)
+const NOT_FOUND: u8 = 51;
+/// The resource requested is no longer available and will not be available again. Search engines and similar tools should remove this resource from their indices. Content aggrefators should stop requesting the resource and convey to their human users that the subscribed resource is gone. (cf HTTP 410)
+const GONE: u8 = 52;
+/// The requested resource should be consistently requested from the new URL provided in the future. Tools loke search engine indexers or content aggregators should update their configurations to avoid requesting the old URL, and end-user clients may automatically update bookmarks, etc. Note that clients that only pay attention to the initial digit of status codes will treat this as a temporary redirect. They will still end up at the right place, they just won't be able to make use of the knowledge that this redirect is permanent, so they'll pay a small performance penality by having to follow the redirect each time.
+const REDIRECT_PERMANENT: u8 = 31;
+/// The request was handled successfully and a response body will follow the response header. The <META> line is a MIME media type which applies to the response body.
+const SUCCESS: u8 = 20;
+
 static DEFAULT_PORT: u16 = 1965;
 
 fn main() {
@@ -416,17 +429,17 @@ impl RequestHandle {
             let bytes_read = if let Ok(read) = self.stream.read(buf).await {
                 read
             } else {
-                break Err((59, "Request ended unexpectedly"));
+                break Err((BAD_REQUEST, "Request ended unexpectedly"));
             };
             len += bytes_read;
             if request[..len].ends_with(b"\r\n") {
                 break Ok(());
             } else if bytes_read == 0 {
-                break Err((59, "Request ended unexpectedly"));
+                break Err((BAD_REQUEST, "Request ended unexpectedly"));
             }
             buf = &mut request[len..];
         }
-        .and_then(|()| std::str::from_utf8(&request[..len - 2]).or(Err((59, "Non-UTF-8 request"))));
+        .and_then(|()| std::str::from_utf8(&request[..len - 2]).or(Err((BAD_REQUEST, "Non-UTF-8 request"))));
 
         let request = result.map_err(|e| {
             // write empty request to log line for uniformity
@@ -437,17 +450,17 @@ impl RequestHandle {
         // log literal request (might be different from or not an actual URL)
         write!(self.log_line, " \"{}\"", request).unwrap();
 
-        let mut url = Url::parse(request).or(Err((59, "Invalid URL")))?;
+        let mut url = Url::parse(request).or(Err((BAD_REQUEST, "Invalid URL")))?;
 
         // Validate the URL:
         // correct scheme
         if url.scheme() != "gemini" {
-            return Err((53, "Unsupported URL scheme"));
+            return Err((PROXY_REQUEST_REFUSED, "Unsupported URL scheme"));
         }
 
         // no userinfo and no fragment
         if url.password().is_some() || !url.username().is_empty() || url.fragment().is_some() {
-            return Err((59, "URL contains fragment or userinfo"));
+            return Err((BAD_REQUEST, "URL contains fragment or userinfo"));
         }
 
         // correct host
@@ -457,19 +470,19 @@ impl RequestHandle {
             let host = Host::parse(
                 &percent_decode_str(domain)
                     .decode_utf8()
-                    .or(Err((59, "Invalid URL")))?,
+                    .or(Err((BAD_REQUEST, "Invalid URL")))?,
             )
-            .or(Err((59, "Invalid URL")))?;
+            .or(Err((BAD_REQUEST, "Invalid URL")))?;
             // TODO: simplify when <https://github.com/servo/rust-url/issues/586> resolved
             url.set_host(Some(&host.to_string()))
                 .expect("invalid domain?");
             // do not use "contains" here since it requires the same type and does
             // not allow to check for Host<&str> if the vec contains Hostname<String>
             if !ARGS.hostnames.is_empty() && !ARGS.hostnames.iter().any(|h| h == &host) {
-                return Err((53, "Proxy request refused"));
+                return Err((PROXY_REQUEST_REFUSED, "Proxy request refused"));
             }
         } else {
-            return Err((59, "URL does not contain a domain"));
+            return Err((BAD_REQUEST, "URL does not contain a domain"));
         }
 
         // correct port
@@ -478,7 +491,7 @@ impl RequestHandle {
                 // Validate that the port in the URL is the same as for the stream this request
                 // came in on.
                 if port != self.stream.get_ref().0.local_addr().unwrap().port() {
-                    return Err((53, "Proxy request refused"));
+                    return Err((PROXY_REQUEST_REFUSED, "Proxy request refused"));
                 }
             }
         }
@@ -513,16 +526,16 @@ impl RequestHandle {
                 match components.next() {
                     None => (),
                     Some(Component::Normal(c)) => path.push(c),
-                    Some(_) => return self.send_header(51, "Not found, sorry.").await,
+                    Some(_) => return self.send_header(NOT_FOUND, "Not found, sorry.").await,
                 }
                 // there must not be more than one component
                 if components.next().is_some() {
-                    return self.send_header(51, "Not found, sorry.").await;
+                    return self.send_header(NOT_FOUND, "Not found, sorry.").await;
                 }
                 // even if it's one component, there may be trailing path
                 // separators at the end
                 if decoded.ends_with(path::is_separator) {
-                    return self.send_header(51, "Not found, sorry.").await;
+                    return self.send_header(NOT_FOUND, "Not found, sorry.").await;
                 }
             }
             // check if hiding files is disabled
@@ -533,7 +546,7 @@ impl RequestHandle {
                 && segments.any(|segment| segment.starts_with('.'))
             {
                 return self
-                    .send_header(52, "If I told you, it would not be a secret.")
+                    .send_header(GONE, "If I told you, it would not be a secret.")
                     .await;
             }
         }
@@ -554,7 +567,7 @@ impl RequestHandle {
                     // if client is not redirected, links may not work as expected without trailing slash
                     let mut url = url;
                     url.set_path(&format!("{}/", url.path()));
-                    return self.send_header(31, url.as_str()).await;
+                    return self.send_header(REDIRECT_PERMANENT, url.as_str()).await;
                 }
             }
         }
@@ -571,7 +584,7 @@ impl RequestHandle {
         let mut file = match tokio::fs::File::open(&path).await {
             Ok(file) => file,
             Err(e) => {
-                self.send_header(51, "Not found, sorry.").await?;
+                self.send_header(NOT_FOUND, "Not found, sorry.").await?;
                 return Err(e.into());
             }
         };
@@ -592,7 +605,7 @@ impl RequestHandle {
                 }
             }
         };
-        self.send_header(20, &mime).await?;
+        self.send_header(SUCCESS, &mime).await?;
 
         // Send body.
         tokio::io::copy(&mut file, &mut self.stream).await?;
@@ -617,13 +630,13 @@ impl RequestHandle {
         {
             txt
         } else {
-            self.send_header(51, "Directory index disabled.").await?;
+            self.send_header(NOT_FOUND, "Directory index disabled.").await?;
             return Ok(());
         };
 
         log::info!("Listing directory {:?}", path);
 
-        self.send_header(20, "text/gemini").await?;
+        self.send_header(SUCCESS, "text/gemini").await?;
         self.stream.write_all(preamble.as_bytes()).await?;
 
         let mut entries = tokio::fs::read_dir(path).await?;
