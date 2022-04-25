@@ -13,7 +13,7 @@ Description=Agate gemini server
 # and place the contents to be displayed in /srv/gemini/content
 WorkingDirectory=/srv/gemini/
 # assumes the device hostname is set correctly
-ExecStart=agate --hostname $(uname -n) --lang en
+ExecStart=/bin/sh -c "agate --hostname $(uname -n) --lang en"
 
 Restart=always
 RestartSec=1
