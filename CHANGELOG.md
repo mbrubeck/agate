@@ -7,7 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.4] - 2022-05-18
+Thank you to @06kellyjac, @albertlarsan68 and @kahays for contributing to this release.
+
 ### Fixed
+* removed port collisions in tests, for the last time (#143)
+* fixed Dockerfile startup command (#169)
 * upated dependencies
 
 ## [3.2.3] - 2022-02-04
@@ -331,7 +336,8 @@ Thank you to @m040601 for contributing to this release.
 
 ## [1.0.0] - 2020-05-21
 
-[Unreleased]: https://github.com/mbrubeck/agate/compare/v3.2.3...HEAD
+[Unreleased]: https://github.com/mbrubeck/agate/compare/v3.2.4...HEAD
+[3.2.4]: https://github.com/mbrubeck/agate/compare/v3.2.3...v3.2.4
 [3.2.3]: https://github.com/mbrubeck/agate/compare/v3.2.2...v3.2.3
 [3.2.2]: https://github.com/mbrubeck/agate/compare/v3.2.1...v3.2.2
 [3.2.1]: https://github.com/mbrubeck/agate/compare/v3.2.0...v3.2.1

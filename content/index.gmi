@@ -215,6 +215,14 @@ The format is based on Keep a Changelog and this project adheres to Semantic Ver
 => https://keepachangelog.com/en/1.0.0/ Keep a Changelog home page
 => https://semver.org/spec/v2.0.0.html Semantic versioning standard v2.0.0
 
+## [3.2.4] - 2022-05-18
+Thank you to @06kellyjac, @albertlarsan68 and @kahays for contributing to this release.
+
+### Fixed
+* removed port collisions in tests, for the last time (#143)
+* fixed Dockerfile startup command (#169)
+* upated dependencies
+
 ## [3.2.3] - 2022-02-04
 Thank you to T. Spivey for contributing to this release.
 
