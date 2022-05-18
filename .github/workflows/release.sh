@@ -3,6 +3,7 @@
 # Since this is not supervised, abort if anything does not work.
 set -e
 
+sudo apt update
 # Cross-compiling needs a linker for the respective platforms. If you are on a Debian-based x86_64 Linux,
 # you can install them with:
 sudo apt -y install podman gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu
