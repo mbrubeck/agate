@@ -17,7 +17,7 @@ if ! (getent group "$PGID" 1>/dev/null 2>/dev/null); then
 fi
 
 if ! (getent passwd "$PUID" 1>/dev/null 2>/dev/null); then
-	adduser -G agate -u 1000 -H -D -h /content agate
+	adduser -G agate -u 1000 -H -D -h "$CONTENT" agate
 fi
 
 sudo chown -R "$PUID:$PGID" "$CONTENT" "$CERTIFICATES"
@@ -30,5 +30,5 @@ sudo \
 	--addr '[::]:1965' \
 	--content "$CONTENT" \
 	--certs "$CERTIFICATES" \
-	--hostname "${HOSTNAME}" \
-	--lang "${LANG}"
+	--hostname "$HOSTNAME" \
+	--lang "$LANG"
