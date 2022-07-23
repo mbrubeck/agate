@@ -120,14 +120,14 @@ Such a configuration file might look like this:
 # This line will be ignored.
 **/*.de.gmi: ;lang=de
 nl/**/*.gmi: ;lang=nl
-index.gmi: ;lang=en-UK
+index.gmi: ;lang=en-GB
 LICENSE: text/plain;charset=UTF-8
 gone.gmi: 52 This file is no longer here, sorry.
 ```
 
 If this is the `.meta` file in the content root directory and the `-C` flag is used, this will result in the following response headers:
 * `/` or `/index.gmi`
-    -> `20 text/gemini;lang=en-UK`
+    -> `20 text/gemini;lang=en-GB`
 * `/LICENSE`
     -> `20 text/plain;charset=UTF-8`
 * `/gone.gmi`
