@@ -25,7 +25,7 @@ By participating in this project you agree to abide by its terms.
 
 ## Reporting security issues
 
-If you find a security issue, please disclose it to Johann150 privately, e.g. per [email](mailto:johann+agate@qwrtqwefsday.eu). If you know how to fix the issue, please follow the contribution workflow as if you do not use GitHub, regardless of if you actually use it. I.e. patches should also be submitted privately.
+If you find a security issue, please disclose it to Johann150 privately, e.g. per [email](mailto:johann+agate@qwertqwefsday.eu). If you know how to fix the issue, please follow the contribution workflow as if you do not use GitHub, regardless of if you actually use it. I.e. patches should also be submitted privately.
 
 An effort will be made to respond to such issues quickly, at least responding with a "read receipt". If you do not hear back anything regarding the security issue within three days, try contacting other maintainers listed in the Cargo.toml file or on crates.io for this crate.
 
