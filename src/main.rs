@@ -188,14 +188,14 @@ fn args() -> Result<Args> {
     opts.optmulti(
         "",
         "addr",
-        &format!("Address to listen on (default 0.0.0.0:{DEFAULT_PORT} and [::]:{DEFAULT_PORT}; muliple occurences means listening on multiple interfaces)"),
+        &format!("Address to listen on (default 0.0.0.0:{DEFAULT_PORT} and [::]:{DEFAULT_PORT}; multiple occurences means listening on multiple interfaces)"),
         "IP:PORT",
     );
     #[cfg(target_family = "unix")]
     opts.optmulti(
         "",
         "socket",
-        "Unix socket to listen on (muliple occurences means listening on multiple sockets)",
+        "Unix socket to listen on (multiple occurences means listening on multiple sockets)",
         "PATH",
     );
     opts.optmulti(
