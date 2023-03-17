@@ -159,6 +159,7 @@ static ARGS: Lazy<Args> = Lazy::new(|| {
 
 struct Args {
     addrs: Vec<SocketAddr>,
+    #[allow(dead_code)] // only used on unix, so dead code on windows
     sockets: Vec<PathBuf>,
     content_dir: PathBuf,
     certs: Arc<certificates::CertStore>,
@@ -347,12 +348,21 @@ fn args() -> Result<Args> {
         addrs.push(i.parse()?);
     }
 
+    #[allow(unused_mut)] // only used on unix
+    let mut empty = addrs.is_empty();
+
+    #[allow(unused_mut)] // only used on unix
     let mut sockets = vec![];
-    for i in matches.opt_strs("socket") {
-        sockets.push(i.parse()?);
+    #[cfg(unix)]
+    {
+        for i in matches.opt_strs("socket") {
+            sockets.push(i.parse()?);
+        }
+
+        empty &= sockets.is_empty();
     }
 
-    if addrs.is_empty() && sockets.is_empty() {
+    if empty {
         addrs = vec![
             SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), DEFAULT_PORT),
             SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), DEFAULT_PORT),
