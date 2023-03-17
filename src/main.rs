@@ -32,9 +32,9 @@ use {
     url::{Host, Url},
 };
 
-#[cfg(target_family = "unix")]
+#[cfg(unix)]
 use std::os::unix::fs::FileTypeExt;
-#[cfg(target_family = "unix")]
+#[cfg(unix)]
 use tokio::net::{UnixListener, UnixStream};
 
 static DEFAULT_PORT: u16 = 1965;
@@ -101,7 +101,7 @@ fn main() {
                 }))
             };
 
-            #[cfg(target_family = "unix")]
+            #[cfg(unix)]
             for socketpath in &ARGS.sockets {
                 let arc = mimetypes.clone();
 
@@ -191,7 +191,7 @@ fn args() -> Result<Args> {
         &format!("Address to listen on (default 0.0.0.0:{DEFAULT_PORT} and [::]:{DEFAULT_PORT}; multiple occurences means listening on multiple interfaces)"),
         "IP:PORT",
     );
-    #[cfg(target_family = "unix")]
+    #[cfg(unix)]
     opts.optmulti(
         "",
         "socket",
