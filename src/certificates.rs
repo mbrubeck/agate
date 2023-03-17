@@ -47,15 +47,14 @@ impl Display for CertLoadError {
         match self {
             Self::NoReadCertDir => write!(f, "Could not read from certificate directory."),
             Self::Empty => write!(f, "No keys or certificates were found in the given directory.\nSpecify the --hostname option to generate these automatically."),
-            Self::BadKey(domain, err) => write!(f, "The key file for {} is malformed: {:?}", domain, err),
-            Self::MissingKey(domain) => write!(f, "The key file for {} is missing.", domain),
+            Self::BadKey(domain, err) => write!(f, "The key file for {domain} is malformed: {err:?}"),
+            Self::MissingKey(domain) => write!(f, "The key file for {domain} is missing."),
             Self::MissingCert(domain) => {
-                write!(f, "The certificate file for {} is missing.", domain)
+                write!(f, "The certificate file for {domain} is missing.")
             }
             Self::EmptyDomain(domain) => write!(
                 f,
-                "A folder for {} exists, but there is no certificate or key file.",
-                domain
+                "A folder for {domain} exists, but there is no certificate or key file."
             ),
         }
     }

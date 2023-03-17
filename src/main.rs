@@ -46,7 +46,7 @@ fn main() {
             let default = PresetMeta::Parameters(
                 ARGS.language
                     .as_ref()
-                    .map_or(String::new(), |lang| format!(";lang={}", lang)),
+                    .map_or(String::new(), |lang| format!(";lang={lang}")),
             );
             let mimetypes = Arc::new(Mutex::new(FileOptions::new(default)));
 
@@ -62,7 +62,7 @@ fn main() {
                 let listener = match TcpListener::bind(addr).await {
                     Err(e) => {
                         if !(addr.ip().is_unspecified() && listening_unspecified) {
-                            panic!("Failed to listen on {}: {}", addr, e)
+                            panic!("Failed to listen on {addr}: {e}")
                         } else {
                             // already listening on the other unspecified address
                             log::warn!("Could not start listener on {}, but already listening on another unspecified address. Probably your system automatically listens in dual stack?", addr);
@@ -78,7 +78,7 @@ fn main() {
 
                     loop {
                         let (stream, _) = listener.accept().await.unwrap_or_else(|e| {
-                            panic!("could not accept new connection on {}: {}", addr, e)
+                            panic!("could not accept new connection on {addr}: {e}")
                         });
                         let arc = arc.clone();
                         tokio::spawn(async {
@@ -104,7 +104,7 @@ type Result<T = (), E = Box<dyn Error + Send + Sync>> = std::result::Result<T, E
 
 static ARGS: Lazy<Args> = Lazy::new(|| {
     args().unwrap_or_else(|s| {
-        eprintln!("{}", s);
+        eprintln!("{s}");
         std::process::exit(1);
     })
 });
@@ -140,7 +140,7 @@ fn args() -> Result<Args> {
     opts.optmulti(
         "",
         "addr",
-        &format!("Address to listen on (default 0.0.0.0:{} and [::]:{}; muliple occurences means listening on multiple interfaces)", DEFAULT_PORT, DEFAULT_PORT),
+        &format!("Address to listen on (default 0.0.0.0:{DEFAULT_PORT} and [::]:{DEFAULT_PORT}; muliple occurences means listening on multiple interfaces)"),
         "IP:PORT",
     );
     opts.optmulti(
@@ -316,7 +316,7 @@ fn check_path(s: String) -> Result<PathBuf, String> {
     if p.as_path().exists() {
         Ok(p)
     } else {
-        Err(format!("No such file: {:?}", p))
+        Err(format!("No such file: {p:?}"))
     }
 }
 
@@ -357,8 +357,7 @@ impl RequestHandle {
                 .map_err(|_| {
                     format!(
                         // use nonexistent status code 01 if peer IP is unknown
-                        "{} - \"\" 01 \"IP error\" error:could not get peer address",
-                        local_addr,
+                        "{local_addr} - \"\" 01 \"IP error\" error:could not get peer address",
                     )
                 })?
                 .ip()
@@ -368,7 +367,7 @@ impl RequestHandle {
             "-".into()
         };
 
-        let log_line = format!("{} {}", local_addr, peer_addr,);
+        let log_line = format!("{local_addr} {peer_addr}",);
 
         match TLS.accept(stream).await {
             Ok(stream) => Ok(Self {
@@ -377,7 +376,7 @@ impl RequestHandle {
                 metadata,
             }),
             // use nonexistent status code 00 if connection was not established
-            Err(e) => Err(format!("{} \"\" 00 \"TLS error\" error:{}", log_line, e)),
+            Err(e) => Err(format!("{log_line} \"\" 00 \"TLS error\" error:{e}")),
         }
     }
 
@@ -439,7 +438,7 @@ impl RequestHandle {
         })?;
 
         // log literal request (might be different from or not an actual URL)
-        write!(self.log_line, " \"{}\"", request).unwrap();
+        write!(self.log_line, " \"{request}\"").unwrap();
 
         let mut url = Url::parse(request).or(Err((BAD_REQUEST, "Invalid URL")))?;
 
@@ -589,7 +588,7 @@ impl RequestHandle {
             // guess the MIME type and add the parameters
             PresetMeta::Parameters(params) => {
                 if path.extension() == Some(OsStr::new("gmi")) {
-                    format!("text/gemini{}", params)
+                    format!("text/gemini{params}")
                 } else {
                     let mime = mime_guess::from_path(&path).first_or_octet_stream();
                     format!("{}{}", mime.essence_str(), params)
@@ -645,8 +644,8 @@ impl RequestHandle {
                 name += "/";
             }
             let line = match percent_encode(name.as_bytes(), &ENCODE_SET).into() {
-                Cow::Owned(url) => format!("=> {} {}\n", url, name),
-                Cow::Borrowed(url) => format!("=> {}\n", url), // url and name are identical
+                Cow::Owned(url) => format!("=> {url} {name}\n"),
+                Cow::Borrowed(url) => format!("=> {url}\n"), // url and name are identical
             };
             lines.push(line);
         }
@@ -659,10 +658,10 @@ impl RequestHandle {
 
     async fn send_header(&mut self, status: u8, meta: &str) -> Result {
         // add response status and response meta
-        write!(self.log_line, " {} \"{}\"", status, meta)?;
+        write!(self.log_line, " {status} \"{meta}\"")?;
 
         self.stream
-            .write_all(format!("{} {}\r\n", status, meta).as_bytes())
+            .write_all(format!("{status} {meta}\r\n").as_bytes())
             .await?;
         Ok(())
     }

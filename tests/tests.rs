@@ -51,7 +51,7 @@ impl Server {
         let mut reader = BufReader::new(server.stderr.as_mut().unwrap());
         let mut buffer = String::new();
         while matches!(reader.read_line(&mut buffer), Ok(i) if i>0) {
-            print!("log: {}", buffer);
+            print!("log: {buffer}");
             if buffer.contains("Started") {
                 break;
             }
@@ -81,7 +81,7 @@ impl Server {
         }
 
         self.output = Some(match self.server.try_wait() {
-            Err(e) => Err(format!("cannot access orchestrated program: {:?}", e)),
+            Err(e) => Err(format!("cannot access orchestrated program: {e:?}")),
             Ok(None) => {
                 // everything fine, still running as expected, kill it now
                 self.server.kill().unwrap();
@@ -89,7 +89,7 @@ impl Server {
                 let mut reader = BufReader::new(self.server.stderr.as_mut().unwrap());
                 let mut buffer = String::new();
                 while matches!(reader.read_line(&mut buffer), Ok(i) if i>0) {
-                    print!("log: {}", buffer);
+                    print!("log: {buffer}");
                     if buffer.contains("Listening") {
                         break;
                     }
@@ -100,7 +100,7 @@ impl Server {
                 let mut reader = BufReader::new(self.server.stderr.as_mut().unwrap());
                 let mut buffer = String::new();
                 while matches!(reader.read_line(&mut buffer), Ok(i) if i>0) {
-                    print!("log: {}", buffer);
+                    print!("log: {buffer}");
                     if buffer.contains("Listening") {
                         break;
                     }
@@ -121,7 +121,7 @@ impl Drop for Server {
             // server was already stopped
         } else {
             // we are panicking and a potential error was not handled
-            self.stop().unwrap_or_else(|e| eprintln!("{}", e));
+            self.stop().unwrap_or_else(|e| eprintln!("{e}"));
         }
     }
 }
