@@ -458,13 +458,14 @@ impl RequestHandle<UnixStream> {
         stream: UnixStream,
         metadata: Arc<Mutex<FileOptions>>,
     ) -> Result<Self, String> {
-        let log_line = match stream.local_addr() {
-            Ok(a) => match a.as_pathname() {
-                Some(p) => format!("{} -", p.display()),
-                None => "<unnamed socket> -".to_string(),
-            },
-            Err(_) => "<unnamed socket> -".to_string(),
-        };
+        let log_line = format!(
+            "unix:{} -",
+            stream
+                .local_addr()
+                .ok()
+                .and_then(|addr| Some(addr.as_pathname()?.to_string_lossy().into_owned()))
+                .unwrap_or_default()
+        );
 
         match TLS.accept(stream).await {
             Ok(stream) => Ok(Self {
