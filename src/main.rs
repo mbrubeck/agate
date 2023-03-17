@@ -33,9 +33,10 @@ use {
 };
 
 #[cfg(unix)]
-use std::os::unix::fs::FileTypeExt;
-#[cfg(unix)]
-use tokio::net::{UnixListener, UnixStream};
+use {
+    std::os::unix::fs::FileTypeExt,
+    tokio::net::{UnixListener, UnixStream},
+};
 
 static DEFAULT_PORT: u16 = 1965;
 
