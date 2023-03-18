@@ -1,7 +1,7 @@
 use anyhow::anyhow;
 use gemini_fetch::{Header, Page, Status};
 use std::convert::TryInto;
-use std::io::{BufRead, BufReader, Read};
+use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
@@ -161,6 +161,58 @@ fn index_page() {
             .unwrap()
         )
     );
+}
+
+#[cfg(unix)]
+#[test]
+fn index_page_unix() {
+	use rustls::{Certificate, ClientConnection, RootCertStore};
+
+    let sock_path = std::env::temp_dir().join("agate-test-unix-socket");
+
+    // this uses multicert because those certificates are set up so rustls
+    // does not complain about them being CA certificates
+    let mut server = Server::new(&[
+        "--certs",
+        "multicert",
+        "--socket",
+        sock_path
+            .to_str()
+            .expect("could not convert temp dir path to string"),
+    ]);
+
+    // set up TLS connection via unix socket
+    let mut certs = RootCertStore::empty();
+    certs
+        .add(&Certificate(
+            include_bytes!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/tests/data/multicert/example.com/cert.der"
+            ))
+            .to_vec(),
+        ))
+        .unwrap();
+    let config = rustls::ClientConfig::builder()
+        .with_safe_defaults()
+        .with_root_certificates(certs)
+        .with_no_client_auth();
+    let mut session = ClientConnection::new(
+        std::sync::Arc::new(config),
+        "example.com".try_into().unwrap(),
+    )
+    .unwrap();
+    let mut unix =
+        std::os::unix::net::UnixStream::connect(sock_path).expect("could not connect unix socket");
+    let mut tls = rustls::Stream::new(&mut session, &mut unix);
+
+    write!(tls, "gemini://example.com\r\n").unwrap();
+
+    let mut buf = [0; 16];
+    tls.read(&mut buf).unwrap();
+
+    assert_eq!(&buf, b"20 text/gemini\r\n");
+
+    server.stop().expect("failed to stop server");
 }
 
 #[test]
