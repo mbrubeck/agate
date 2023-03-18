@@ -1,6 +1,6 @@
 [package]
 name = "agate"
-version = "3.2.4"
+version = "3.3.0"
 authors = ["Matt Brubeck <mbrubeck@limpet.net>", "Johann150 <johann+agate@qwertqwefsday.eu>"]
 description = "Very simple server for the Gemini hypertext protocol"
 keywords = ["server", "gemini", "hypertext", "internet", "protocol"]

@@ -6,13 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-Thank you to @equalsraf for contributing to this release.
+
+## [3.3.0] - 2023-03-18
+Thank you to @equalsraf, @michaelnordmeyer and @wanderer1988 for contributing to this release.
 
 ### Added
 * listening on unix sockets (#244)
 
 ### Fixed
 * updated dependencies
+* misstyped email address in section on how to report security vulnerabilities (#239)
+* wrong language code in README (#189)
 
 ## [3.2.4] - 2022-05-18
 Thank you to @06kellyjac, @albertlarsan68 and @kahays for contributing to this release.
@@ -343,7 +347,8 @@ Thank you to @m040601 for contributing to this release.
 
 ## [1.0.0] - 2020-05-21
 
-[Unreleased]: https://github.com/mbrubeck/agate/compare/v3.2.4...HEAD
+[Unreleased]: https://github.com/mbrubeck/agate/compare/v3.3.0...HEAD
+[3.3.0]: https://github.com/mbrubeck/agate/compare/v3.2.4...v3.3.0
 [3.2.4]: https://github.com/mbrubeck/agate/compare/v3.2.3...v3.2.4
 [3.2.3]: https://github.com/mbrubeck/agate/compare/v3.2.2...v3.2.3
 [3.2.2]: https://github.com/mbrubeck/agate/compare/v3.2.1...v3.2.2

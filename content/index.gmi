@@ -123,7 +123,7 @@ Such a configuration file might look like this:
 # This line will be ignored.
 **/*.de.gmi: ;lang=de
 nl/**/*.gmi: ;lang=nl
-index.gmi: ;lang=en-UK
+index.gmi: ;lang=en-GB
 LICENSE: text/plain;charset=UTF-8
 gone.gmi: 52 This file is no longer here, sorry.
 ```
@@ -131,7 +131,7 @@ gone.gmi: 52 This file is no longer here, sorry.
 If this is the `.meta` file in the content root directory and the `-C` flag is used, this will result in the following response headers:
 ```
 `/` or `/index.gmi`
-    -> `20 text/gemini;lang=en-UK`
+    -> `20 text/gemini;lang=en-GB`
 `/LICENSE`
     -> `20 text/plain;charset=UTF-8`
 `/gone.gmi`
@@ -189,13 +189,19 @@ The files for a certificate/key pair have to be named `cert.der` and `key.der` r
 
 ## Logging
 
-All requests will be logged using this format:
+All requests via TCP sockets will be logged using this format:
 ```
 <local ip>:<local port> <remote ip or dash> "<request>" <response status> "<response meta>"[ error:<error>]
 ```
-The "error:" part will only be logged if an error occurred. This should only be used for informative purposes as the status code should provide the information that an error occurred. If the error consisted in the connection not being established (e.g. because of TLS errors), the status code `00` will be used.
+All requests via Unix sockets will be logged using this format:
+```
+unix:[<unix socket name>] - "<request>" <response status> "<response meta>"[ error:<error>]
+```
+Square brackets indicate optional parts.
 
-By default, Agate will not log the remote IP addresses because that might be an issue because IPs are considered private data under the EU's GDPR. To enable logging of IP addresses, you can use the `--log-ip` option. Note that in this case some error conditions might still force Agate to log a dash instead of an IP address.
+The "error:" part will only be logged if an error occurred. This should only be used for informative purposes as the status code should provide the information that an error occurred. If the error consisted in the connection not being established (e.g. because of TLS errors), special status codes listed below may be used.
+
+By default, Agate will not log the remote IP addresses because that might be an issue because IPs are considered private data under the EU's GDPR. To enable logging of IP addresses, you can use the `--log-ip` option. Note that in this case some error conditions might still force Agate to log a dash instead of an IP address. IP addresses can also not be logged for connections via Unix sockets.
 
 There are some lines apart from these that might occur in logs depending on the selected log level. For example the initial "Listening on..." line or information about listing a particular directory.
 
@@ -214,6 +220,17 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning.
 => https://keepachangelog.com/en/1.0.0/ Keep a Changelog home page
 => https://semver.org/spec/v2.0.0.html Semantic versioning standard v2.0.0
+
+## [3.3.0] - 2023-03-18
+Thank you to @equalsraf, @michaelnordmeyer and @wanderer1988 for contributing to this release.
+
+### Added
+* listening on unix sockets (#244)
+
+### Fixed
+* updated dependencies
+* misstyped email address in section on how to report security vulnerabilities (#239)
+* wrong language code in README (#189)
 
 ## [3.2.4] - 2022-05-18
 Thank you to @06kellyjac, @albertlarsan68 and @kahays for contributing to this release.
