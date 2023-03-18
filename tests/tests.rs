@@ -166,7 +166,7 @@ fn index_page() {
 #[cfg(unix)]
 #[test]
 fn index_page_unix() {
-	use rustls::{Certificate, ClientConnection, RootCertStore};
+    use rustls::{Certificate, ClientConnection, RootCertStore};
 
     let sock_path = std::env::temp_dir().join("agate-test-unix-socket");
 
@@ -208,7 +208,7 @@ fn index_page_unix() {
     write!(tls, "gemini://example.com\r\n").unwrap();
 
     let mut buf = [0; 16];
-    tls.read(&mut buf).unwrap();
+    let _ = tls.read(&mut buf);
 
     assert_eq!(&buf, b"20 text/gemini\r\n");
 
