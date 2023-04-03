@@ -18,11 +18,10 @@ dependencies = [
  "once_cell",
  "percent-encoding",
  "rcgen",
- "rustls 0.20.8",
+ "rustls 0.21.0",
  "tokio",
- "tokio-rustls 0.23.4",
+ "tokio-rustls 0.24.0",
  "url",
- "webpki 0.22.0",
 ]
 
 [[package]]
@@ -155,7 +154,7 @@ dependencies = [
  "tokio",
  "tokio-rustls 0.22.0",
  "url",
- "webpki 0.21.4",
+ "webpki",
  "webpki-roots",
  "x509-signature",
 ]
@@ -365,19 +364,29 @@ dependencies = [
  "log",
  "ring",
  "sct 0.6.1",
- "webpki 0.21.4",
+ "webpki",
 ]
 
 [[package]]
 name = "rustls"
-version = "0.20.8"
+version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fff78fc74d175294f4e83b28343315ffcfb114b156f0185e9741cb5570f50e2f"
+checksum = "07180898a28ed6a7f7ba2311594308f595e3dd2e3c3812fa0a80a47b45f17e5d"
 dependencies = [
  "log",
  "ring",
+ "rustls-webpki",
  "sct 0.7.0",
- "webpki 0.22.0",
+]
+
+[[package]]
+name = "rustls-webpki"
+version = "0.100.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d6207cd5ed3d8dca7816f8f3725513a34609c0c765bf652b8c3cb4cfd87db46b"
+dependencies = [
+ "ring",
+ "untrusted",
 ]
 
 [[package]]
@@ -534,18 +543,17 @@ checksum = "bc6844de72e57df1980054b38be3a9f4702aba4858be64dd700181a8a6d0e1b6"
 dependencies = [
  "rustls 0.19.1",
  "tokio",
- "webpki 0.21.4",
+ "webpki",
 ]
 
 [[package]]
 name = "tokio-rustls"
-version = "0.23.4"
+version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c43ee83903113e03984cb9e5cebe6c04a5116269e900e3ddba8f068a62adda59"
+checksum = "e0d409377ff5b1e3ca6437aa86c1eb7d40c134bfec254e44c830defa92669db5"
 dependencies = [
- "rustls 0.20.8",
+ "rustls 0.21.0",
  "tokio",
- "webpki 0.22.0",
 ]
 
 [[package]]
@@ -688,22 +696,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "webpki"
-version = "0.22.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f095d78192e208183081cc07bc5515ef55216397af48b873e5edcd72637fa1bd"
-dependencies = [
- "ring",
- "untrusted",
-]
-
-[[package]]
 name = "webpki-roots"
 version = "0.21.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "aabe153544e473b775453675851ecc86863d2a81d786d741f6b76778f2a48940"
 dependencies = [
- "webpki 0.21.4",
+ "webpki",
 ]
 
 [[package]]
