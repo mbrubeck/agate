@@ -539,7 +539,7 @@ fn explicit_tls_version() {
             .unwrap()
             .downcast::<Error>()
             .unwrap(),
-        Error::AlertReceived(rustls::internal::msgs::enums::AlertDescription::ProtocolVersion)
+        Error::AlertReceived(rustls::AlertDescription::ProtocolVersion)
     )
 }
 
