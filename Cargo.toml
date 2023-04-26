@@ -24,7 +24,7 @@ percent-encoding = "2.2"
 rcgen = { version = "0.10.0" }
 rustls = "0.21.0"
 tokio-rustls = "0.24.0"
-tokio = { version = "1.27", features = ["fs", "io-util", "net", "rt-multi-thread", "sync"] }
+tokio = { version = "1.28", features = ["fs", "io-util", "net", "rt-multi-thread", "sync"] }
 url = "2.3.1"
 
 [dev-dependencies]
