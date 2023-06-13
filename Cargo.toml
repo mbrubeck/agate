@@ -25,7 +25,7 @@ rcgen = { version = "0.10.0" }
 rustls = "0.21.1"
 tokio-rustls = "0.24.1"
 tokio = { version = "1.28", features = ["fs", "io-util", "net", "rt-multi-thread", "sync"] }
-url = "2.3.1"
+url = "2.4.0"
 
 [dev-dependencies]
 anyhow = "1.0"
