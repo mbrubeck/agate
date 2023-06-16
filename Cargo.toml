@@ -21,7 +21,7 @@ log = "0.4"
 mime_guess = "2.0"
 once_cell = "1.18"
 percent-encoding = "2.3"
-rcgen = { version = "0.10.0" }
+rcgen = { version = "0.11.0" }
 rustls = "0.21.2"
 tokio-rustls = "0.24.1"
 tokio = { version = "1.28", features = ["fs", "io-util", "net", "rt-multi-thread", "sync"] }
