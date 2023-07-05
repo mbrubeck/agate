@@ -119,6 +119,7 @@ Agate will use this MIME type instead of what it would guess, if the file is fou
 If a line violates the format or looks like case 3, but is incorrect, it might be ignored. You should check your logs. Please know that this configuration file is first read when a file from the respective directory is accessed. So no log messages after startup does not mean the `.meta` file is okay.
 
 Such a configuration file might look like this:
+
 ```
 # This line will be ignored.
 **/*.de.gmi: ;lang=de
@@ -129,6 +130,7 @@ gone.gmi: 52 This file is no longer here, sorry.
 ```
 
 If this is the `.meta` file in the content root directory and the `-C` flag is used, this will result in the following response headers:
+
 ```
 `/` or `/index.gmi`
     -> `20 text/gemini;lang=en-GB`

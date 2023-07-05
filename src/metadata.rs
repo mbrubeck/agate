@@ -218,7 +218,7 @@ impl FileOptions {
     /// Get the metadata for the specified file. This might need to (re)load a
     /// single sidecar file.
     /// The file path should consistenly be either absolute or relative to the
-    /// working/content directory. If inconsisten file paths are used, this can
+    /// working/content directory. If inconsistent file paths are used, this can
     /// lead to loading and storing sidecar files multiple times.
     pub fn get(&mut self, file: &Path) -> PresetMeta {
         self.update(file);

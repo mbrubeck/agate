@@ -740,7 +740,7 @@ where
             .add(b'{')
             .add(b'}');
 
-        // check if directory listing is enabled by geting preamble
+        // check if directory listing is enabled by getting preamble
         let preamble = if let Ok(txt) = std::fs::read_to_string(path.join(".directory-listing-ok"))
         {
             txt
