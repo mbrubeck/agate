@@ -451,7 +451,7 @@ fn port_check_skipped() {
 #[test]
 /// - status for paths with hidden segments is "gone" if file does not exist
 fn secret_nonexistent() {
-    let page = get(&[], "gemini://localhost/.secret").expect("could not get page");
+    let page = get(&[], "gemini://localhost/.non-existing-secret").expect("could not get page");
 
     assert_eq!(page.header.status, Status::Gone);
 }
@@ -468,6 +468,22 @@ fn secret_exists() {
 /// - secret file served if `--serve-secret` is enabled
 fn serve_secret() {
     let page = get(&["--serve-secret"], "gemini://localhost/.meta").expect("could not get page");
+
+    assert_eq!(page.header.status, Status::Success);
+}
+
+#[test]
+/// - secret file served if path is in sidecar
+fn serve_secret_meta_config() {
+    let page = get(&[], "gemini://localhost/.servable-secret").expect("could not get page");
+
+    assert_eq!(page.header.status, Status::Success);
+}
+
+#[test]
+/// - secret file served if path with subdir is in sidecar
+fn serve_secret_meta_config_subdir() {
+    let page = get(&["-C"], "gemini://localhost/.well-known/servable-secret").expect("could not get page");
 
     assert_eq!(page.header.status, Status::Success);
 }

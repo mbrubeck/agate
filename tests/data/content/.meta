@@ -8,3 +8,5 @@ test.gmi: ;lang=en ;charset=us-ascii
 gone.txt: 52 This file is no longer available.
 # test setting data for files in other directories
 example.com/index.gmi: ;lang=en-US
+.servable-secret: text/plain
+.well-known/servable-secret: text/plain
