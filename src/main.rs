@@ -159,7 +159,8 @@ static ARGS: Lazy<Args> = Lazy::new(|| {
 
 struct Args {
     addrs: Vec<SocketAddr>,
-    #[cfg_attr(target_os = "windows", allow(dead_code))] // only used on unix, so dead code on windows
+    // only used on unix, so dead code on windows
+    #[cfg_attr(windows, allow(dead_code))]
     sockets: Vec<PathBuf>,
     content_dir: PathBuf,
     certs: Arc<certificates::CertStore>,
