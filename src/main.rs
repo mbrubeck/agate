@@ -159,8 +159,7 @@ static ARGS: Lazy<Args> = Lazy::new(|| {
 
 struct Args {
     addrs: Vec<SocketAddr>,
-    // only used on unix, so dead code on windows
-    #[cfg_attr(windows, allow(dead_code))]
+    #[cfg(unix)]
     sockets: Vec<PathBuf>,
     content_dir: PathBuf,
     certs: Arc<certificates::CertStore>,
@@ -349,10 +348,10 @@ fn args() -> Result<Args> {
         addrs.push(i.parse()?);
     }
 
-    #[allow(unused_mut)] // only used on unix
+    #[cfg_attr(not(unix), allow(unused_mut))]
     let mut empty = addrs.is_empty();
 
-    #[allow(unused_mut)] // only used on unix
+    #[cfg(unix)]
     let mut sockets = vec![];
     #[cfg(unix)]
     {
@@ -372,6 +371,7 @@ fn args() -> Result<Args> {
 
     Ok(Args {
         addrs,
+        #[cfg(unix)]
         sockets,
         content_dir: check_path(matches.opt_get_default("content", "content".into())?)?,
         certs: Arc::new(certs),
@@ -463,7 +463,7 @@ impl RequestHandle<TcpStream> {
     }
 }
 
-#[cfg(target_family = "unix")]
+#[cfg(unix)]
 impl RequestHandle<UnixStream> {
     async fn new_unix(
         stream: UnixStream,
