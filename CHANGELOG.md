@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+Thank you to Jan Stępień for contributing to this release.
+
+### Fixed
+* set permissions for generated key files so only owner can read them
 
 ## [3.3.0] - 2023-03-18
 Thank you to @equalsraf, @michaelnordmeyer and @wanderer1988 for contributing to this release.

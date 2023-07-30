@@ -34,7 +34,7 @@ use {
 
 #[cfg(unix)]
 use {
-    std::os::unix::fs::FileTypeExt,
+    std::os::unix::fs::{FileTypeExt, PermissionsExt},
     tokio::net::{UnixListener, UnixStream},
 };
 
@@ -320,11 +320,20 @@ fn args() -> Result<Args> {
                 )))?;
                 cert_file.write_all(&cert.serialize_der()?)?;
                 // write key data to disk
-                let mut key_file = File::create(certs_path.join(format!(
-                    "{}/{}",
-                    domain,
-                    certificates::KEY_FILE_NAME
-                )))?;
+                let key_file_path =
+                    certs_path.join(format!("{}/{}", domain, certificates::KEY_FILE_NAME));
+                let mut key_file = File::create(&key_file_path)?;
+                #[cfg(unix)]
+                {
+                    // set permissions so only owner can read
+                    match key_file.set_permissions(std::fs::Permissions::from_mode(0o400)) {
+                        Ok(_) => (),
+                        Err(_) => log::warn!(
+                            "could not set permissions for new key file {}",
+                            key_file_path.display()
+                        ),
+                    }
+                }
                 key_file.write_all(&cert.serialize_private_key_der())?;
 
                 reload_certs = true;
