@@ -7,7 +7,7 @@ use std::time::SystemTime;
 static SIDECAR_FILENAME: &str = ".meta";
 
 /// A struct to store a string of metadata for each file retrieved from
-/// sidecar files called `.lang`.
+/// sidecar files with the name given by `SIDECAR_FILENAME`.
 ///
 /// These sidecar file's lines should have the format
 /// ```text
