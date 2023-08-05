@@ -1,6 +1,6 @@
 name: Release Builds
 
-on: 
+on:
   push:
     tags:
       - 'v*' # on every version tag
@@ -12,17 +12,10 @@ jobs:
     steps:
     - name: create release
       id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: ncipollo/release-action@v1
       with:
-        tag_name: ${{ github.ref }}
-        release_name: ${{ github.ref }}
         # only draft the release so changelog can be edited
         draft: true
-        prerelease: false
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
 
   build_ubuntu:
     runs-on: ubuntu-20.04
@@ -31,42 +24,12 @@ jobs:
     - uses: actions/checkout@v3
     - name: build
       run: bash .github/workflows/release.sh
-    - name: upload release asset x86_64
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: upload release assets linux
+      uses: AButler/upload-release-assets@v2.0
       with:
-        upload_url: ${{ needs.create_release.outputs.upload_url }}
-        asset_path: ./agate.x86_64-unknown-linux-gnu.gz
-        asset_name: agate.x86_64-unknown-linux-gnu.gz
-        asset_content_type: application/gzip
-    - name: upload release asset arm
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create_release.outputs.upload_url }}
-        asset_path: ./agate.arm-unknown-linux-gnueabihf.gz
-        asset_name: agate.arm-unknown-linux-gnueabihf.gz
-        asset_content_type: application/gzip
-    - name: upload release asset armv7
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create_release.outputs.upload_url }}
-        asset_path: ./agate.armv7-unknown-linux-gnueabihf.gz
-        asset_name: agate.armv7-unknown-linux-gnueabihf.gz
-        asset_content_type: application/gzip
-    - name: upload release asset aarch64
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create_release.outputs.upload_url }}
-        asset_path: ./agate.aarch64-unknown-linux-gnu.gz
-        asset_name: agate.aarch64-unknown-linux-gnu.gz
-        asset_content_type: application/gzip
+        files: 'agate.*.gz'
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        release-tag: ${{ github.ref }}
 
   build_windows:
     runs-on: windows-latest
@@ -78,57 +41,36 @@ jobs:
     - name: strip names
       run: strip target/release/agate.exe
     - name: compress
-      run: Compress-Archive -LiteralPath target/release/agate.exe -DestinationPath agate.zip
+      run: Compress-Archive -LiteralPath target/release/agate.exe -DestinationPath agate.x86_64-pc-windows-msvc.zip
     - name: upload release asset win
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: AButler/upload-release-assets@v2.0
       with:
-        upload_url: ${{ needs.create_release.outputs.upload_url }}
-        asset_name: agate.x86_64-pc-windows-msvc.zip
-        asset_path: agate.zip
-        asset_content_type: application/zip
+        files: agate.x86_64-pc-windows-msvc.zip
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        release-tag: ${{ github.ref }}
 
   build_macos_x86_64:
     runs-on: macos-latest
     needs: create_release
     steps:
     - uses: actions/checkout@v3
-    - name: Build
-      run: cargo build --verbose --release
-    - name: strip names
-      run: strip target/release/agate
-    - name: compress
-      run: gzip -c target/release/agate > ./agate.gz
-    - name: upload release asset darwin
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create_release.outputs.upload_url }}
-        asset_path: ./agate.gz
-        asset_name: agate.x86_64-apple-darwin.gz
-        asset_content_type: application/gzip
-
-  build_macos_arm:
-    runs-on: macos-latest
-    needs: create_release
-    steps:
-    - uses: actions/checkout@v3
     - name: install toolchain
       run: rustup target add aarch64-apple-darwin
-    - name: Build
+    - name: Build x86_64
+      run: cargo build --verbose --release
+    - name: strip names x86
+      run: strip target/release/agate
+    - name: compress x86
+      run: gzip -c target/release/agate > ./agate.x86_64-apple-darwin.gz
+    - name: Build ARM
       run: SDKROOT=$(xcrun -sdk macosx --show-sdk-path) MACOSX_DEPLOYMENT_TARGET=$(xcrun -sdk macosx --show-sdk-platform-version) cargo build --verbose --release --target=aarch64-apple-darwin
-    - name: strip names
+    - name: strip names ARM
       run: strip target/aarch64-apple-darwin/release/agate
-    - name: compress
-      run: gzip -c target/aarch64-apple-darwin/release/agate > ./agate.gz
-    - name: upload release asset darwin
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: compress ARM
+      run: gzip -c target/aarch64-apple-darwin/release/agate > ./agate.aarch64-apple-darwin.gz
+    - name: upload release assets darwin
+      uses: AButler/upload-release-assets@v2.0
       with:
-        upload_url: ${{ needs.create_release.outputs.upload_url }}
-        asset_path: ./agate.gz
-        asset_name: agate.aarch64-apple-darwin.gz
-        asset_content_type: application/gzip
+        files: 'agate.*.gz'
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        release-tag: ${{ github.ref }}
