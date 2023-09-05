@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-20.04
     needs: create_release
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: build
       run: bash .github/workflows/release.sh
     - name: upload release assets linux
@@ -35,7 +35,7 @@ jobs:
     runs-on: windows-latest
     needs: create_release
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Build
       run: cargo build --verbose --release
     - name: strip names
@@ -53,7 +53,7 @@ jobs:
     runs-on: macos-latest
     needs: create_release
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: install toolchain
       run: rustup target add aarch64-apple-darwin
     - name: Build x86_64
