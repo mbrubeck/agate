@@ -361,9 +361,9 @@ checksum = "dd8b5dd2ae5ed71462c540258bedcb51965123ad7e7ccf4b9a8cafaa4a63576d"
 
 [[package]]
 name = "pem"
-version = "2.0.1"
+version = "3.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6b13fe415cdf3c8e44518e18a7c95a13431d9bdf6d15367d82b23c377fdd441a"
+checksum = "3163d2912b7c3b52d651a055f2c7eec9ba5cd22d26ef75b8dd3a59980b185923"
 dependencies = [
  "base64 0.21.2",
  "serde",
@@ -407,9 +407,9 @@ dependencies = [
 
 [[package]]
 name = "rcgen"
-version = "0.11.1"
+version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4954fbc00dcd4d8282c987710e50ba513d351400dbdd00e803a05172a90d8976"
+checksum = "4426f9f4d65c83b570885bee479ba4c5e78d7a5286c8a58e3d2570462121b447"
 dependencies = [
  "pem",
  "ring",
