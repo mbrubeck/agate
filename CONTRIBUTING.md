@@ -51,7 +51,7 @@ This will help developers and maintainers to resolve your issue. Some things you
 * Describe how the problem can be reproduced.
 * Explain what exactly is the problem and what you expect instead.
 
-[github-issues]: https://github.com/brendanzab/codespan/issues
+[github-issues]: https://github.com/mbrubeck/agate/issues
 
 ## Contribution Workflow
 
