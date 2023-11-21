@@ -25,7 +25,7 @@ jobs:
     - name: build
       run: bash .github/workflows/release.sh
     - name: upload release assets linux
-      uses: AButler/upload-release-assets@v2.0
+      uses: AButler/upload-release-assets@v3.0
       with:
         files: 'agate.*.gz'
         repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -43,7 +43,7 @@ jobs:
     - name: compress
       run: Compress-Archive -LiteralPath target/release/agate.exe -DestinationPath agate.x86_64-pc-windows-msvc.zip
     - name: upload release asset win
-      uses: AButler/upload-release-assets@v2.0
+      uses: AButler/upload-release-assets@v3.0
       with:
         files: agate.x86_64-pc-windows-msvc.zip
         repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -69,7 +69,7 @@ jobs:
     - name: compress ARM
       run: gzip -c target/aarch64-apple-darwin/release/agate > ./agate.aarch64-apple-darwin.gz
     - name: upload release assets darwin
-      uses: AButler/upload-release-assets@v2.0
+      uses: AButler/upload-release-assets@v3.0
       with:
         files: 'agate.*.gz'
         repo-token: ${{ secrets.GITHUB_TOKEN }}
