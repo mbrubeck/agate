@@ -166,7 +166,7 @@ fn index_page() {
 #[cfg(unix)]
 #[test]
 fn index_page_unix() {
-    use rustls::{Certificate, ClientConnection, RootCertStore};
+    use rustls::{pki_types::CertificateDer, ClientConnection, RootCertStore};
 
     let sock_path = std::env::temp_dir().join("agate-test-unix-socket");
 
@@ -184,7 +184,7 @@ fn index_page_unix() {
     // set up TLS connection via unix socket
     let mut certs = RootCertStore::empty();
     certs
-        .add(&Certificate(
+        .add(CertificateDer::from(
             include_bytes!(concat!(
                 env!("CARGO_MANIFEST_DIR"),
                 "/tests/data/multicert/example.com/cert.der"
@@ -193,7 +193,6 @@ fn index_page_unix() {
         ))
         .unwrap();
     let config = rustls::ClientConfig::builder()
-        .with_safe_defaults()
         .with_root_certificates(certs)
         .with_no_client_auth();
     let mut session = ClientConnection::new(
@@ -363,7 +362,7 @@ fn username() {
 #[test]
 /// - URLS with invalid hostnames are rejected
 fn percent_encode() {
-    use rustls::{Certificate, ClientConnection, RootCertStore};
+    use rustls::{pki_types::CertificateDer, ClientConnection, RootCertStore};
     use std::io::Write;
     use std::net::TcpStream;
 
@@ -373,7 +372,7 @@ fn percent_encode() {
 
     let mut certs = RootCertStore::empty();
     certs
-        .add(&Certificate(
+        .add(CertificateDer::from(
             include_bytes!(concat!(
                 env!("CARGO_MANIFEST_DIR"),
                 "/tests/data/multicert/example.com/cert.der"
@@ -382,7 +381,6 @@ fn percent_encode() {
         ))
         .unwrap();
     let config = rustls::ClientConfig::builder()
-        .with_safe_defaults()
         .with_root_certificates(certs)
         .with_no_client_auth();
 
@@ -533,12 +531,8 @@ fn explicit_tls_version() {
 
     let server = Server::new(&["-3"]);
 
-    let config = rustls::ClientConfig::builder()
-        .with_safe_default_cipher_suites()
-        .with_safe_default_kx_groups()
-        // try to connect using only TLS 1.2
-        .with_protocol_versions(&[&rustls::version::TLS12])
-        .unwrap()
+    // try to connect using only TLS 1.2
+    let config = rustls::ClientConfig::builder_with_protocol_versions(&[&rustls::version::TLS12])
         .with_root_certificates(RootCertStore::empty())
         .with_no_client_auth();
 
@@ -636,7 +630,7 @@ mod multicert {
 
     #[test]
     fn example_com() {
-        use rustls::{Certificate, ClientConnection, RootCertStore};
+        use rustls::{pki_types::CertificateDer, ClientConnection, RootCertStore};
         use std::io::Write;
         use std::net::TcpStream;
 
@@ -644,7 +638,7 @@ mod multicert {
 
         let mut certs = RootCertStore::empty();
         certs
-            .add(&Certificate(
+            .add(CertificateDer::from(
                 include_bytes!(concat!(
                     env!("CARGO_MANIFEST_DIR"),
                     "/tests/data/multicert/example.com/cert.der"
@@ -653,7 +647,6 @@ mod multicert {
             ))
             .unwrap();
         let config = rustls::ClientConfig::builder()
-            .with_safe_defaults()
             .with_root_certificates(certs)
             .with_no_client_auth();
 
@@ -675,7 +668,7 @@ mod multicert {
 
     #[test]
     fn example_org() {
-        use rustls::{Certificate, ClientConnection, RootCertStore};
+        use rustls::{pki_types::CertificateDer, ClientConnection, RootCertStore};
         use std::io::Write;
         use std::net::TcpStream;
 
@@ -683,7 +676,7 @@ mod multicert {
 
         let mut certs = RootCertStore::empty();
         certs
-            .add(&Certificate(
+            .add(CertificateDer::from(
                 include_bytes!(concat!(
                     env!("CARGO_MANIFEST_DIR"),
                     "/tests/data/multicert/example.org/cert.der"
@@ -692,7 +685,6 @@ mod multicert {
             ))
             .unwrap();
         let config = rustls::ClientConfig::builder()
-            .with_safe_defaults()
             .with_root_certificates(certs)
             .with_no_client_auth();
 
