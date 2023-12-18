@@ -119,10 +119,10 @@ impl CertStore {
     /// Load certificates from a certificate directory.
     /// Certificates should be stored in a folder for each hostname, for example
     /// the certificate and key for `example.com` should be in the files
-    /// `certs_dir/example.com/{cert.pem,key.rsa}` respectively.
+    /// `certs_dir/example.com/{cert.der,key.der}` respectively.
     ///
-    /// If there are `cert.pem` and `key.rsa` directly in certs_dir, these will be
-    /// loaded as default certificates.
+    /// If there are `cert.der` and `key.der` directly in `certs_dir`, these
+    /// will be loaded as default certificates.
     pub fn load_from(certs_dir: &Path) -> Result<Self, CertLoadError> {
         // load all certificates from directories
         let mut certs = vec![];
