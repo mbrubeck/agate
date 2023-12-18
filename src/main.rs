@@ -408,13 +408,9 @@ static TLS: Lazy<TlsAcceptor> = Lazy::new(acceptor);
 
 fn acceptor() -> TlsAcceptor {
     let config = if ARGS.only_tls13 {
-        ServerConfig::builder()
-            .with_safe_default_cipher_suites()
-            .with_safe_default_kx_groups()
-            .with_protocol_versions(&[&rustls::version::TLS13])
-            .expect("could not build server config")
+        ServerConfig::builder_with_protocol_versions(&[&rustls::version::TLS13])
     } else {
-        ServerConfig::builder().with_safe_defaults()
+        ServerConfig::builder()
     }
     .with_no_client_auth()
     .with_cert_resolver(ARGS.certs.clone());
