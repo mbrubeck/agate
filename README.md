@@ -16,7 +16,7 @@ Since Agate by default uses port 1965, you should be able to run other servers (
 * [Cargo package][crates.io]
 * [Source code][source]
 
-## Installation and Setup
+### Installation and Setup
 
 1. Get a binary for agate. You can use any of the below ways:
 
