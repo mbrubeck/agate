@@ -1,5 +1,6 @@
 # Agate
 
+
 [![Crates.io](https://img.shields.io/crates/v/agate.svg)](https://crates.io/crates/agate)
 [![Test Status](https://github.com/mbrubeck/agate/workflows/Tests/badge.svg)](https://github.com/mbrubeck/agate/actions?workflow=Tests)
 [![Dependency Status](https://deps.rs/repo/github/mbrubeck/agate/status.svg)](https://deps.rs/repo/github/mbrubeck/agate)
