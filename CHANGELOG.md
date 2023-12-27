@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.3.2] - 2023-12-27
+
+### Fixed
+* updated dependencies
+
 ## [3.3.1] - 2023-08-05
 Thank you to Jan Stępień and @michaelnordmeyer for contributing to this release.
 
