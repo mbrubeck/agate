@@ -13,9 +13,6 @@ jobs:
     - name: create release
       id: create_release
       uses: ncipollo/release-action@v1
-      with:
-        # only draft the release so changelog can be edited
-        draft: true
 
   build_ubuntu:
     runs-on: ubuntu-20.04
