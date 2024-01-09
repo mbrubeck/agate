@@ -205,7 +205,7 @@ Agate uses some status codes that are not valid Gemini status codes when logging
 
 If you want to run agate on a multi-user system, you should be aware that all certificate and key data is loaded into memory and stored there until the server stops. Since the memory is also not explicitly overwritten or zeroed after use, the sensitive data might stay in memory after the server has terminated.
 
-[Gemini]: https://gemini.circumlunar.space/
+[Gemini]: https://geminiprotocol.net/
 [Rust]: https://www.rust-lang.org/
 [home]: gemini://qwertqwefsday.eu/agate.gmi
 [source]: https://github.com/mbrubeck/agate
