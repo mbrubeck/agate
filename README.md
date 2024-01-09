@@ -8,8 +8,6 @@
 
 Agate is a server for the [Gemini] network protocol, built with the [Rust] programming language. Agate has very few features, and can only serve static files. It uses async I/O, and should be quite efficient even when running on low-end hardware and serving many concurrent requests.
 
-Since Agate by default uses port 1965, you should be able to run other servers (like e.g. Apache or nginx) on the same device.
-
 ## Learn more
 
 * Home page: [gemini://qwertqwefsday.eu/agate.gmi][home]
