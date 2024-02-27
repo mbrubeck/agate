@@ -1,0 +1,46 @@
+use std::env;
+use std::fs;
+use std::path::Path;
+use tokio::net::TcpListener;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use hyper::service::{make_service_fn, service_fn};
+use hyper::{Request, Response, Body, StatusCode};
+use hyper::header::{CONTENT_TYPE, HeaderValue};
+
+async fn handle_request(req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
+    let path = req.uri().path().trim_start_matches('/');
+    let file_path = format!("content/{}", path);
+
+    if Path::new(&file_path).exists() {
+        let content = fs::read_to_string(&file_path)?;
+        let response = Response::builder()
+            .status(StatusCode::OK)
+            .header(CONTENT_TYPE, "text/gemini")
+            .body(Body::from(content))?;
+        Ok(response)
+    } else {
+        let response = Response::builder()
+            .status(StatusCode::NOT_FOUND)
+            .body(Body::from("51 Not found"))?;
+        Ok(response)
+    }
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let addr = env::args().nth(1).unwrap_or_else(|| "0.0.0.0:1965".to_string());
+    let listener = TcpListener::bind(&addr).await?;
+
+    let make_svc = make_service_fn(|_| {
+        let service = service_fn(handle_request);
+        async { Ok::<_, hyper::Error>(service) }
+    });
+
+    let server = hyper::Server::from_tcp(listener)?.serve(make_svc);
+
+    println!("Serving on {}", addr);
+
+    server.await?;
+
+    Ok(())
+}
