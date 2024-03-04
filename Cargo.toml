@@ -22,7 +22,7 @@ mime_guess = "2.0"
 once_cell = "1.19"
 percent-encoding = "2.3"
 rcgen = { version = "0.12.1", default-features = false, features = ["ring"] }
-rustls = "0.22.2"
+rustls = "0.23.1"
 tokio-rustls = "0.25.0"
 tokio = { version = "1.36", features = ["fs", "io-util", "net", "rt-multi-thread", "sync"] }
 url = "2.5.0"
