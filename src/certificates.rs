@@ -1,15 +1,16 @@
 use {
-    rustls::{
-        crypto::ring::sign::any_supported_type,
-        pki_types::{self, CertificateDer, PrivateKeyDer},
-        server::{ClientHello, ResolvesServerCert},
-        sign::{CertifiedKey, SigningKey},
-    },
     std::{
         ffi::OsStr,
         fmt::{Display, Formatter},
         path::Path,
         sync::Arc,
+    },
+    tokio_rustls::rustls::{
+        self,
+        crypto::ring::sign::any_supported_type,
+        pki_types::{self, CertificateDer, PrivateKeyDer},
+        server::{ClientHello, ResolvesServerCert},
+        sign::{CertifiedKey, SigningKey},
     },
 };
 

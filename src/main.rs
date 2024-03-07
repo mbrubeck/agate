@@ -10,7 +10,6 @@ use {
     once_cell::sync::Lazy,
     percent_encoding::{percent_decode_str, percent_encode, AsciiSet, CONTROLS},
     rcgen::{Certificate, CertificateParams, DnType},
-    rustls::server::ServerConfig,
     std::{
         borrow::Cow,
         error::Error,
@@ -28,7 +27,11 @@ use {
         runtime::Runtime,
         sync::Mutex,
     },
-    tokio_rustls::{server::TlsStream, TlsAcceptor},
+    tokio_rustls::{
+        rustls::{server::ServerConfig, version::TLS13},
+        server::TlsStream,
+        TlsAcceptor,
+    },
     url::{Host, Url},
 };
 
@@ -408,7 +411,7 @@ static TLS: Lazy<TlsAcceptor> = Lazy::new(acceptor);
 
 fn acceptor() -> TlsAcceptor {
     let config = if ARGS.only_tls13 {
-        ServerConfig::builder_with_protocol_versions(&[&rustls::version::TLS13])
+        ServerConfig::builder_with_protocol_versions(&[&TLS13])
     } else {
         ServerConfig::builder()
     }

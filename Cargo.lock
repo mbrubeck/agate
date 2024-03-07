@@ -33,7 +33,6 @@ dependencies = [
  "once_cell",
  "percent-encoding",
  "rcgen",
- "rustls 0.22.2",
  "tokio",
  "tokio-rustls 0.25.0",
  "url",

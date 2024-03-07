@@ -6,6 +6,7 @@ use std::net::{SocketAddr, ToSocketAddrs};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicU16, Ordering};
+use tokio_rustls::rustls;
 use url::Url;
 
 static BINARY_PATH: &str = env!("CARGO_BIN_EXE_agate");
