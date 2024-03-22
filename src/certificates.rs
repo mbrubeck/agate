@@ -98,7 +98,7 @@ fn load_domain(certs_dir: &Path, domain: String) -> Result<CertifiedKey, CertLoa
 /// possible type until we find one that works.
 ///
 /// We should probably stop doing this and use a PEM file instead:
-/// https://github.com/rustls/rustls/issues/1661
+/// <https://github.com/rustls/rustls/issues/1661>
 fn der_to_private_key(der: &[u8]) -> Result<Arc<dyn SigningKey>, rustls::Error> {
     let keys = [
         PrivateKeyDer::Pkcs1(pki_types::PrivatePkcs1KeyDer::from(der)),
