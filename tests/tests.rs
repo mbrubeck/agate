@@ -6,6 +6,8 @@ use std::net::{SocketAddr, ToSocketAddrs};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicU16, Ordering};
+use std::thread::sleep;
+use std::time::Duration;
 use tokio_rustls::rustls;
 use url::Url;
 
@@ -201,8 +203,13 @@ fn index_page_unix() {
         "example.com".try_into().unwrap(),
     )
     .unwrap();
-    let mut unix =
-        std::os::unix::net::UnixStream::connect(sock_path).expect("could not connect unix socket");
+
+    let mut unix = loop {
+        if let Ok(sock) = std::os::unix::net::UnixStream::connect(&sock_path) {
+            break sock;
+        }
+        sleep(Duration::from_millis(10));
+    };
     let mut tls = rustls::Stream::new(&mut session, &mut unix);
 
     write!(tls, "gemini://example.com\r\n").unwrap();
