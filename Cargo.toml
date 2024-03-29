@@ -27,7 +27,6 @@ tokio = { version = "1.36", features = ["fs", "io-util", "net", "rt-multi-thread
 url = "2.5.0"
 
 [dev-dependencies]
-anyhow = "1.0"
 gemini-fetch = "0.2.1"
 
 [profile.release]

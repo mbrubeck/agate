@@ -1,4 +1,3 @@
-use anyhow::anyhow;
 use gemini_fetch::{Header, Page, Status};
 use std::convert::TryInto;
 use std::io::{BufRead, BufReader, Read, Write};
@@ -129,7 +128,7 @@ impl Drop for Server {
     }
 }
 
-fn get(args: &[&str], url: &str) -> Result<Page, anyhow::Error> {
+fn get(args: &[&str], url: &str) -> Result<Page, String> {
     let mut server = Server::new(args);
 
     // actually perform the request
@@ -137,7 +136,7 @@ fn get(args: &[&str], url: &str) -> Result<Page, anyhow::Error> {
         Page::fetch_from(&Url::parse(url).unwrap(), server.get_addr(), None).await
     });
 
-    server.stop().map_err(|e| anyhow!(e)).and(page)
+    server.stop().and(page.map_err(|e| e.to_string()))
 }
 
 #[test]
