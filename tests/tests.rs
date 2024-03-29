@@ -1,7 +1,8 @@
-use gemini_fetch::{Header, Page, Status};
+use gemini_fetch::{Page, Status};
+use rustls::{pki_types::CertificateDer, ClientConnection, RootCertStore};
 use std::convert::TryInto;
 use std::io::{BufRead, BufReader, Read, Write};
-use std::net::{SocketAddr, ToSocketAddrs};
+use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicU16, Ordering};
@@ -130,12 +131,9 @@ impl Drop for Server {
 
 fn get(args: &[&str], url: &str) -> Result<Page, String> {
     let mut server = Server::new(args);
-
-    // actually perform the request
-    let page = tokio::runtime::Runtime::new().unwrap().block_on(async {
-        Page::fetch_from(&Url::parse(url).unwrap(), server.get_addr(), None).await
-    });
-
+    let url = Url::parse(url).unwrap();
+    let request = Page::fetch_from(&url, server.get_addr(), None);
+    let page = tokio::runtime::Runtime::new().unwrap().block_on(request);
     server.stop().and(page.map_err(|e| e.to_string()))
 }
 
@@ -145,31 +143,15 @@ fn get(args: &[&str], url: &str) -> Result<Page, String> {
 fn index_page() {
     let page = get(&[], "gemini://localhost").expect("could not get page");
 
-    assert_eq!(
-        page.header,
-        Header {
-            status: Status::Success,
-            meta: "text/gemini".to_string(),
-        }
-    );
+    assert_eq!(page.header.status, Status::Success);
+    assert_eq!(page.header.meta, "text/gemini");
 
-    assert_eq!(
-        page.body,
-        Some(
-            std::fs::read_to_string(concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/tests/data/content/index.gmi"
-            ))
-            .unwrap()
-        )
-    );
+    assert_eq!(page.body.unwrap(), include_str!("data/content/index.gmi"));
 }
 
 #[cfg(unix)]
 #[test]
 fn index_page_unix() {
-    use rustls::{pki_types::CertificateDer, ClientConnection, RootCertStore};
-
     let sock_path = std::env::temp_dir().join("agate-test-unix-socket");
 
     // this uses multicert because those certificates are set up so rustls
@@ -187,11 +169,7 @@ fn index_page_unix() {
     let mut certs = RootCertStore::empty();
     certs
         .add(CertificateDer::from(
-            include_bytes!(concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/tests/data/multicert/example.com/cert.der"
-            ))
-            .to_vec(),
+            include_bytes!("data/multicert/example.com/cert.der").as_slice(),
         ))
         .unwrap();
     let config = rustls::ClientConfig::builder()
@@ -226,24 +204,9 @@ fn index_page_unix() {
 fn symlink_page() {
     let page = get(&[], "gemini://localhost/symlink.gmi").expect("could not get page");
 
-    assert_eq!(
-        page.header,
-        Header {
-            status: Status::Success,
-            meta: "text/gemini".to_string(),
-        }
-    );
-
-    assert_eq!(
-        page.body,
-        Some(
-            std::fs::read_to_string(concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/tests/data/content/index.gmi"
-            ))
-            .unwrap()
-        )
-    );
+    assert_eq!(page.header.status, Status::Success);
+    assert_eq!(page.header.meta, "text/gemini");
+    assert_eq!(page.body.unwrap(), include_str!("data/content/index.gmi"));
 }
 
 #[test]
@@ -251,23 +214,11 @@ fn symlink_page() {
 fn symlink_directory() {
     let page = get(&[], "gemini://localhost/symlinked_dir/file.gmi").expect("could not get page");
 
+    assert_eq!(page.header.status, Status::Success);
+    assert_eq!(page.header.meta, "text/gemini");
     assert_eq!(
-        page.header,
-        Header {
-            status: Status::Success,
-            meta: "text/gemini".to_string(),
-        }
-    );
-
-    assert_eq!(
-        page.body,
-        Some(
-            std::fs::read_to_string(concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/tests/data/symlinked_dir/file.gmi"
-            ))
-            .unwrap()
-        )
+        page.body.unwrap(),
+        include_str!("data/symlinked_dir/file.gmi")
     );
 }
 
@@ -276,14 +227,8 @@ fn symlink_directory() {
 /// - MIME media types can be set in the configuration file
 fn meta() {
     let page = get(&[], "gemini://localhost/test").expect("could not get page");
-
-    assert_eq!(
-        page.header,
-        Header {
-            status: Status::Success,
-            meta: "text/html".to_string(),
-        }
-    );
+    assert_eq!(page.header.status, Status::Success);
+    assert_eq!(page.header.meta, "text/html");
 }
 
 #[test]
@@ -291,14 +236,8 @@ fn meta() {
 /// - MIME media type parameters can be set in the configuration file
 fn meta_param() {
     let page = get(&[], "gemini://localhost/test.gmi").expect("could not get page");
-
-    assert_eq!(
-        page.header,
-        Header {
-            status: Status::Success,
-            meta: "text/gemini;lang=en ;charset=us-ascii".to_string(),
-        }
-    );
+    assert_eq!(page.header.status, Status::Success);
+    assert_eq!(page.header.meta, "text/gemini;lang=en ;charset=us-ascii");
 }
 
 #[test]
@@ -306,14 +245,8 @@ fn meta_param() {
 /// - distributed configuration file is used when `-C` flag not used
 fn glob() {
     let page = get(&[], "gemini://localhost/testdir/a.nl.gmi").expect("could not get page");
-
-    assert_eq!(
-        page.header,
-        Header {
-            status: Status::Success,
-            meta: "text/plain;lang=nl".to_string(),
-        }
-    );
+    assert_eq!(page.header.status, Status::Success);
+    assert_eq!(page.header.meta, "text/plain;lang=nl");
 }
 
 #[test]
@@ -321,28 +254,16 @@ fn glob() {
 /// - central configuration file is used when `-C` flag is used
 fn doubleglob() {
     let page = get(&["-C"], "gemini://localhost/testdir/a.nl.gmi").expect("could not get page");
-
-    assert_eq!(
-        page.header,
-        Header {
-            status: Status::Success,
-            meta: "text/gemini;lang=nl".to_string(),
-        }
-    );
+    assert_eq!(page.header.status, Status::Success);
+    assert_eq!(page.header.meta, "text/gemini;lang=nl");
 }
 
 #[test]
 /// - full header lines can be set in the configuration file
 fn full_header_preset() {
     let page = get(&[], "gemini://localhost/gone.txt").expect("could not get page");
-
-    assert_eq!(
-        page.header,
-        Header {
-            status: Status::Gone,
-            meta: "This file is no longer available.".to_string(),
-        }
-    );
+    assert_eq!(page.header.status, Status::Gone);
+    assert_eq!(page.header.meta, "This file is no longer available.");
 }
 
 #[test]
@@ -369,10 +290,6 @@ fn username() {
 #[test]
 /// - URLS with invalid hostnames are rejected
 fn percent_encode() {
-    use rustls::{pki_types::CertificateDer, ClientConnection, RootCertStore};
-    use std::io::Write;
-    use std::net::TcpStream;
-
     // Can't use `get` here because we are testing a URL thats invalid so
     // the gemini fetching library can not process it.
     let mut server = Server::new(&["--certs", "multicert"]);
@@ -380,11 +297,7 @@ fn percent_encode() {
     let mut certs = RootCertStore::empty();
     certs
         .add(CertificateDer::from(
-            include_bytes!(concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/tests/data/multicert/example.com/cert.der"
-            ))
-            .to_vec(),
+            include_bytes!("data/multicert/example.com/cert.der").as_slice(),
         ))
         .unwrap();
     let config = rustls::ClientConfig::builder()
@@ -532,10 +445,6 @@ fn directory_traversal_regression() {
 ///   (lower versions do not have to be tested because rustls does not even
 ///   support them, making agate incapable of accepting them)
 fn explicit_tls_version() {
-    use rustls::{ClientConnection, Error, RootCertStore};
-    use std::io::Read;
-    use std::net::TcpStream;
-
     let server = Server::new(&["-3"]);
 
     // try to connect using only TLS 1.2
@@ -555,9 +464,9 @@ fn explicit_tls_version() {
             .unwrap_err()
             .into_inner()
             .unwrap()
-            .downcast::<Error>()
+            .downcast::<rustls::Error>()
             .unwrap(),
-        Error::AlertReceived(rustls::AlertDescription::ProtocolVersion)
+        rustls::Error::AlertReceived(rustls::AlertDescription::ProtocolVersion)
     )
 }
 
@@ -577,16 +486,9 @@ mod vhosts {
         .expect("could not get page");
 
         assert_eq!(page.header.status, Status::Success);
-
         assert_eq!(
-            page.body,
-            Some(
-                std::fs::read_to_string(concat!(
-                    env!("CARGO_MANIFEST_DIR"),
-                    "/tests/data/content/example.com/index.gmi"
-                ))
-                .unwrap()
-            )
+            page.body.unwrap(),
+            include_str!("data/content/example.com/index.gmi")
         );
     }
 
@@ -600,22 +502,18 @@ mod vhosts {
         .expect("could not get page");
 
         assert_eq!(page.header.status, Status::Success);
-
         assert_eq!(
-            page.body,
-            Some(
-                std::fs::read_to_string(concat!(
-                    env!("CARGO_MANIFEST_DIR"),
-                    "/tests/data/content/example.org/index.gmi"
-                ))
-                .unwrap()
-            )
+            page.body.unwrap(),
+            include_str!("data/content/example.org/index.gmi")
         );
     }
 }
 
 mod multicert {
     use super::*;
+    use rustls::{pki_types::CertificateDer, ClientConnection, RootCertStore};
+    use std::io::Write;
+    use std::net::TcpStream;
 
     #[test]
     #[should_panic]
@@ -637,20 +535,12 @@ mod multicert {
 
     #[test]
     fn example_com() {
-        use rustls::{pki_types::CertificateDer, ClientConnection, RootCertStore};
-        use std::io::Write;
-        use std::net::TcpStream;
-
         let mut server = Server::new(&["--certs", "multicert"]);
 
         let mut certs = RootCertStore::empty();
         certs
             .add(CertificateDer::from(
-                include_bytes!(concat!(
-                    env!("CARGO_MANIFEST_DIR"),
-                    "/tests/data/multicert/example.com/cert.der"
-                ))
-                .to_vec(),
+                include_bytes!("data/multicert/example.com/cert.der").as_slice(),
             ))
             .unwrap();
         let config = rustls::ClientConfig::builder()
@@ -675,20 +565,12 @@ mod multicert {
 
     #[test]
     fn example_org() {
-        use rustls::{pki_types::CertificateDer, ClientConnection, RootCertStore};
-        use std::io::Write;
-        use std::net::TcpStream;
-
         let mut server = Server::new(&["--certs", "multicert"]);
 
         let mut certs = RootCertStore::empty();
         certs
             .add(CertificateDer::from(
-                include_bytes!(concat!(
-                    env!("CARGO_MANIFEST_DIR"),
-                    "/tests/data/multicert/example.org/cert.der"
-                ))
-                .to_vec(),
+                include_bytes!("data/multicert/example.org/cert.der").as_slice(),
             ))
             .unwrap();
         let config = rustls::ClientConfig::builder()
@@ -723,17 +605,11 @@ mod directory_listing {
         let page = get(&["--content", "dirlist-preamble"], "gemini://localhost/")
             .expect("could not get page");
 
+        assert_eq!(page.header.status, Status::Success);
+        assert_eq!(page.header.meta, "text/gemini");
         assert_eq!(
-            page.header,
-            Header {
-                status: Status::Success,
-                meta: "text/gemini".into(),
-            }
-        );
-
-        assert_eq!(
-            page.body,
-            Some("This is a directory listing\n=> a\n=> b\n=> wao%20spaces wao spaces\n".into())
+            page.body.unwrap(),
+            "This is a directory listing\n=> a\n=> b\n=> wao%20spaces wao spaces\n"
         );
     }
 
@@ -742,14 +618,8 @@ mod directory_listing {
         let page =
             get(&["--content", "dirlist"], "gemini://localhost/").expect("could not get page");
 
-        assert_eq!(
-            page.header,
-            Header {
-                status: Status::Success,
-                meta: "text/gemini".into(),
-            }
-        );
-
-        assert_eq!(page.body, Some("=> a\n=> b\n".into()),);
+        assert_eq!(page.header.status, Status::Success);
+        assert_eq!(page.header.meta, "text/gemini");
+        assert_eq!(page.body.unwrap(), "=> a\n=> b\n");
     }
 }
