@@ -9,7 +9,7 @@ use metadata::{FileOptions, PresetMeta};
 use {
     once_cell::sync::Lazy,
     percent_encoding::{percent_decode_str, percent_encode, AsciiSet, CONTROLS},
-    rcgen::{Certificate, CertificateParams, DnType},
+    rcgen::{CertificateParams, DnType, KeyPair},
     std::{
         borrow::Cow,
         error::Error,
@@ -298,7 +298,7 @@ fn args() -> Result<Args> {
             if !matches!(certs, Some(ref certs) if certs.has_domain(domain)) {
                 log::info!("No certificate or key found for {:?}, generating them.", s);
 
-                let mut cert_params = CertificateParams::new(vec![domain.clone()]);
+                let mut cert_params = CertificateParams::new(vec![domain.clone()])?;
                 cert_params
                     .distinguished_name
                     .push(DnType::CommonName, domain);
@@ -306,12 +306,14 @@ fn args() -> Result<Args> {
                 // <CertificateParams as Default>::default() already implements a
                 // date in the far future from the time of writing: 4096-01-01
 
-                if matches.opt_present("e") {
-                    cert_params.alg = &rcgen::PKCS_ED25519;
-                }
+                let key_pair = if matches.opt_present("e") {
+                    KeyPair::generate_for(&rcgen::PKCS_ED25519)
+                } else {
+                    KeyPair::generate()
+                }?;
 
                 // generate the certificate with the configuration
-                let cert = Certificate::from_params(cert_params)?;
+                let cert = cert_params.self_signed(&key_pair)?;
 
                 // make sure the certificate directory exists
                 fs::create_dir(certs_path.join(domain))?;
@@ -321,7 +323,7 @@ fn args() -> Result<Args> {
                     domain,
                     certificates::CERT_FILE_NAME
                 )))?;
-                cert_file.write_all(&cert.serialize_der()?)?;
+                cert_file.write_all(cert.der())?;
                 // write key data to disk
                 let key_file_path =
                     certs_path.join(format!("{}/{}", domain, certificates::KEY_FILE_NAME));
@@ -337,7 +339,7 @@ fn args() -> Result<Args> {
                         ),
                     }
                 }
-                key_file.write_all(&cert.serialize_private_key_der())?;
+                key_file.write_all(key_pair.serialized_der())?;
 
                 reload_certs = true;
             }
