@@ -1,4 +1,19 @@
-use gemini_fetch::{Page, Status};
+//! Agate integration tests
+//!
+//! This program is free software: you can redistribute it and/or modify
+//! it under the terms of the GNU General Public License as published by
+//! the Free Software Foundation, either version 3 of the License, or
+//! (at your option) any later version.
+//!
+//! This program is distributed in the hope that it will be useful,
+//! but WITHOUT ANY WARRANTY; without even the implied warranty of
+//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//! GNU General Public License for more details.
+//!
+//! You should have received a copy of the GNU General Public License
+//! along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+use trotter::{Actor, Response, Status};
 use rustls::{pki_types::CertificateDer, ClientConnection, RootCertStore};
 use std::convert::TryInto;
 use std::io::{BufRead, BufReader, Read, Write};
@@ -129,12 +144,16 @@ impl Drop for Server {
     }
 }
 
-fn get(args: &[&str], url: &str) -> Result<Page, String> {
+fn get(args: &[&str], url: &str) -> Result<Response, String> {
     let mut server = Server::new(args);
+
     let url = Url::parse(url).unwrap();
-    let request = Page::fetch_from(&url, server.get_addr(), None);
-    let page = tokio::runtime::Runtime::new().unwrap().block_on(request);
-    server.stop().and(page.map_err(|e| e.to_string()))
+    let actor = Actor::default().proxy("localhost".into(), server.addr.port());
+    let request = actor.get(url);
+
+    let response = tokio::runtime::Runtime::new().unwrap().block_on(request).map_err(|e| e.to_string());
+    server.stop()?;
+    response
 }
 
 #[test]
@@ -143,10 +162,10 @@ fn get(args: &[&str], url: &str) -> Result<Page, String> {
 fn index_page() {
     let page = get(&[], "gemini://localhost").expect("could not get page");
 
-    assert_eq!(page.header.status, Status::Success);
-    assert_eq!(page.header.meta, "text/gemini");
+    assert_eq!(page.status, Status::Success.value());
+    assert_eq!(page.meta, "text/gemini");
 
-    assert_eq!(page.body.unwrap(), include_str!("data/content/index.gmi"));
+    assert_eq!(page.content, include_bytes!("data/content/index.gmi"));
 }
 
 #[cfg(unix)]
@@ -204,9 +223,9 @@ fn index_page_unix() {
 fn symlink_page() {
     let page = get(&[], "gemini://localhost/symlink.gmi").expect("could not get page");
 
-    assert_eq!(page.header.status, Status::Success);
-    assert_eq!(page.header.meta, "text/gemini");
-    assert_eq!(page.body.unwrap(), include_str!("data/content/index.gmi"));
+    assert_eq!(page.status, Status::Success.value());
+    assert_eq!(page.meta, "text/gemini");
+    assert_eq!(page.content, include_bytes!("data/content/index.gmi"));
 }
 
 #[test]
@@ -214,11 +233,11 @@ fn symlink_page() {
 fn symlink_directory() {
     let page = get(&[], "gemini://localhost/symlinked_dir/file.gmi").expect("could not get page");
 
-    assert_eq!(page.header.status, Status::Success);
-    assert_eq!(page.header.meta, "text/gemini");
+    assert_eq!(page.status, Status::Success.value());
+    assert_eq!(page.meta, "text/gemini");
     assert_eq!(
-        page.body.unwrap(),
-        include_str!("data/symlinked_dir/file.gmi")
+        page.content,
+        include_bytes!("data/symlinked_dir/file.gmi")
     );
 }
 
@@ -227,8 +246,8 @@ fn symlink_directory() {
 /// - MIME media types can be set in the configuration file
 fn meta() {
     let page = get(&[], "gemini://localhost/test").expect("could not get page");
-    assert_eq!(page.header.status, Status::Success);
-    assert_eq!(page.header.meta, "text/html");
+    assert_eq!(page.status, Status::Success.value());
+    assert_eq!(page.meta, "text/html");
 }
 
 #[test]
@@ -236,8 +255,8 @@ fn meta() {
 /// - MIME media type parameters can be set in the configuration file
 fn meta_param() {
     let page = get(&[], "gemini://localhost/test.gmi").expect("could not get page");
-    assert_eq!(page.header.status, Status::Success);
-    assert_eq!(page.header.meta, "text/gemini;lang=en ;charset=us-ascii");
+    assert_eq!(page.status, Status::Success.value());
+    assert_eq!(page.meta, "text/gemini;lang=en ;charset=us-ascii");
 }
 
 #[test]
@@ -245,8 +264,8 @@ fn meta_param() {
 /// - distributed configuration file is used when `-C` flag not used
 fn glob() {
     let page = get(&[], "gemini://localhost/testdir/a.nl.gmi").expect("could not get page");
-    assert_eq!(page.header.status, Status::Success);
-    assert_eq!(page.header.meta, "text/plain;lang=nl");
+    assert_eq!(page.status, Status::Success.value());
+    assert_eq!(page.meta, "text/plain;lang=nl");
 }
 
 #[test]
@@ -254,16 +273,16 @@ fn glob() {
 /// - central configuration file is used when `-C` flag is used
 fn doubleglob() {
     let page = get(&["-C"], "gemini://localhost/testdir/a.nl.gmi").expect("could not get page");
-    assert_eq!(page.header.status, Status::Success);
-    assert_eq!(page.header.meta, "text/gemini;lang=nl");
+    assert_eq!(page.status, Status::Success.value());
+    assert_eq!(page.meta, "text/gemini;lang=nl");
 }
 
 #[test]
 /// - full header lines can be set in the configuration file
 fn full_header_preset() {
     let page = get(&[], "gemini://localhost/gone.txt").expect("could not get page");
-    assert_eq!(page.header.status, Status::Gone);
-    assert_eq!(page.header.meta, "This file is no longer available.");
+    assert_eq!(page.status, Status::Gone.value());
+    assert_eq!(page.meta, "This file is no longer available.");
 }
 
 #[test]
@@ -275,7 +294,7 @@ fn fragment() {
     )
     .expect("could not get page");
 
-    assert_eq!(page.header.status, Status::BadRequest);
+    assert_eq!(page.status, Status::BadRequest.value());
 }
 
 #[test]
@@ -284,7 +303,7 @@ fn username() {
     let page = get(&["--hostname", "example.com"], "gemini://user@example.com/")
         .expect("could not get page");
 
-    assert_eq!(page.header.status, Status::BadRequest);
+    assert_eq!(page.status, Status::BadRequest.value());
 }
 
 #[test]
@@ -331,7 +350,7 @@ fn password() {
     )
     .expect("could not get page");
 
-    assert_eq!(page.header.status, Status::BadRequest);
+    assert_eq!(page.status, Status::BadRequest.value());
 }
 
 #[test]
@@ -341,7 +360,7 @@ fn hostname_check() {
     let page =
         get(&["--hostname", "example.org"], "gemini://example.com/").expect("could not get page");
 
-    assert_eq!(page.header.status, Status::ProxyRequestRefused);
+    assert_eq!(page.status, Status::ProxyRequestRefused.value());
 }
 
 #[test]
@@ -351,7 +370,7 @@ fn port_check() {
     let page =
         get(&["--hostname", "example.org"], "gemini://example.org:1/").expect("could not get page");
 
-    assert_eq!(page.header.status, Status::ProxyRequestRefused);
+    assert_eq!(page.status, Status::ProxyRequestRefused.value());
 }
 
 #[test]
@@ -363,7 +382,7 @@ fn port_check_skipped() {
     )
     .expect("could not get page");
 
-    assert_eq!(page.header.status, Status::Success);
+    assert_eq!(page.status, Status::Success.value());
 }
 
 #[test]
@@ -371,7 +390,7 @@ fn port_check_skipped() {
 fn secret_nonexistent() {
     let page = get(&[], "gemini://localhost/.non-existing-secret").expect("could not get page");
 
-    assert_eq!(page.header.status, Status::Gone);
+    assert_eq!(page.status, Status::Gone.value());
 }
 
 #[test]
@@ -379,7 +398,7 @@ fn secret_nonexistent() {
 fn secret_exists() {
     let page = get(&[], "gemini://localhost/.meta").expect("could not get page");
 
-    assert_eq!(page.header.status, Status::Gone);
+    assert_eq!(page.status, Status::Gone.value());
 }
 
 #[test]
@@ -387,7 +406,7 @@ fn secret_exists() {
 fn serve_secret() {
     let page = get(&["--serve-secret"], "gemini://localhost/.meta").expect("could not get page");
 
-    assert_eq!(page.header.status, Status::Success);
+    assert_eq!(page.status, Status::Success.value());
 }
 
 #[test]
@@ -395,7 +414,7 @@ fn serve_secret() {
 fn serve_secret_meta_config() {
     let page = get(&[], "gemini://localhost/.servable-secret").expect("could not get page");
 
-    assert_eq!(page.header.status, Status::Success);
+    assert_eq!(page.status, Status::Success.value());
 }
 
 #[test]
@@ -404,7 +423,7 @@ fn serve_secret_meta_config_subdir() {
     let page =
         get(&["-C"], "gemini://localhost/.well-known/servable-secret").expect("could not get page");
 
-    assert_eq!(page.header.status, Status::Success);
+    assert_eq!(page.status, Status::Success.value());
 }
 
 #[test]
@@ -436,7 +455,7 @@ fn directory_traversal_regression() {
     let urls = [absolute, relative];
     for url in urls.iter() {
         let page = get(&[], url.as_str()).expect("could not get page");
-        assert_eq!(page.header.status, Status::NotFound);
+        assert_eq!(page.status, Status::NotFound.value());
     }
 }
 
@@ -485,10 +504,10 @@ mod vhosts {
         )
         .expect("could not get page");
 
-        assert_eq!(page.header.status, Status::Success);
+        assert_eq!(page.status, Status::Success.value());
         assert_eq!(
-            page.body.unwrap(),
-            include_str!("data/content/example.com/index.gmi")
+            page.content,
+            include_bytes!("data/content/example.com/index.gmi")
         );
     }
 
@@ -501,10 +520,10 @@ mod vhosts {
         )
         .expect("could not get page");
 
-        assert_eq!(page.header.status, Status::Success);
+        assert_eq!(page.status, Status::Success.value());
         assert_eq!(
-            page.body.unwrap(),
-            include_str!("data/content/example.org/index.gmi")
+            page.content,
+            include_bytes!("data/content/example.org/index.gmi")
         );
     }
 }
@@ -605,11 +624,11 @@ mod directory_listing {
         let page = get(&["--content", "dirlist-preamble"], "gemini://localhost/")
             .expect("could not get page");
 
-        assert_eq!(page.header.status, Status::Success);
-        assert_eq!(page.header.meta, "text/gemini");
+        assert_eq!(page.status, Status::Success.value());
+        assert_eq!(page.meta, "text/gemini");
         assert_eq!(
-            page.body.unwrap(),
-            "This is a directory listing\n=> a\n=> b\n=> wao%20spaces wao spaces\n"
+            page.content,
+            b"This is a directory listing\n=> a\n=> b\n=> wao%20spaces wao spaces\n"
         );
     }
 
@@ -618,8 +637,8 @@ mod directory_listing {
         let page =
             get(&["--content", "dirlist"], "gemini://localhost/").expect("could not get page");
 
-        assert_eq!(page.header.status, Status::Success);
-        assert_eq!(page.header.meta, "text/gemini");
-        assert_eq!(page.body.unwrap(), "=> a\n=> b\n");
+        assert_eq!(page.status, Status::Success.value());
+        assert_eq!(page.meta, "text/gemini");
+        assert_eq!(page.content, b"=> a\n=> b\n");
     }
 }
