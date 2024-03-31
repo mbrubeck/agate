@@ -13,7 +13,6 @@
 //! You should have received a copy of the GNU General Public License
 //! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use trotter::{Actor, Response, Status};
 use rustls::{pki_types::CertificateDer, ClientConnection, RootCertStore};
 use std::convert::TryInto;
 use std::io::{BufRead, BufReader, Read, Write};
@@ -24,6 +23,7 @@ use std::sync::atomic::{AtomicU16, Ordering};
 use std::thread::sleep;
 use std::time::Duration;
 use tokio_rustls::rustls;
+use trotter::{Actor, Response, Status};
 use url::Url;
 
 static BINARY_PATH: &str = env!("CARGO_BIN_EXE_agate");
@@ -151,7 +151,10 @@ fn get(args: &[&str], url: &str) -> Result<Response, String> {
     let actor = Actor::default().proxy("localhost".into(), server.addr.port());
     let request = actor.get(url);
 
-    let response = tokio::runtime::Runtime::new().unwrap().block_on(request).map_err(|e| e.to_string());
+    let response = tokio::runtime::Runtime::new()
+        .unwrap()
+        .block_on(request)
+        .map_err(|e| e.to_string());
     server.stop()?;
     response
 }
@@ -235,10 +238,7 @@ fn symlink_directory() {
 
     assert_eq!(page.status, Status::Success.value());
     assert_eq!(page.meta, "text/gemini");
-    assert_eq!(
-        page.content,
-        include_bytes!("data/symlinked_dir/file.gmi")
-    );
+    assert_eq!(page.content, include_bytes!("data/symlinked_dir/file.gmi"));
 }
 
 #[test]
