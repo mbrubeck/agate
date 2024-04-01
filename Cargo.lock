@@ -19,7 +19,7 @@ checksum = "f26201604c87b1e01bd3d98f8d5d9a8fcbb815e8cedb41ffccbeb4bf593a35fe"
 
 [[package]]
 name = "agate"
-version = "3.3.6"
+version = "3.3.7"
 dependencies = [
  "configparser",
  "env_logger",
@@ -693,9 +693,9 @@ dependencies = [
 
 [[package]]
 name = "trotter"
-version = "1.0.0"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bb30f9aa35afc36110559b2d6f7a1bff0db1ee0d1a02744ab95d667a5e965559"
+checksum = "83bb9a90ef3789e7e4529e1400fbcff84a36c2e40a83a646692645aa9108cac7"
 dependencies = [
  "openssl",
  "thiserror",
