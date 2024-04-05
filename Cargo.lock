@@ -461,9 +461,9 @@ dependencies = [
 
 [[package]]
 name = "rcgen"
-version = "0.13.0"
+version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aa96feb4d337a43eae1b39b6d4cafc2860a46cf9cec6f1e65294244ece65e348"
+checksum = "54077e1872c46788540de1ea3d7f4ccb1983d12f9aa909b234468676c1a36779"
 dependencies = [
  "ring",
  "rustls-pki-types",
