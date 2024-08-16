@@ -1,0 +1,7 @@
+**
+
+!src/**
+!tools/docker/**
+!Cross.toml
+!Cargo.toml
+!Cargo.lock
