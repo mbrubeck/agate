@@ -555,10 +555,9 @@ where
             std::str::from_utf8(&request[..len - 2]).or(Err((BAD_REQUEST, "Non-UTF-8 request")))
         });
 
-        let request = result.map_err(|e| {
+        let request = result.inspect_err(|_| {
             // write empty request to log line for uniformity
             write!(self.log_line, " \"\"").unwrap();
-            e
         })?;
 
         // log literal request (might be different from or not an actual URL)
