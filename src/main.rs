@@ -7,7 +7,6 @@ use codes::*;
 use metadata::{FileOptions, PresetMeta};
 
 use {
-    once_cell::sync::Lazy,
     percent_encoding::{percent_decode_str, percent_encode, AsciiSet, CONTROLS},
     rcgen::{CertificateParams, DnType, KeyPair},
     std::{
@@ -19,7 +18,7 @@ use {
         io::Write as _,
         net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr},
         path::{self, Component, Path, PathBuf},
-        sync::Arc,
+        sync::{Arc, LazyLock},
     },
     tokio::{
         io::{AsyncReadExt, AsyncWriteExt},
@@ -153,7 +152,7 @@ fn main() {
 
 type Result<T = (), E = Box<dyn Error + Send + Sync>> = std::result::Result<T, E>;
 
-static ARGS: Lazy<Args> = Lazy::new(|| {
+static ARGS: LazyLock<Args> = LazyLock::new(|| {
     args().unwrap_or_else(|s| {
         eprintln!("{s}");
         std::process::exit(1);
@@ -409,7 +408,7 @@ fn check_path(s: String) -> Result<PathBuf, String> {
 }
 
 /// TLS configuration.
-static TLS: Lazy<TlsAcceptor> = Lazy::new(acceptor);
+static TLS: LazyLock<TlsAcceptor> = LazyLock::new(acceptor);
 
 fn acceptor() -> TlsAcceptor {
     let config = if ARGS.only_tls13 {
