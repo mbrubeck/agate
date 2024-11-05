@@ -23,7 +23,7 @@ percent-encoding = "2.3"
 rcgen = { version = "0.13.1", default-features = false, features = ["ring"] }
 tokio-rustls = { version = "0.26.0", default-features = false, features = ["logging", "ring", "tls12"] }
 tokio = { version = "1.41", features = ["fs", "io-util", "net", "rt-multi-thread", "sync"] }
-url = "2.5.2"
+url = "2.5.3"
 
 [dev-dependencies]
 trotter = "1.0"
