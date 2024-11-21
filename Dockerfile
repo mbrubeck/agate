@@ -6,7 +6,6 @@ RUN apk --no-cache add libc-dev
 COPY src src
 COPY Cargo.toml .
 COPY Cargo.lock .
-COPY Cross.toml .
 RUN cargo install --target x86_64-unknown-linux-musl --path .
 
 FROM docker.io/library/alpine:latest
