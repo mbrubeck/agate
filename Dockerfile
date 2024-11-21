@@ -1,6 +1,4 @@
 FROM docker.io/library/rust:alpine AS builder
-# RUN wget -O source.tar.gz $(wget -qO- https://api.github.com/repos/mbrubeck/agate/releases/latest | sed -nE 's/^.*"tarball_url"\s*:\s*"([^"]+)".*$/\1/p')&& tar xzf source.tar.gz && \
-#     mv mbrubeck-agate-* /agate
 
 WORKDIR /agate
 COPY src src
