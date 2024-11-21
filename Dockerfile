@@ -1,12 +1,13 @@
 FROM docker.io/library/rust:alpine AS builder
 
 WORKDIR /agate
+RUN apk --no-cache add libc-dev
+
 COPY src src
 COPY Cargo.toml .
 COPY Cargo.lock .
 COPY Cross.toml .
-RUN apk --no-cache add libc-dev && \
-    cargo install --target x86_64-unknown-linux-musl --path .
+RUN cargo install --target x86_64-unknown-linux-musl --path .
 
 FROM docker.io/library/alpine:latest
 COPY --from=builder /usr/local/cargo/bin/agate /usr/bin/agate
