@@ -30,12 +30,8 @@ cd agate
 ```
 
 ## build the image
-Enter the `tools/docker` directory:
 
-```
-cd tools/docker
-```
-And now build the docker image:
+Now build the docker image:
 
 ```
 docker build -t agate .
@@ -45,7 +41,7 @@ This process will take a few minutes because all the rust modules have to be com
 ## start the docker container
 
 ```
-docker run -t -d --name agate -p 1965:1965 -v /var/www/gmi:/gmi -v /var/www/gmi/.certificates:/app/.certificates -e HOSTNAME=example.org -e LANG=en-US agate:latest
+docker run -t -d --name agate -p 1965:1965 -v path/to/gmi:/gmi:ro -v path/to/certs:/certs:rw agate:latest --hostname localhost
 ```
 
 You have to replace `/var/www/gmi/` with the folder where you'd like to have gemtext files and `/var/www/gmi/.certificates/` with the folder where you'd like to have your certificates stored. You also have to have to replace `example.org` with your domain name and if plan to speak in a different language than english in your gemini space than you should replace `en-US` with your countries language code (for example de-DE or fr-CA).
