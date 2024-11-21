@@ -11,6 +11,9 @@ RUN apk --no-cache add libc-dev && \
 FROM docker.io/library/alpine:latest
 COPY --from=builder /usr/local/cargo/bin/agate /usr/bin/agate
 WORKDIR /app
-COPY tools/docker/start.sh /app
-ENTRYPOINT ["/bin/sh", "start.sh"]
+EXPOSE 1965
+VOLUME /gmi/
+VOLUME /certs/
+
+ENTRYPOINT ["agate", "--addr", "0.0.0.0:1965", "--content", "/gmi/", "--certs", "/certs/"]
 
