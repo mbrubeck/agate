@@ -38,6 +38,23 @@ Install the package [`agate-bin`](https://aur.archlinux.org/packages/agate-bin/)
 
 If you have the Rust toolchain installed, run `cargo install agate` to install agate from crates.io.
 
+### Docker
+
+Recent builds have also been released as OCI/Docker images on Github's Container Registry (ghcr.io). Most people will need to mount two volumes, one for your content, one for your certificates (this can be empty, they will be automatically generated if needed):
+
+```sh
+$ docker run \
+  -p 1965:1965 \
+  -v your/path/to/gmi:/gmi \
+  -v your/path/to/certs:/certs \
+  ghcr.io/mbrubeck/agate:latest \
+  --hostname example.org
+```
+
+This container will run without a mounted certificates directory, but new certificates will be lost when it shuts down and re-generated every time it boots, showing your site's visitors a certificate warning each time your server restarts.
+
+Each release is tagged with `major`, `major.minor`, `major.minor.patch`, as well as the full version string and "latest". This means `docker pull ghcr.io/mbrubeck/agate:3` will always retrieve the latest `v3.*` image, `…:3.3` the latest `v3.3.*` image, and `…:latest` the most recent release of any version.
+
 ### Source
 
 Download the source code and run `cargo build --release` inside the source repository, then find the binary at `target/release/agate`.

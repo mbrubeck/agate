@@ -71,3 +71,42 @@ jobs:
         files: 'agate.*.gz'
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         release-tag: ${{ github.ref_name }}
+
+  build_docker:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Log into GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          # Because this workflow only runs on commits tagged `v*` (i n semver format) this section ensures that
+          # a docker build tagged `v1.2.3+podman.build` is tagged with `1`, `1.2`, `1.2.3` and `1.2.3+podman.build`
+          # as well as being tagged with `latest`. For each of these, a subsequent build that has the same tag will
+          # replace it. This means that pulling `ghcr.io/mbrubeck/agate:1` will always get the most recent image
+          # released with a v1 tag, container, `ghcr.io/mbrubeck/agate:1.2` will get the latest v1.2 tag, and so on.
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}.{{patch}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
