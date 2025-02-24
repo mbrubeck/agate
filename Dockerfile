@@ -7,7 +7,6 @@ COPY src src
 COPY Cargo.toml .
 COPY Cargo.lock .
 ARG TARGETARCH
-ARG TARGETARCH
 RUN if [ "$TARGETARCH" = "amd64" ]; then \
       cargo install --target x86_64-unknown-linux-musl --path . ; \
     elif [ "$TARGETARCH" = "arm64" ]; then \
