@@ -6,7 +6,15 @@ RUN apk --no-cache add libc-dev
 COPY src src
 COPY Cargo.toml .
 COPY Cargo.lock .
-RUN cargo install --target x86_64-unknown-linux-musl --path .
+ARG TARGETARCH
+ARG TARGETARCH
+RUN if [ "$TARGETARCH" = "amd64" ]; then \
+      cargo install --target x86_64-unknown-linux-musl --path . ; \
+    elif [ "$TARGETARCH" = "arm64" ]; then \
+      cargo install --target aarch64-unknown-linux-musl --path . ; \
+    else \
+      echo "The architecture $TARGETARCH isn't unsupported." && exit 1; \
+    fi
 
 FROM docker.io/library/alpine:latest
 COPY --from=builder /usr/local/cargo/bin/agate /usr/bin/agate
