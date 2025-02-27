@@ -7,7 +7,7 @@ use {
     },
     tokio_rustls::rustls::{
         self,
-        crypto::ring::sign::any_supported_type,
+        crypto::aws_lc_rs::sign::any_supported_type,
         pki_types::{self, CertificateDer, PrivateKeyDer},
         server::{ClientHello, ResolvesServerCert},
         sign::{CertifiedKey, SigningKey},
