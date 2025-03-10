@@ -21,7 +21,7 @@ log = "0.4"
 mime_guess = "2.0"
 percent-encoding = "2.3"
 rcgen = { version = "0.13.2", default-features = false, features = ["ring"] }
-tokio-rustls = { version = "0.26.1", default-features = false, features = ["logging", "ring", "tls12"] }
+tokio-rustls = { version = "0.26.2", default-features = false, features = ["logging", "ring", "tls12"] }
 tokio = { version = "1.44", features = ["fs", "io-util", "net", "rt-multi-thread", "sync"] }
 url = "2.5.4"
 
