@@ -8,7 +8,7 @@ categories = ["network-programming"]
 repository = "https://github.com/mbrubeck/agate"
 readme = "README.md"
 license = "MIT OR Apache-2.0"
-edition = "2021"
+edition = "2024"
 exclude = ["/tools", "/.github", "/Cross.toml", "/content", "/CODE_OF_CONDUCT.md", "/CONTRIBUTING.md", "/CHANGELOG.md", "/tests"]
 
 [dependencies]
