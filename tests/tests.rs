@@ -13,7 +13,7 @@
 //! You should have received a copy of the GNU General Public License
 //! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use rustls::{pki_types::CertificateDer, ClientConnection, RootCertStore};
+use rustls::{ClientConnection, RootCertStore, pki_types::CertificateDer};
 use std::convert::TryInto;
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
@@ -530,7 +530,7 @@ mod vhosts {
 
 mod multicert {
     use super::*;
-    use rustls::{pki_types::CertificateDer, ClientConnection, RootCertStore};
+    use rustls::{ClientConnection, RootCertStore, pki_types::CertificateDer};
     use std::io::Write;
     use std::net::TcpStream;
 

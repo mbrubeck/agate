@@ -1,5 +1,5 @@
 use configparser::ini::Ini;
-use glob::{glob_with, MatchOptions};
+use glob::{MatchOptions, glob_with};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
@@ -146,7 +146,10 @@ impl FileOptions {
                     || !header.chars().nth(1).unwrap().is_ascii_digit()
                     || !header.chars().nth(2).unwrap().is_whitespace()
                 {
-                    log::error!("Line for {:?} starts like a full header line, but it is incorrect; ignoring it.", path);
+                    log::error!(
+                        "Line for {:?} starts like a full header line, but it is incorrect; ignoring it.",
+                        path
+                    );
                     return;
                 }
                 let separator = header.chars().nth(2).unwrap();
@@ -154,7 +157,11 @@ impl FileOptions {
                     // the Gemini specification says that the third
                     // character has to be a space, so correct any
                     // other whitespace to it (e.g. tabs)
-                    log::warn!("Full Header line for {:?} has an invalid character, treating {:?} as a space.", path, separator);
+                    log::warn!(
+                        "Full Header line for {:?} has an invalid character, treating {:?} as a space.",
+                        path,
+                        separator
+                    );
                 }
                 let status = header
                     .chars()

@@ -50,8 +50,13 @@ impl Display for CertLoadError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::NoReadCertDir => write!(f, "Could not read from certificate directory."),
-            Self::Empty => write!(f, "No keys or certificates were found in the given directory.\nSpecify the --hostname option to generate these automatically."),
-            Self::BadKey(domain, err) => write!(f, "The key file for {domain} is malformed: {err:?}"),
+            Self::Empty => write!(
+                f,
+                "No keys or certificates were found in the given directory.\nSpecify the --hostname option to generate these automatically."
+            ),
+            Self::BadKey(domain, err) => {
+                write!(f, "The key file for {domain} is malformed: {err:?}")
+            }
             Self::MissingKey(domain) => write!(f, "The key file for {domain} is missing."),
             Self::MissingCert(domain) => {
                 write!(f, "The certificate file for {domain} is missing.")
@@ -134,13 +139,13 @@ impl CertStore {
             Err(CertLoadError::EmptyDomain(_)) => { /* there are no fallback keys */ }
             Err(CertLoadError::Empty) | Err(CertLoadError::NoReadCertDir) => unreachable!(),
             Err(CertLoadError::BadKey(_, e)) => {
-                return Err(CertLoadError::BadKey("fallback".to_string(), e))
+                return Err(CertLoadError::BadKey("fallback".to_string(), e));
             }
             Err(CertLoadError::MissingKey(_)) => {
-                return Err(CertLoadError::MissingKey("fallback".to_string()))
+                return Err(CertLoadError::MissingKey("fallback".to_string()));
             }
             Err(CertLoadError::MissingCert(_)) => {
-                return Err(CertLoadError::MissingCert("fallback".to_string()))
+                return Err(CertLoadError::MissingCert("fallback".to_string()));
             }
             // For the fallback keys there is no domain name to verify them
             // against, so we can skip that step and only have to do it for the
