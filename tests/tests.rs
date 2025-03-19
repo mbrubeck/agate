@@ -402,6 +402,15 @@ fn secret_exists() {
 }
 
 #[test]
+/// - status for paths with hidden segments is "gone" if the respective segment is not the last
+fn secret_subdir() {
+    let page =
+        get(&["-C"], "gemini://localhost/.well-known/hidden-file").expect("could not get page");
+
+    assert_eq!(page.status, Status::Gone.value());
+}
+
+#[test]
 /// - secret file served if `--serve-secret` is enabled
 fn serve_secret() {
     let page = get(&["--serve-secret"], "gemini://localhost/.meta").expect("could not get page");
