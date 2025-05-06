@@ -15,7 +15,7 @@ jobs:
       uses: ncipollo/release-action@v1
 
   build_ubuntu:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: create_release
     steps:
     - uses: actions/checkout@v4
