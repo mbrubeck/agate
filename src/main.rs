@@ -273,9 +273,7 @@ fn args() -> Result<Args> {
         // the directory does not exist
         Err(_) => {
             // since certificate management should be automated, we are going to create the directory too
-            log::info!(
-                "The certificate directory {certs_path:?} does not exist, creating it."
-            );
+            log::info!("The certificate directory {certs_path:?} does not exist, creating it.");
             std::fs::create_dir(&certs_path).expect("could not create certificate directory");
             // we just created the directory, skip loading from it
             (None, PathBuf::from(certs_path))
