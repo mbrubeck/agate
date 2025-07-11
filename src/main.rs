@@ -73,7 +73,7 @@ fn main() {
                             panic!("Failed to listen on {addr}: {e}")
                         } else {
                             // already listening on the other unspecified address
-                            log::warn!("Could not start listener on {}, but already listening on another unspecified address. Probably your system automatically listens in dual stack?", addr);
+                            log::warn!("Could not start listener on {addr}, but already listening on another unspecified address. Probably your system automatically listens in dual stack?");
                             continue;
                         }
                     }
@@ -82,7 +82,7 @@ fn main() {
                 listening_unspecified |= addr.ip().is_unspecified();
 
                 handles.push(tokio::spawn(async move {
-                    log::info!("Started listener on {}", addr);
+                    log::info!("Started listener on {addr}");
 
                     loop {
                         let (stream, _) = listener.accept().await.unwrap_or_else(|e| {
@@ -92,11 +92,11 @@ fn main() {
                         tokio::spawn(async {
                             match RequestHandle::new(stream, arc).await {
                                 Ok(handle) => match handle.handle().await {
-                                    Ok(info) => log::info!("{}", info),
-                                    Err(err) => log::warn!("{}", err),
+                                    Ok(info) => log::info!("{info}"),
+                                    Err(err) => log::warn!("{err}"),
                                 },
                                 Err(log_line) => {
-                                    log::warn!("{}", log_line);
+                                    log::warn!("{log_line}");
                                 }
                             }
                         });
@@ -134,11 +134,11 @@ fn main() {
                         tokio::spawn(async {
                             match RequestHandle::new_unix(stream, arc).await {
                                 Ok(handle) => match handle.handle().await {
-                                    Ok(info) => log::info!("{}", info),
-                                    Err(err) => log::warn!("{}", err),
+                                    Ok(info) => log::info!("{info}"),
+                                    Err(err) => log::warn!("{err}"),
                                 },
                                 Err(log_line) => {
-                                    log::warn!("{}", log_line);
+                                    log::warn!("{log_line}");
                                 }
                             }
                         });
@@ -274,8 +274,7 @@ fn args() -> Result<Args> {
         Err(_) => {
             // since certificate management should be automated, we are going to create the directory too
             log::info!(
-                "The certificate directory {:?} does not exist, creating it.",
-                certs_path
+                "The certificate directory {certs_path:?} does not exist, creating it."
             );
             std::fs::create_dir(&certs_path).expect("could not create certificate directory");
             // we just created the directory, skip loading from it
@@ -295,7 +294,7 @@ fn args() -> Result<Args> {
         // check if we have a certificate for that domain
         if let Host::Domain(ref domain) = hostname {
             if !matches!(certs, Some(ref certs) if certs.has_domain(domain)) {
-                log::info!("No certificate or key found for {:?}, generating them.", s);
+                log::info!("No certificate or key found for {s:?}, generating them.");
 
                 let mut cert_params = CertificateParams::new(vec![domain.clone()])?;
                 cert_params
@@ -496,7 +495,7 @@ impl RequestHandle<UnixStream> {
                 metadata,
             }),
             // use nonexistent status code 00 if connection was not established
-            Err(e) => Err(format!("{} \"\" 00 \"TLS error\" error:{}", log_line, e)),
+            Err(e) => Err(format!("{log_line} \"\" 00 \"TLS error\" error:{e}")),
         }
     }
 }
@@ -743,7 +742,7 @@ where
             return Ok(());
         };
 
-        log::info!("Listing directory {:?}", path);
+        log::info!("Listing directory {path:?}");
 
         self.send_header(SUCCESS, "text/gemini").await?;
         self.stream.write_all(preamble.as_bytes()).await?;

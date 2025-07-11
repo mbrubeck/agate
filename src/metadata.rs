@@ -107,7 +107,7 @@ impl FileOptions {
     /// (Re)reads a specified sidecar file.
     /// This function will allways try to read the file, even if it is current.
     fn read_database(&mut self, db: &Path) {
-        log::debug!("reading database {:?}", db);
+        log::debug!("reading database {db:?}");
 
         let mut ini = Ini::new_cs();
         ini.set_default_section("mime");
@@ -124,7 +124,7 @@ impl FileOptions {
         let files = match map {
             Ok(section) => section,
             Err(err) => {
-                log::error!("invalid config file {:?}: {}", db, err);
+                log::error!("invalid config file {db:?}: {err}");
                 return;
             }
         };
@@ -147,8 +147,7 @@ impl FileOptions {
                     || !header.chars().nth(2).unwrap().is_whitespace()
                 {
                     log::error!(
-                        "Line for {:?} starts like a full header line, but it is incorrect; ignoring it.",
-                        path
+                        "Line for {path:?} starts like a full header line, but it is incorrect; ignoring it."
                     );
                     return;
                 }
@@ -158,9 +157,7 @@ impl FileOptions {
                     // character has to be a space, so correct any
                     // other whitespace to it (e.g. tabs)
                     log::warn!(
-                        "Full Header line for {:?} has an invalid character, treating {:?} as a space.",
-                        path,
-                        separator
+                        "Full Header line for {path:?} has an invalid character, treating {separator:?} as a space."
                     );
                 }
                 let status = header
@@ -193,12 +190,12 @@ impl FileOptions {
                 match glob_with(path, glob_options) {
                     Ok(paths) => paths.collect::<Vec<_>>(),
                     Err(err) => {
-                        log::error!("incorrect glob pattern in {:?}: {}", path, err);
+                        log::error!("incorrect glob pattern in {path:?}: {err}");
                         continue;
                     }
                 }
             } else {
-                log::error!("path is not UTF-8: {:?}", path);
+                log::error!("path is not UTF-8: {path:?}");
                 continue;
             };
 
@@ -213,7 +210,7 @@ impl FileOptions {
                             self.file_meta.insert(path, preset.clone());
                         }
                         Err(err) => {
-                            log::warn!("could not process glob path: {}", err);
+                            log::warn!("could not process glob path: {err}");
                             continue;
                         }
                     };
