@@ -290,55 +290,55 @@ fn args() -> Result<Args> {
         let hostname = Host::parse(&s)?;
 
         // check if we have a certificate for that domain
-        if let Host::Domain(ref domain) = hostname {
-            if !matches!(certs, Some(ref certs) if certs.has_domain(domain)) {
-                log::info!("No certificate or key found for {s:?}, generating them.");
+        if let Host::Domain(ref domain) = hostname
+            && !matches!(certs, Some(ref certs) if certs.has_domain(domain))
+        {
+            log::info!("No certificate or key found for {s:?}, generating them.");
 
-                let mut cert_params = CertificateParams::new(vec![domain.clone()])?;
-                cert_params
-                    .distinguished_name
-                    .push(DnType::CommonName, domain);
+            let mut cert_params = CertificateParams::new(vec![domain.clone()])?;
+            cert_params
+                .distinguished_name
+                .push(DnType::CommonName, domain);
 
-                // <CertificateParams as Default>::default() already implements a
-                // date in the far future from the time of writing: 4096-01-01
+            // <CertificateParams as Default>::default() already implements a
+            // date in the far future from the time of writing: 4096-01-01
 
-                let key_pair = if matches.opt_present("e") {
-                    KeyPair::generate_for(&rcgen::PKCS_ED25519)
-                } else {
-                    KeyPair::generate()
-                }?;
+            let key_pair = if matches.opt_present("e") {
+                KeyPair::generate_for(&rcgen::PKCS_ED25519)
+            } else {
+                KeyPair::generate()
+            }?;
 
-                // generate the certificate with the configuration
-                let cert = cert_params.self_signed(&key_pair)?;
+            // generate the certificate with the configuration
+            let cert = cert_params.self_signed(&key_pair)?;
 
-                // make sure the certificate directory exists
-                fs::create_dir(certs_path.join(domain))?;
-                // write certificate data to disk
-                let mut cert_file = File::create(certs_path.join(format!(
-                    "{}/{}",
-                    domain,
-                    certificates::CERT_FILE_NAME
-                )))?;
-                cert_file.write_all(cert.der())?;
-                // write key data to disk
-                let key_file_path =
-                    certs_path.join(format!("{}/{}", domain, certificates::KEY_FILE_NAME));
-                let mut key_file = File::create(&key_file_path)?;
-                #[cfg(unix)]
-                {
-                    // set permissions so only owner can read
-                    match key_file.set_permissions(std::fs::Permissions::from_mode(0o400)) {
-                        Ok(_) => (),
-                        Err(_) => log::warn!(
-                            "could not set permissions for new key file {}",
-                            key_file_path.display()
-                        ),
-                    }
+            // make sure the certificate directory exists
+            fs::create_dir(certs_path.join(domain))?;
+            // write certificate data to disk
+            let mut cert_file = File::create(certs_path.join(format!(
+                "{}/{}",
+                domain,
+                certificates::CERT_FILE_NAME
+            )))?;
+            cert_file.write_all(cert.der())?;
+            // write key data to disk
+            let key_file_path =
+                certs_path.join(format!("{}/{}", domain, certificates::KEY_FILE_NAME));
+            let mut key_file = File::create(&key_file_path)?;
+            #[cfg(unix)]
+            {
+                // set permissions so only owner can read
+                match key_file.set_permissions(std::fs::Permissions::from_mode(0o400)) {
+                    Ok(_) => (),
+                    Err(_) => log::warn!(
+                        "could not set permissions for new key file {}",
+                        key_file_path.display()
+                    ),
                 }
-                key_file.write_all(key_pair.serialized_der())?;
-
-                reload_certs = true;
             }
+            key_file.write_all(key_pair.serialized_der())?;
+
+            reload_certs = true;
         }
 
         hostnames.push(hostname);
@@ -594,13 +594,13 @@ where
         }
 
         // correct port
-        if let Some(expected_port) = self.local_port_check {
-            if let Some(port) = url.port() {
-                // Validate that the port in the URL is the same as for the stream this request
-                // came in on.
-                if port != expected_port {
-                    return Err((PROXY_REQUEST_REFUSED, "Proxy request refused"));
-                }
+        if let Some(expected_port) = self.local_port_check
+            && let Some(port) = url.port()
+        {
+            // Validate that the port in the URL is the same as for the stream this request
+            // came in on.
+            if port != expected_port {
+                return Err((PROXY_REQUEST_REFUSED, "Proxy request refused"));
             }
         }
         Ok(url)
@@ -659,24 +659,24 @@ where
             }
         }
 
-        if let Ok(metadata) = tokio::fs::metadata(&path).await {
-            if metadata.is_dir() {
-                if url.path().ends_with('/') || url.path().is_empty() {
-                    // if the path ends with a slash or the path is empty, the links will work the same
-                    // without a redirect
-                    // use `push` instead of `join` because the changed path is used later
-                    path.push("index.gmi");
-                    if !path.exists() {
-                        path.pop();
-                        // try listing directory
-                        return self.list_directory(&path).await;
-                    }
-                } else {
-                    // if client is not redirected, links may not work as expected without trailing slash
-                    let mut url = url;
-                    url.set_path(&format!("{}/", url.path()));
-                    return self.send_header(REDIRECT_PERMANENT, url.as_str()).await;
+        if let Ok(metadata) = tokio::fs::metadata(&path).await
+            && metadata.is_dir()
+        {
+            if url.path().ends_with('/') || url.path().is_empty() {
+                // if the path ends with a slash or the path is empty, the links will work the same
+                // without a redirect
+                // use `push` instead of `join` because the changed path is used later
+                path.push("index.gmi");
+                if !path.exists() {
+                    path.pop();
+                    // try listing directory
+                    return self.list_directory(&path).await;
                 }
+            } else {
+                // if client is not redirected, links may not work as expected without trailing slash
+                let mut url = url;
+                url.set_path(&format!("{}/", url.path()));
+                return self.send_header(REDIRECT_PERMANENT, url.as_str()).await;
             }
         }
 
