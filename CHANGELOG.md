@@ -5,7 +5,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+Updates to dependencies are not considered notable changes for the purpose of this changelog.
+This may lead to no listed changes for a version.
+
 ## [Unreleased]
+
+## [3.3.18] - 2025-08-05
+## [3.3.17] - 2025-06-27
+## [3.3.16] - 2025-05-06
+
+### Changed
+* Build release artifacts with Ubuntu 22.04, because Ubuntu 20.04 is no longer supported
+	* pre-built binaries may no longer run on Linux distributions older than Ubuntu 22.04 (glibc 2.35)
+	* users with older glibc versions will need to build from source
+
+## [3.3.15] - 2025-05-06
+## [3.3.14] - 2025-03-24
+## [3.3.13] - 2025-02-24
+Thank you to @luineth for contributing to this release.
+
+### Added
+* aarch64 support for Docker image (#376)
+
+## [3.3.12] - 2025-02-18
+## [3.3.11] - 2024-11-29
+Thank you to @geraldwuhoo and @jphastings for contributing to this release.
+
+### Added
+* Automatically publish docker images to GHCR (#366)
+
+### Fixed
+* Refactor Dockerfile for multi-stage build (#144)
+
+## [3.3.10] - 2024-11-04
+## [3.3.9] - 2024-09-10
+## [3.3.8] - 2024-07-24
+## [3.3.7] - 2024-04-01
+## [3.3.6] - 2024-03-22
+## [3.3.5] - 2024-03-15
+
+### Fixed
+* updated and simplified dependencies
+* fix syntax of license field in Cargo manifest
+
+## [3.3.4] - 2024-01-16
+
+### Fixed
+* cleaned up documentation
 
 ## [3.3.3] - 2023-12-27
 
@@ -13,10 +59,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * fixed release automation
 
 ## [3.3.2] - 2023-12-27
-
-### Fixed
-* updated dependencies
-
 ## [3.3.1] - 2023-08-05
 Thank you to Jan Stępień and @michaelnordmeyer for contributing to this release.
 
@@ -31,7 +73,6 @@ Thank you to @equalsraf, @michaelnordmeyer and @wanderer1988 for contributing to
 * listening on unix sockets (#244)
 
 ### Fixed
-* updated dependencies
 * misstyped email address in section on how to report security vulnerabilities (#239)
 * wrong language code in README (#189)
 
@@ -41,14 +82,12 @@ Thank you to @06kellyjac, @albertlarsan68 and @kahays for contributing to this r
 ### Fixed
 * removed port collisions in tests, for the last time (#143)
 * fixed Dockerfile startup command (#169)
-* upated dependencies
 
 ## [3.2.3] - 2022-02-04
 Thank you to T. Spivey for contributing to this release.
 
 ### Fixed
 * improper IRIs are handled instead of crashing (bug reported via email)
-* updated dependencies
 
 ## [3.2.2] - 2022-01-25
 Thank you to @Suzie97 for contributing to this release.
@@ -56,16 +95,12 @@ Thank you to @Suzie97 for contributing to this release.
 ### Added
 * CI build for `aarch64-apple-darwin` target (#137)
 
-### Fixed
-* updated dependencies
-
 ## [3.2.1] - 2021-12-02
 Thank you to @MatthiasPortzel for contributing to this release.
 
 ### Fixed
 * host name comparisons are now case insensitive (#115)
 * made automatic certificate configuration more prominent in the README
-* updated dependencies
 
 ## [3.2.0] - 2021-11-15
 Thank you to @balazsbtond and @joseph-marques for contributing to this release.
@@ -74,7 +109,6 @@ Thank you to @balazsbtond and @joseph-marques for contributing to this release.
 * you can add header text to a directory listing. See the updated readme for details. (#98)
 
 ### Fixed
-* updated dependencies
 * error pages also send close_notify (#100)
 
 ## [3.1.3] - 2021-10-25
@@ -103,7 +137,6 @@ Thank you to @jgarte and @alvaro-cuesta for contributing to this release.
 ### Fixed
 * actually bind to multiple IP addresses. Despite the documentation saying so,
   Agate would only bind to the first address that did not result in an error. (#63)
-* updated dependencies
 
 ## [3.1.0] - 2021-06-08
 Thank you to Matthew Ingwersen and Oliver Simmons (@GoodClover) for contributing to this release.
@@ -133,7 +166,6 @@ Thank you to @06kellyjac, @cpnfeeny, @lifelike, @skittlesvampir and @steko for c
   The previous handling could be exploited as a DoS attack vector. (#59)
 * Two tests were running on the same port, causing them to fail nondeterministically. (#51)
 * Rephrased the changelog for 3.0.0 on continuing to use older certificates. (#55)
-* Updated dependencies.
 
 ## [3.0.2] - 2021-04-08
 Thank you to @kvibber, @lifelike and @pasdechance for contributing to this release.
@@ -196,7 +228,6 @@ Thank you to @littleli and @06kellyjac for contributing to this release.
 * The GitHub workflow has been fixed so Windows binaries are compressed correctly (#36).
 * Split out install steps to allow for more options in the future.
 * Add install notes for nix/NixOS to the README (#38).
-* Updated dependencies.
 
 ## [2.5.2] - 2021-02-12
 
@@ -293,9 +324,6 @@ Thank you to @Johann150 and @KilianKemps for contributing to this release.
 ### Added
 * Optional directory listings (#8, #9).
 
-### Fixed
-* Updated dependencies.
-
 ## [2.0.0] - 2020-12-23
 Thank you to @bortzmeyer, @KillianKemps, and @Ylhp for contributing to this release.
 
@@ -326,7 +354,6 @@ Thank you @Johann150, @jonhiggs and @tronje for contributing to this release!
 * verify hostname and port in request URL (#4).
 * improved logging (#2, #3).
 * Don't redirect to "/" when the path is empty (#5).
-* Update dependencies.
 
 ## [1.2.2] - 2020-09-21
 Thank you to @m040601 for contributing to this release.
@@ -336,13 +363,11 @@ Thank you to @m040601 for contributing to this release.
 * Built both x86_64 and ARM binaries. These binaries are built for Linux operating systems with glibc 2.28 or later, such as Debian 10 ("buster") or newer, Ubuntu 18.10 or newer, and Raspberry Pi OS 2019-06-20 or newer (#1).
 
 ### Fixed
-* Update dependencies.
 * Minor internal code cleanup.
 
 ## [1.2.1] - 2020-06-20
 ### Fixed
 * Reduce memory usage when serving large files.
-* Update dependencies.
 
 ## [1.2.0] - 2020-06-10
 ### Changed
@@ -351,7 +376,6 @@ Thank you to @m040601 for contributing to this release.
 ### Fixed
 * Handling for requests that exceed 1KB.
 * Reduce memory allocations and speed up request parsing.
-* Update dependencies.
 
 ## [1.1.0] - 2020-05-22
 ### Added
@@ -364,7 +388,24 @@ Thank you to @m040601 for contributing to this release.
 
 ## [1.0.0] - 2020-05-21
 
-[Unreleased]: https://github.com/mbrubeck/agate/compare/v3.3.1...HEAD
+[Unreleased]: https://github.com/mbrubeck/agate/compare/v3.3.18...HEAD
+[3.3.18]: https://github.com/mbrubeck/agate/compare/v3.3.17...v3.3.18
+[3.3.17]: https://github.com/mbrubeck/agate/compare/v3.3.16...v3.3.17
+[3.3.16]: https://github.com/mbrubeck/agate/compare/v3.3.15...v3.3.16
+[3.3.15]: https://github.com/mbrubeck/agate/compare/v3.3.14...v3.3.15
+[3.3.14]: https://github.com/mbrubeck/agate/compare/v3.3.13...v3.3.14
+[3.3.13]: https://github.com/mbrubeck/agate/compare/v3.3.12...v3.3.13
+[3.3.12]: https://github.com/mbrubeck/agate/compare/v3.3.11...v3.3.12
+[3.3.11]: https://github.com/mbrubeck/agate/compare/v3.3.10...v3.3.11
+[3.3.10]: https://github.com/mbrubeck/agate/compare/v3.3.9...v3.3.10
+[3.3.9]: https://github.com/mbrubeck/agate/compare/v3.3.8...v3.3.9
+[3.3.8]: https://github.com/mbrubeck/agate/compare/v3.3.7...v3.3.8
+[3.3.7]: https://github.com/mbrubeck/agate/compare/v3.3.6...v3.3.7
+[3.3.6]: https://github.com/mbrubeck/agate/compare/v3.3.5...v3.3.6
+[3.3.5]: https://github.com/mbrubeck/agate/compare/v3.3.4...v3.3.5
+[3.3.4]: https://github.com/mbrubeck/agate/compare/v3.3.3...v3.3.4
+[3.3.3]: https://github.com/mbrubeck/agate/compare/v3.3.2...v3.3.3
+[3.3.2]: https://github.com/mbrubeck/agate/compare/v3.3.1...v3.3.2
 [3.3.1]: https://github.com/mbrubeck/agate/compare/v3.3.0...v3.3.1
 [3.3.0]: https://github.com/mbrubeck/agate/compare/v3.2.4...v3.3.0
 [3.2.4]: https://github.com/mbrubeck/agate/compare/v3.2.3...v3.2.4
