@@ -195,6 +195,13 @@ Using a directory named just `.` causes undefined behaviour as this would have t
 
 The files for a certificate/key pair have to be named `cert.der` and `key.der` respectively. The certificate has to be a X.509 certificate in a DER format file and has to include a subject alt name of the domain name. The private key has to be in DER format and must be either an RSA, ECDSA or Ed25519 key.
 
+If you have an existing certificate/key pair in PEM format, you can use these commands to convert them to the DER format:
+
+```shell
+openssl x509 -inform pem -in cert.pem -outform der -out cert.der
+openssl rsa -inform pem -in privkey.pem -outform der -out key.der
+```
+
 ## Logging
 
 All requests via TCP sockets will be logged using this format:
