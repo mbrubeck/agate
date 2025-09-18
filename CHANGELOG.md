@@ -10,6 +10,12 @@ This may lead to no listed changes for a version.
 
 ## [Unreleased]
 
+## [3.3.19] - 2025-09-18
+
+### Fixed
+* Update dependencies.
+* Document commands for converting PEM to DER.
+
 ## [3.3.18] - 2025-08-05
 ## [3.3.17] - 2025-06-27
 ## [3.3.16] - 2025-05-06
