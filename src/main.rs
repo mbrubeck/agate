@@ -313,17 +313,15 @@ fn args() -> Result<Args> {
             let cert = cert_params.self_signed(&key_pair)?;
 
             // make sure the certificate directory exists
-            fs::create_dir(certs_path.join(domain))?;
+            let cert_dir = certs_path.join(domain);
+            fs::create_dir(&cert_dir)?;
+
             // write certificate data to disk
-            let mut cert_file = File::create(certs_path.join(format!(
-                "{}/{}",
-                domain,
-                certificates::CERT_FILE_NAME
-            )))?;
+            let mut cert_file = File::create(cert_dir.join(certificates::CERT_FILE_NAME))?;
             cert_file.write_all(cert.der())?;
+
             // write key data to disk
-            let key_file_path =
-                certs_path.join(format!("{}/{}", domain, certificates::KEY_FILE_NAME));
+            let key_file_path = cert_dir.join(certificates::KEY_FILE_NAME);
             let mut key_file = File::create(&key_file_path)?;
             #[cfg(unix)]
             {
