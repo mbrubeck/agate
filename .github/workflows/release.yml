@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-22.04
     needs: create_release
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     - name: build
       run: bash .github/workflows/release.sh
     - name: upload release assets linux
@@ -32,7 +32,7 @@ jobs:
     runs-on: windows-latest
     needs: create_release
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     - name: Build
       run: cargo build --verbose --release
     - name: strip names
@@ -50,7 +50,7 @@ jobs:
     runs-on: macos-latest
     needs: create_release
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     - name: install toolchain
       run: rustup target add aarch64-apple-darwin
     - name: Build x86_64
@@ -79,7 +79,7 @@ jobs:
       packages: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Log into GHCR
