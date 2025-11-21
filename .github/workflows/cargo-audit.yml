@@ -10,7 +10,7 @@ jobs:
   cargo-audit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: actions-rs/audit-check@v1
         # Don't run on dependabot PRs or forks
         # https://github.com/actions-rs/clippy-check/issues/2#issuecomment-807852653

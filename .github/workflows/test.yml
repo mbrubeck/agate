@@ -12,7 +12,7 @@ jobs:
   clippy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Run clippy action to produce annotations
         # Don't run on dependabot PRs
         # https://github.com/actions-rs/clippy-check/issues/2#issuecomment-807852653
@@ -30,7 +30,7 @@ jobs:
   formatting:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Formatting
         uses: actions-rs/cargo@v1
         with:
@@ -39,7 +39,7 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: actions-rs/cargo@v1
         with:
           command: test
