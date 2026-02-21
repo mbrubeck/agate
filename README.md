@@ -83,7 +83,11 @@ When a client requests the URL `gemini://example.com/foo/bar`, Agate will respon
 
 ### Automatic Certificate generation
 
-If the `--hostname` argument is used, Agate will generate keys and self signed certificates for each hostname specified. For Gemini it is recommended by the specification to use self signed certificates because Gemini uses the TOFU (Trust on first use) principle for certificates. Because of this, the generated certificates will also have a long expiration time of `4096-01-01`.
+If the `--hostname` argument is used, Agate will generate keys and self signed certificates for each hostname specified.
+Please note that using an IP address for certificates is not (intentionally) supported.
+
+For Gemini it is recommended by the specification to use self signed certificates because Gemini uses the TOFU (Trust on first use) principle for certificates.
+Because of this, the generated certificates will also have a long expiration time of `4096-01-01`.
 
 For manual configuration of keys and certificates see the [section on certificates](#certificates) below.
 
