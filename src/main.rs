@@ -570,24 +570,35 @@ where
             return Err((BAD_REQUEST, "URL contains fragment or userinfo"));
         }
 
-        // correct host
-        let Some(domain) = url.domain() else {
-            return Err((BAD_REQUEST, "URL does not contain a domain"));
+        let host = match url.domain() {
+            Some(domain) => {
+                // because the gemini scheme is not special enough for WHATWG, normalize
+                // it ourselves
+                let host = Host::parse(
+                    &percent_decode_str(domain)
+                        .decode_utf8()
+                        .or(Err((BAD_REQUEST, "Invalid URL")))?,
+                )
+                .or(Err((BAD_REQUEST, "Invalid URL")))?;
+                // TODO: simplify when <https://github.com/servo/rust-url/issues/586> resolved
+                url.set_host(Some(&host.to_string()))
+                    .expect("invalid domain?");
+                Some(host)
+            }
+            None => {
+                url.set_host(None).expect("invalid domain?");
+                None
+            }
         };
-        // because the gemini scheme is not special enough for WHATWG, normalize
-        // it ourselves
-        let host = Host::parse(
-            &percent_decode_str(domain)
-                .decode_utf8()
-                .or(Err((BAD_REQUEST, "Invalid URL")))?,
-        )
-        .or(Err((BAD_REQUEST, "Invalid URL")))?;
-        // TODO: simplify when <https://github.com/servo/rust-url/issues/586> resolved
-        url.set_host(Some(&host.to_string()))
-            .expect("invalid domain?");
+
         // do not use "contains" here since it requires the same type and does
         // not allow to check for Host<&str> if the vec contains Hostname<String>
-        if !ARGS.hostnames.is_empty() && !ARGS.hostnames.iter().any(|h| h == &host) {
+        if !ARGS.hostnames.is_empty()
+            && !ARGS
+                .hostnames
+                .iter()
+                .any(|h| host.as_ref().is_some_and(|this| this == h))
+        {
             return Err((PROXY_REQUEST_REFUSED, "Proxy request refused"));
         }
 
