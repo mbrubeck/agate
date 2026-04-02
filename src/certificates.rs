@@ -222,7 +222,7 @@ impl ResolvesServerCert for CertStore {
                 .map(|(_, k)| k)
                 .cloned()
         } else {
-            // This kind of resolver requires SNI. Fallback to default cert.
+            // Fallback to default cert.
             // * must exist in the `.certificates` root
             // * CN value can be any
             self.certs
