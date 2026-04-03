@@ -10,6 +10,9 @@ This may lead to no listed changes for a version.
 
 ## [Unreleased]
 
+### Fixed
+* Use the default port when checking for the right port.
+
 ## [3.3.19] - 2025-09-18
 
 ### Fixed

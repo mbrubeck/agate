@@ -36,6 +36,7 @@ static PORT: AtomicU16 = AtomicU16::new(DEFAULT_PORT);
 struct Server {
     addr: SocketAddr,
     server: std::process::Child,
+    port: u16,
     // is set when output is collected by stop()
     output: Option<Result<(), String>>,
 }
@@ -44,11 +45,10 @@ impl Server {
     pub fn new(args: &[&str]) -> Self {
         use std::net::{IpAddr, Ipv4Addr};
 
+        let port = PORT.fetch_add(1, Ordering::SeqCst);
+
         // generate unique port/address so tests do not clash
-        let addr = (
-            IpAddr::V4(Ipv4Addr::LOCALHOST),
-            PORT.fetch_add(1, Ordering::SeqCst),
-        )
+        let addr = (IpAddr::V4(Ipv4Addr::LOCALHOST), port)
             .to_socket_addrs()
             .unwrap()
             .next()
@@ -84,6 +84,7 @@ impl Server {
         Self {
             addr,
             server,
+            port,
             output: None,
         }
     }
@@ -147,7 +148,12 @@ impl Drop for Server {
 fn get(args: &[&str], url: &str) -> Result<Response, String> {
     let mut server = Server::new(args);
 
-    let url = Url::parse(url).unwrap();
+    let mut url = Url::parse(url).unwrap();
+    if url.port().is_none() {
+        // inject port number into URL because that is only determined
+        // when constructing the `Server` above.
+        url.set_port(Some(server.port)).unwrap();
+    }
     let actor = Actor::default().proxy("localhost".into(), server.addr.port());
     let request = actor.get(url);
 

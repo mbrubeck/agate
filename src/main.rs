@@ -591,16 +591,14 @@ where
             return Err((PROXY_REQUEST_REFUSED, "Proxy request refused"));
         }
 
-        // correct port
+        // Validate that the port in the URL is the same as for the stream this request
+        // came in on.
         if let Some(expected_port) = self.local_port_check
-            && let Some(port) = url.port()
+            && url.port().unwrap_or(DEFAULT_PORT) != expected_port
         {
-            // Validate that the port in the URL is the same as for the stream this request
-            // came in on.
-            if port != expected_port {
-                return Err((PROXY_REQUEST_REFUSED, "Proxy request refused"));
-            }
+            return Err((PROXY_REQUEST_REFUSED, "Proxy request refused"));
         }
+
         Ok(url)
     }
 
