@@ -210,25 +210,27 @@ impl CertStore {
 
 impl ResolvesServerCert for CertStore {
     fn resolve(&self, client_hello: ClientHello<'_>) -> Option<Arc<CertifiedKey>> {
-        if let Some(name) = client_hello.server_name() {
-            let name: &str = name;
+        match client_hello.server_name() {
             // The certificate list is sorted so the longest match will always
             // appear first. We have to find the first that is either this
             // domain or a parent domain of the current one.
-            self.certs
-                .iter()
-                .find(|(s, _)| name.ends_with(s))
-                // only the key is interesting
-                .map(|(_, k)| k)
-                .cloned()
-        } else {
+            Some(name) => {
+                let name: &str = name;
+                self.certs
+                    .iter()
+                    .find(|(s, _)| name.ends_with(s))
+                    // only the key is interesting
+                    .map(|(_, k)| k)
+                    .cloned()
+            }
             // Fallback to default cert.
             // * must exist in the `.certificates` root
             // * CN value can be any
-            self.certs
+            None => self
+                .certs
                 .iter()
                 .find(|(domain, _)| domain.is_empty())
-                .map(|(_, key)| Arc::clone(key))
+                .map(|(_, key)| Arc::clone(key)),
         }
     }
 }
