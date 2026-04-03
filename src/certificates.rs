@@ -222,8 +222,12 @@ impl ResolvesServerCert for CertStore {
                 .map(|(_, k)| k)
                 .cloned()
         } else {
-            // This kind of resolver requires SNI.
-            None
+            // Fallback to default cert. Due to the certificate loading logic,
+            // the fallback cert is always the last one, if it is present.
+            match self.certs.last() {
+                Some((domain, key)) if domain.is_empty() => Some(key.clone()),
+                _ => None,
+            }
         }
     }
 }
