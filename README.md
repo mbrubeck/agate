@@ -172,6 +172,8 @@ If you want to serve the same content for multiple domains, you can instead disa
 
 When one or more `--hostname`s are specified, Agate will check that the hostnames and port in request URLs match the specified hostnames and the listening ports. If Agate is behind a proxy on another port and receives a request with an URL specifying the proxy port, this port may not match one of Agate's listening ports and the request will be rejected: it is possible to disable the port check with `--skip-port-check`.
 
+If Agate receives a request using an IP address in the URL, it will check that the IP address from the URL matches the local IP address of the TCP connection. Because Unix sockets do not have an IP address, this check cannot be performed and any IP address will be permitted via Unix sockets.
+
 ### Certificates
 
 Agate has support for using multiple certificates with the `--certs` option. Agate will thus always require that a client uses SNI, which should not be a problem since the Gemini specification also requires SNI to be used.

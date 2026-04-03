@@ -9,9 +9,15 @@ Updates to dependencies are not considered notable changes for the purpose of th
 This may lead to no listed changes for a version.
 
 ## [Unreleased]
+Thank you to @oooo-ps for contributing to this release.
 
 ### Fixed
 * Use the default port when checking for the right port.
+
+### Added
+* Accept requests with URLs containing IP addresses.
+  Agate will check that the IP matches the local address for TCP sockets.
+  Unix sockets will accept any IP address.
 
 ## [3.3.19] - 2025-09-18
 

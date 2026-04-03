@@ -496,9 +496,47 @@ impl RequestHandle<UnixStream> {
     }
 }
 
+trait CheckHost {
+    fn check_host(&self, host: &url::Host) -> bool;
+}
+
+fn check_domain(domain: &str) -> bool {
+    if ARGS.hostnames.is_empty() {
+        // no hostnames -> hostname check disabled
+        true
+    } else {
+        ARGS.hostnames.iter().any(|x| x == &Host::Domain(domain))
+    }
+}
+
+impl CheckHost for TcpStream {
+    fn check_host(&self, host: &url::Host) -> bool {
+        match host {
+            url::Host::Ipv4(ip) => self
+                .local_addr()
+                .is_ok_and(|local| &local.ip().to_canonical() == ip),
+            url::Host::Ipv6(ip) => self.local_addr().is_ok_and(|local| match local.ip() {
+                IpAddr::V4(local) => &local.to_ipv6_mapped() == ip,
+                IpAddr::V6(local) => &local == ip,
+            }),
+            url::Host::Domain(domain) => check_domain(domain),
+        }
+    }
+}
+
+#[cfg(unix)]
+impl CheckHost for UnixStream {
+    fn check_host(&self, host: &url::Host) -> bool {
+        match host {
+            url::Host::Ipv4(..) | url::Host::Ipv6(..) => true,
+            url::Host::Domain(domain) => check_domain(domain),
+        }
+    }
+}
+
 impl<T> RequestHandle<T>
 where
-    T: AsyncWriteExt + AsyncReadExt + Unpin,
+    T: AsyncWriteExt + AsyncReadExt + Unpin + CheckHost,
 {
     /// Do the necessary actions to handle this request. Returns a corresponding
     /// log line as Err or Ok, depending on if the request finished with or
@@ -570,24 +608,34 @@ where
             return Err((BAD_REQUEST, "URL contains fragment or userinfo"));
         }
 
-        // correct host
-        let Some(domain) = url.domain() else {
-            return Err((BAD_REQUEST, "URL does not contain a domain"));
+        // normalize host
+        let host = match url.host() {
+            Some(Host::Domain(domain)) => {
+                // because the gemini scheme is not special enough for WHATWG,
+                // (re-)normalize it properly
+                let domain = Host::parse(
+                    &percent_decode_str(domain)
+                        .decode_utf8()
+                        .or(Err((BAD_REQUEST, "Invalid URL")))?,
+                )
+                .or(Err((BAD_REQUEST, "Invalid URL")))?;
+                // also put the now properly normalized host back into the url
+                // TODO: simplify when <https://github.com/servo/rust-url/issues/586> resolved
+                url.set_host(Some(&domain.to_string()))
+                    .expect("invalid domain?");
+
+                domain
+            }
+            // these match arms are needed for "converting" from Host<&str> to Host<String>
+            Some(Host::Ipv4(ip)) => Host::Ipv4(ip),
+            Some(Host::Ipv6(ip)) => Host::Ipv6(ip),
+            None => {
+                // cannot-be-a-base URLs cannot be used here
+                return Err((BAD_REQUEST, "URL does not contain a domain"));
+            }
         };
-        // because the gemini scheme is not special enough for WHATWG, normalize
-        // it ourselves
-        let host = Host::parse(
-            &percent_decode_str(domain)
-                .decode_utf8()
-                .or(Err((BAD_REQUEST, "Invalid URL")))?,
-        )
-        .or(Err((BAD_REQUEST, "Invalid URL")))?;
-        // TODO: simplify when <https://github.com/servo/rust-url/issues/586> resolved
-        url.set_host(Some(&host.to_string()))
-            .expect("invalid domain?");
-        // do not use "contains" here since it requires the same type and does
-        // not allow to check for Host<&str> if the vec contains Hostname<String>
-        if !ARGS.hostnames.is_empty() && !ARGS.hostnames.iter().any(|h| h == &host) {
+        // check for correct host
+        if !self.stream.get_ref().0.check_host(&host) {
             return Err((PROXY_REQUEST_REFUSED, "Proxy request refused"));
         }
 
