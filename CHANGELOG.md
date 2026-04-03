@@ -403,7 +403,8 @@ Thank you to @m040601 for contributing to this release.
 
 ## [1.0.0] - 2020-05-21
 
-[Unreleased]: https://github.com/mbrubeck/agate/compare/v3.3.18...HEAD
+[Unreleased]: https://github.com/mbrubeck/agate/compare/v3.3.19...HEAD
+[3.3.19]: https://github.com/mbrubeck/agate/compare/v3.3.18...v3.3.19
 [3.3.18]: https://github.com/mbrubeck/agate/compare/v3.3.17...v3.3.18
 [3.3.17]: https://github.com/mbrubeck/agate/compare/v3.3.16...v3.3.17
 [3.3.16]: https://github.com/mbrubeck/agate/compare/v3.3.15...v3.3.16
