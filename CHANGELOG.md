@@ -9,6 +9,8 @@ Updates to dependencies are not considered notable changes for the purpose of th
 This may lead to no listed changes for a version.
 
 ## [Unreleased]
+
+## [3.3.22] - 2026-04-19
 Thank you to @oooo-ps and Fabian Stiewitz for contributing to this release.
 
 ### Security
@@ -24,6 +26,8 @@ Thank you to @oooo-ps and Fabian Stiewitz for contributing to this release.
   Agate will check that the IP matches the local address for TCP sockets.
   Unix sockets will accept any IP address.
 
+## [3.3.21] - 2026-03-24
+## [3.3.20] - 2026-01-06
 ## [3.3.19] - 2025-09-18
 
 ### Fixed
@@ -408,7 +412,10 @@ Thank you to @m040601 for contributing to this release.
 
 ## [1.0.0] - 2020-05-21
 
-[Unreleased]: https://github.com/mbrubeck/agate/compare/v3.3.19...HEAD
+[Unreleased]: https://github.com/mbrubeck/agate/compare/v3.3.22...HEAD
+[3.3.22]: https://github.com/mbrubeck/agate/compare/v3.3.21...v3.3.22
+[3.3.21]: https://github.com/mbrubeck/agate/compare/v3.3.20...v3.3.21
+[3.3.20]: https://github.com/mbrubeck/agate/compare/v3.3.19...v3.3.20
 [3.3.19]: https://github.com/mbrubeck/agate/compare/v3.3.18...v3.3.19
 [3.3.18]: https://github.com/mbrubeck/agate/compare/v3.3.17...v3.3.18
 [3.3.17]: https://github.com/mbrubeck/agate/compare/v3.3.16...v3.3.17
