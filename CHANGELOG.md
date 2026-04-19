@@ -9,7 +9,12 @@ Updates to dependencies are not considered notable changes for the purpose of th
 This may lead to no listed changes for a version.
 
 ## [Unreleased]
-Thank you to @oooo-ps for contributing to this release.
+Thank you to @oooo-ps and Fabian Stiewitz for contributing to this release.
+
+### Security
+* Properly escape URLs in log output to prevent user controlled output from ending up in log.
+  Log output may now contain several escape sequences, for example `\"`, `\t`
+  or `\u{1b}` (representing U+001B as used in ANSI escape sequences).
 
 ### Fixed
 * Use the default port when checking for the right port.

@@ -223,6 +223,8 @@ Square brackets indicate optional parts.
 
 The "error:" part will only be logged if an error occurred. This should only be used for informative purposes as the status code should provide the information that an error occurred. If the error consisted in the connection not being established (e.g. because of TLS errors), special status codes listed below may be used.
 
+Note that in particular the `request` component may contain escape sequences like `\"`, `\t` or `\u{1b}`. See Rust's [`char::escape_default`](https://doc.rust-lang.org/std/primitive.char.html#method.escape_default) for details on the escaping.
+
 By default, Agate will not log the remote IP addresses because that might be an issue because IPs are considered private data under the EU's GDPR. To enable logging of IP addresses, you can use the `--log-ip` option. Note that in this case some error conditions might still force Agate to log a dash instead of an IP address. IP addresses can also not be logged for connections via Unix sockets.
 
 There are some lines apart from these that might occur in logs depending on the selected log level. For example the initial "Listening on..." line or information about listing a particular directory.

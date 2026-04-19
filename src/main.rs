@@ -593,7 +593,9 @@ where
         })?;
 
         // log literal request (might be different from or not an actual URL)
-        write!(self.log_line, " \"{request}\"").unwrap();
+        self.log_line.push_str(" \"");
+        self.log_line.extend(request.escape_default());
+        self.log_line.push('"');
 
         let mut url = Url::parse(request).or(Err((BAD_REQUEST, "Invalid URL")))?;
 
