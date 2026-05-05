@@ -14,6 +14,12 @@ Agate is a server for the [Gemini] network protocol, built with the [Rust] progr
 * [Cargo package][crates.io]
 * [Source code][source]
 
+## License
+
+Agate is free software, available under the Apache License version 2.0 or (at your option) the MIT licence, except for the code in the `tests` directory which is available under the GNU GPL version 3 or later.  (The code in `tests` is not included in the packaged or precompiled versions of Agate.)
+
+See the `LICENSE-APACHE` and `LICENSE-MIT` files in this directory for details.
+
 ## Installation and Setup
 
 1. Get a binary for agate. You can use any of the below ways:
