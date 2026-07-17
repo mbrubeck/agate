@@ -246,7 +246,7 @@ fn args() -> Result<Args> {
     let matches = opts.parse(&args[1..]).map_err(|f| f.to_string())?;
 
     if matches.opt_present("h") {
-        eprintln!("{}", opts.usage(&format!("Usage: {} [options]", &args[0])));
+        eprintln!("{}", opts.usage(&format!("Usage: {} [options]", args[0])));
         std::process::exit(0);
     }
 
