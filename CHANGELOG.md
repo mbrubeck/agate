@@ -10,6 +10,16 @@ This may lead to no listed changes for a version.
 
 ## [Unreleased]
 
+## [3.3.24] - 2026-08-03
+
+### Fixed
+* Update dependencies.
+
+## [3.3.23] - 2026-06-04
+
+### Fixed
+* Update dependencies.
+
 ## [3.3.22] - 2026-04-19
 Thank you to @oooo-ps and Fabian Stiewitz for contributing to this release.
 
