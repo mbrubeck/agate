@@ -18,7 +18,9 @@ Since Agate by default uses port 1965, you should be able to run other servers (
 
 ### Pre-compiled
 
-Download and unpack the [pre-compiled binary](https://github.com/mbrubeck/agate/releases).
+Download and unpack the pre-compiled binary (see link below)
+
+=> https://github.com/mbrubeck/agate/releases Agate releases
 
 ### NixOS/Nix
 
