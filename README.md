@@ -109,6 +109,8 @@ The directory listing will hide files and directories whose name starts with a d
 
 A file called `index.gmi` will always take precedence over a directory listing.
 
+It is also possible to use `--allow-directory-listings` to make all directories listable.
+
 ### Meta-Presets
 
 You can put a file called `.meta` in any content directory. This file stores some metadata about the adjacent files which Agate will use when serving these files. The `.meta` file must be UTF-8 encoded.

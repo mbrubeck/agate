@@ -786,11 +786,12 @@ where
             .add(b'{')
             .add(b'}');
 
-        // check if directory listing is enabled by getting preamble
         let preamble: String;
+        // check if directory listing is enabled by getting preamble
         match std::fs::read_to_string(path.join(".directory-listing-ok")) {
             Ok(text) => preamble = text,
             Err(..) => {
+                // user override (allow even without preamble)
                 if ARGS.allow_directory_listings {
                     preamble = "".to_owned();
                 } else {
