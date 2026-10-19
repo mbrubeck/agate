@@ -172,6 +172,7 @@ struct Args {
     only_tls13: bool,
     central_config: bool,
     skip_port_check: bool,
+    allow_directory_listings: bool,
 }
 
 fn args() -> Result<Args> {
@@ -241,6 +242,11 @@ fn args() -> Result<Args> {
         "",
         "skip-port-check",
         "Skip URL port check even when a hostname is specified.",
+    );
+    opts.optflag(
+        "",
+        "allow-directory-listings",
+        "Allow directory listings in all directories",
     );
 
     let matches = opts.parse(&args[1..]).map_err(|f| f.to_string())?;
@@ -390,6 +396,7 @@ fn args() -> Result<Args> {
         only_tls13: matches.opt_present("only-tls13"),
         central_config: matches.opt_present("central-conf"),
         skip_port_check: matches.opt_present("skip-port-check"),
+        allow_directory_listings: matches.opt_present("allow-directory-listings"),
     })
 }
 
@@ -780,11 +787,19 @@ where
             .add(b'}');
 
         // check if directory listing is enabled by getting preamble
-        let Ok(preamble) = std::fs::read_to_string(path.join(".directory-listing-ok")) else {
-            self.send_header(NOT_FOUND, "Directory index disabled.")
-                .await?;
-            return Ok(());
-        };
+        let preamble: String;
+        match std::fs::read_to_string(path.join(".directory-listing-ok")) {
+            Ok(text) => preamble = text,
+            Err(..) => {
+                if ARGS.allow_directory_listings {
+                    preamble = "".to_owned();
+                } else {
+                    self.send_header(NOT_FOUND, "Directory index disabled.")
+                        .await?;
+                    return Ok(());
+                }
+            }
+        }
 
         log::info!("Listing directory {path:?}");
 
