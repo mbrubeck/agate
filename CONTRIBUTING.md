@@ -4,6 +4,7 @@
 
 - [Introduction](#introduction)
 - [Code of Conduct](#code-of-conduct)
+- [No AI/LLM policy](#no-ai-llm-policy)
 - [Reporting Bugs and Suggesting Improvements](#reporting-bugs-and-suggesting-improvements)
 - [Contribution Workflow](#contribution-workflow)
 - [Quality Standards](#quality-standards)
@@ -22,6 +23,13 @@ We look forward to working with you!
 
 Please note that this project is released with a [Code of Conduct](./CODE_OF_CONDUCT.md).
 By participating in this project you agree to abide by its terms.
+
+## No AI/LLM policy
+
+AI generated content is not allowed in this repository.
+
+AI includes large language models, diffusion models or similar deep learning systems.
+Content here includes but is not limited to code, documentation, pull requests, issues and comments.
 
 ## Reporting security issues
 
