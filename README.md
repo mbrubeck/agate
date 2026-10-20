@@ -107,9 +107,10 @@ You can enable a basic directory listing for a directory by putting a file calle
 This file must be UTF-8 encoded text; it may be empty. Any text in the file will be prepended to the directory listing.
 The directory listing will hide files and directories whose name starts with a dot (e.g. the `.directory-listing-ok` file itself, the `.meta` configuration file, or the `..` directory).
 
-A file called `index.gmi` will always take precedence over a directory listing.
+It is also possible to use the `--allow-directory-listings` flag to enable directory listings in every folder without needing the `.directory-listing-ok` file.
+If that file is still present, it will be handled as without the flag specified.
 
-It is also possible to use `--allow-directory-listings` to make all directories listable.
+A file called `index.gmi` will always take precedence over a directory listing.
 
 ### Meta-Presets
 
