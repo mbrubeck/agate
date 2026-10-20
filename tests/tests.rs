@@ -633,14 +633,18 @@ mod directory_listing {
 
     #[test]
     fn with_allow_directory_listings() {
-        let page = get(&["--content", "dirlist-no-preamble", "--allow-directory-listings"], "gemini://localhost/")
-            .expect("could not get page");
+        let page = get(
+            &[
+                "--content",
+                "dirlist-no-preamble",
+                "--allow-directory-listings",
+            ],
+            "gemini://localhost/",
+        )
+        .expect("could not get page");
         assert_eq!(page.status, Status::Success.value());
         assert_eq!(page.meta, "text/gemini");
-        assert_eq!(
-            page.content,
-            b"=> a\n=> b\n"
-        );
+        assert_eq!(page.content, b"=> a\n=> b\n");
     }
 
     #[test]
