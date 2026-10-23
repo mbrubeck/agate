@@ -117,5 +117,3 @@ Contributions should:
     These binaries will be uploaded to a new draft GitHub release with the same name as the version tag. (You need push access to see it).
 1. Run `cargo publish` to publish to [crates.io](https://crates.io/crates/agate).
 1. Fill the GitHub release text with the appropriate entries from the changelog.
-1. Wait for the binary compilation to finish.
-1. Publish the GitHub release.
