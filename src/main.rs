@@ -668,9 +668,10 @@ where
             path.push(url.host_str().expect("no hostname"));
         }
 
-        if let Some(mut segments) = url.path_segments() {
+        if let Some(segments) = url.path_segments() {
+            let mut has_secret_segments = false;
             // append percent-decoded path segments
-            for segment in segments.clone() {
+            for segment in segments {
                 // To prevent directory traversal attacks, we need to
                 // check that each filesystem path component in the URL
                 // path segment is a normal component (not the root
@@ -698,13 +699,14 @@ where
                 if decoded.ends_with(path::is_separator) {
                     return self.send_header(NOT_FOUND, "Not found, sorry.").await;
                 }
+                has_secret_segments |= decoded.starts_with('.');
             }
             // check if hiding files is disabled
             if !ARGS.serve_secret
                 // there is a configuration for this file, assume it should be served
                 && !self.metadata.lock().await.exists(&path)
                 // check if file or directory is hidden
-                && segments.any(|segment| segment.starts_with('.'))
+                && has_secret_segments
             {
                 return self
                     .send_header(GONE, "If I told you, it would not be a secret.")

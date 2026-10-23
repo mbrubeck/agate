@@ -408,10 +408,28 @@ fn secret_exists() {
 }
 
 #[test]
+/// - status for paths with hidden segments is "gone" if file exists even if percent encoding is used
+fn secret_exists_percent() {
+    let page = get(&[], "gemini://localhost/%2emeta").expect("could not get page");
+
+    assert_eq!(page.status, Status::Gone.value());
+}
+
+#[test]
 /// - status for paths with hidden segments is "gone" if the respective segment is not the last
 fn secret_subdir() {
     let page =
         get(&["-C"], "gemini://localhost/.well-known/hidden-file").expect("could not get page");
+
+    assert_eq!(page.status, Status::Gone.value());
+}
+
+#[test]
+/// - status for paths with hidden segments is "gone" if the respective segment is not the last
+///   and the dot is percent encoded
+fn secret_subdir_percent() {
+    let page =
+        get(&["-C"], "gemini://localhost/%2Ewell-known/hidden-file").expect("could not get page");
 
     assert_eq!(page.status, Status::Gone.value());
 }
