@@ -10,16 +10,13 @@ This may lead to no listed changes for a version.
 
 ## [Unreleased]
 
+## [3.3.25] - 2026-10-23
+
+### Security
+* Properly detect secret file segments even when they are percent encoded.
+
 ## [3.3.24] - 2026-08-03
-
-### Fixed
-* Update dependencies.
-
 ## [3.3.23] - 2026-06-04
-
-### Fixed
-* Update dependencies.
-
 ## [3.3.22] - 2026-04-19
 Thank you to @oooo-ps and Fabian Stiewitz for contributing to this release.
 
@@ -422,7 +419,10 @@ Thank you to @m040601 for contributing to this release.
 
 ## [1.0.0] - 2020-05-21
 
-[Unreleased]: https://github.com/mbrubeck/agate/compare/v3.3.22...HEAD
+[Unreleased]: https://github.com/mbrubeck/agate/compare/v3.3.25...HEAD
+[3.3.25]: https://github.com/mbrubeck/agate/compare/v3.3.24...v3.3.25
+[3.3.24]: https://github.com/mbrubeck/agate/compare/v3.3.23...v3.3.24
+[3.3.23]: https://github.com/mbrubeck/agate/compare/v3.3.22...v3.3.23
 [3.3.22]: https://github.com/mbrubeck/agate/compare/v3.3.21...v3.3.22
 [3.3.21]: https://github.com/mbrubeck/agate/compare/v3.3.20...v3.3.21
 [3.3.20]: https://github.com/mbrubeck/agate/compare/v3.3.19...v3.3.20
