@@ -11,9 +11,13 @@ This may lead to no listed changes for a version.
 ## [Unreleased]
 
 ## [3.3.25] - 2026-10-23
+Thank you to @Euro20179 for contributing to this release.
 
 ### Security
 * Properly detect secret file segments even when they are percent encoded.
+
+### Added
+* Flag for allowing directory listings in all directories without needing a `.directory-listing-ok` file.
 
 ## [3.3.24] - 2026-08-03
 ## [3.3.23] - 2026-06-04
