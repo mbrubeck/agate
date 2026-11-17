@@ -20,9 +20,9 @@ Agate is free software, available under the Apache License version 2.0 or (at yo
 
 See the `LICENSE-APACHE` and `LICENSE-MIT` files in this directory for details.
 
-## Installation and Setup
+## Installation
 
-1. Get a binary for agate. You can use any of the below ways:
+Get a binary for agate. You can use any of the mechanisms described below.
 
 ### Pre-compiled
 
@@ -65,12 +65,11 @@ Each release is tagged with `major`, `major.minor`, `major.minor.patch`, as well
 
 Download the source code and run `cargo build --release` inside the source repository, then find the binary at `target/release/agate`.
 
-***
-You can use the install script in the `tools` directory for the remaining steps if there is one for your system.  
-If there is none, please consider contributing one to make it easier for less tech-savvy users!
-***
+## Setup
 
-2. Run the server. You can use the following arguments to specify the locations of the content directory, IP address and port to listen on, host name to expect in request URLs, and default language code to include in the MIME type for text/gemini files: (Replace the hostname `example.com` with the address of your Gemini server.)
+Note: If you installed Agate from source and/or have access to the source code, you can use the install scripts in the `tools` directory for the remaining steps if there is one for your system. If there is none, please consider contributing one to make it easier for less tech-savvy users!
+
+Run the server. You can use the following arguments to specify the locations of the content directory, IP address and port to listen on, host name to expect in request URLs, and default language code to include in the MIME type for text/gemini files: (Replace the hostname `example.com` with the address of your Gemini server.)
 If you have not done it yourself, Agate will generate a private key and certificate for you on the first run, using the specified hostname(s). See the section Certificates below for more.
 
 ```
