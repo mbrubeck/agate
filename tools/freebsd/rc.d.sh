@@ -7,8 +7,8 @@
 # agate_enable (bool):  Set to NO by default.
 #                       Set it to YES to enable agate.
 # agate_user:           default www
-# agate_content:        default /usr/local/www/gemini
-# agate_certs:          default /usr/local/etc/gemini/ssl/
+# agate_content:        default @PREFIX@/www/gemini
+# agate_certs:          default @PREFIX@/etc/agate/
 # agate_hostname:       e.g., gemini.example.tld, default hostname
 # agate_addr:           default [::], listen on IPV4 and IPV6
 # agate_port:           default 1965
@@ -25,15 +25,15 @@ load_rc_config $name
 
 : "${agate_enable:="NO"}"
 : "${agate_user:="www"}"
-: "${agate_content:="/usr/local/www/gemini/"}"
-: "${agate_certs:="/usr/local/etc/gemini/ssl/"}"
+: "${agate_content:="@PREFIX@/www/gemini/"}"
+: "${agate_certs:="@PREFIX@/etc/agate/"}"
 : "${agate_hostname:=$(uname -n)}"
 : "${agate_addr:="[::]"}"
 : "${agate_port:="1965"}"
 : "${agate_lang:="en-US"}"
 : "${agate_logfile:="/var/log/gemini/agate.log"}"
 
-command="/usr/local/bin/agate"
+command="@BINDIR@/agate"
 command_args="--content ${agate_content} \
        --certs ${agate_certs} \
        --addr ${agate_addr}:${agate_port} \
