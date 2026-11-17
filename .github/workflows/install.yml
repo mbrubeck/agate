@@ -25,7 +25,7 @@ jobs:
           if [ ! -f "tools/${this_flavor}/Makefile.inc" ]; then
             this_flavor=
           fi
-          for flavor in ${this_flavor} generic; do
+          for flavor in ${this_flavor} freebsd generic; do
             make installcheck FLAVOR="$flavor" PREFIX="${{ runner.temp }}/prefix-$flavor"
             make installcheck FLAVOR="$flavor" DESTDIR="${{ runner.temp }}/destdir-$flavor"
           done
