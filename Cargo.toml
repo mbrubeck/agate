@@ -29,6 +29,6 @@ url = "2.5.8"
 trotter = "1.0"
 
 [profile.release]
-lto = true
-codegen-units = 1
+lto = "thin"
+codegen-units = 16
 panic = "abort"
