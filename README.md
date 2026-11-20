@@ -63,13 +63,27 @@ Each release is tagged with `major`, `major.minor`, `major.minor.patch`, as well
 
 ### Source
 
-Download the source code and run `cargo build --release` inside the source repository, then find the binary at `target/release/agate`.
+Download the source code and run `cargo build --release` inside the source repository, then find the binary at `target/release/agate`. You can manually copy the resulting binary into your preferred location for execution as it does not have any dependencies on any other files.
+
+You can also use the `Makefile`-based installation workflow to install Agate. This will place the `agate` binary along other supporting files (documentation, examples, startup scripts) in the right locations in a standard way. For this, you'll need to use GNU Make:
+
+```sh
+$ make
+$ sudo make install                       # Install to /usr/local.
+$ sudo make install PREFIX=/usr           # Install to /usr.
+$ sudo make install DESTDIR=/tmp/workdir  # Install to /usr/local but with /tmp/workdir as the root.
+```
+
+If you are a package maintainer, you can use this workflow to stage the files that the package ships so as to enforce consistency across distributions.
+
+The `tools` directory may contain additional system-specific files that are not yet hooked up into `make install`. Take a look there for additional support tools.
 
 ## Setup
 
 Note: If you installed Agate from source and/or have access to the source code, you can use the install scripts in the `tools` directory for the remaining steps if there is one for your system. If there is none, please consider contributing one to make it easier for less tech-savvy users!
 
 Run the server. You can use the following arguments to specify the locations of the content directory, IP address and port to listen on, host name to expect in request URLs, and default language code to include in the MIME type for text/gemini files: (Replace the hostname `example.com` with the address of your Gemini server.)
+
 If you have not done it yourself, Agate will generate a private key and certificate for you on the first run, using the specified hostname(s). See the section Certificates below for more.
 
 ```

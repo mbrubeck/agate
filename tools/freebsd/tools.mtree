@@ -1,0 +1,7 @@
+./etc type=dir mode=0755
+./etc/newsyslog.conf.d type=dir mode=0755
+./etc/newsyslog.conf.d/agate.conf type=file mode=0644
+./etc/rc.d type=dir mode=0755
+./etc/rc.d/agate type=file mode=0755
+./share/doc/agate type=dir mode=0755
+./share/doc/agate/README.freebsd.md type=file mode=0755

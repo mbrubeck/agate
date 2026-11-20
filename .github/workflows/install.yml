@@ -1,0 +1,31 @@
+name: Installation Workflows
+
+on:
+  push:
+    branches-ignore:
+      - dependabot/*
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install mtree
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes mtree-netbsd
+      - name: Build
+        run: make
+      - name: Check installation layouts
+        run: |
+          this_flavor="$(uname -s | tr A-Z a-z)"
+          if [ ! -f "tools/${this_flavor}/Makefile.inc" ]; then
+            this_flavor=
+          fi
+          for flavor in ${this_flavor} freebsd generic; do
+            make installcheck FLAVOR="$flavor" PREFIX="${{ runner.temp }}/prefix-$flavor"
+            make installcheck FLAVOR="$flavor" DESTDIR="${{ runner.temp }}/destdir-$flavor"
+          done
