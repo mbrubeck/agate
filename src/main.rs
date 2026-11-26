@@ -13,18 +13,21 @@ use {
         borrow::Cow,
         error::Error,
         ffi::OsStr,
-        fmt::Write,
+        fmt::{self, Write},
         fs::{self, File},
-        io::Write as _,
+        future::Future,
+        io::{self, ErrorKind, Write as _},
         net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr},
         path::{self, Component, Path, PathBuf},
         sync::{Arc, LazyLock},
+        time::Duration,
     },
     tokio::{
         io::{AsyncReadExt, AsyncWriteExt},
         net::{TcpListener, TcpStream},
         runtime::Runtime,
         sync::Mutex,
+        time::sleep,
     },
     tokio_rustls::{
         TlsAcceptor,
@@ -82,25 +85,7 @@ fn main() {
                 listening_unspecified |= addr.ip().is_unspecified();
 
                 handles.push(tokio::spawn(async move {
-                    log::info!("Started listener on {addr}");
-
-                    loop {
-                        let (stream, _) = listener.accept().await.unwrap_or_else(|e| {
-                            panic!("could not accept new connection on {addr}: {e}")
-                        });
-                        let arc = arc.clone();
-                        tokio::spawn(async {
-                            match RequestHandle::new(stream, arc).await {
-                                Ok(handle) => match handle.handle().await {
-                                    Ok(info) => log::info!("{info}"),
-                                    Err(err) => log::warn!("{err}"),
-                                },
-                                Err(log_line) => {
-                                    log::warn!("{log_line}");
-                                }
-                            }
-                        });
-                    }
+                    serve_listener(addr, || listener.accept(), RequestHandle::new, arc).await;
                 }))
             };
 
@@ -124,25 +109,13 @@ fn main() {
                 };
 
                 handles.push(tokio::spawn(async move {
-                    log::info!("Started listener on {}", socketpath.display());
-
-                    loop {
-                        let (stream, _) = listener.accept().await.unwrap_or_else(|e| {
-                            panic!("could not accept new connection on {}: {}", socketpath.display(), e)
-                        });
-                        let arc = arc.clone();
-                        tokio::spawn(async {
-                            match RequestHandle::new_unix(stream, arc).await {
-                                Ok(handle) => match handle.handle().await {
-                                    Ok(info) => log::info!("{info}"),
-                                    Err(err) => log::warn!("{err}"),
-                                },
-                                Err(log_line) => {
-                                    log::warn!("{log_line}");
-                                }
-                            }
-                        });
-                    }
+                    serve_listener(
+                        socketpath.display(),
+                        || listener.accept(),
+                        RequestHandle::new_unix,
+                        arc,
+                    )
+                    .await;
                 }))
             };
 
@@ -406,6 +379,58 @@ fn check_path(s: String) -> Result<PathBuf, String> {
         Ok(p)
     } else {
         Err(format!("No such file: {p:?}"))
+    }
+}
+
+static ACCEPT_RETRY_DURATION: Duration = Duration::from_secs(1);
+
+async fn serve_listener<S, Peer, Accept, Handle>(
+    addr: impl fmt::Display,
+    accept: impl Fn() -> Accept,
+    new_handle: impl Fn(S, Arc<Mutex<FileOptions>>) -> Handle,
+    metadata: Arc<Mutex<FileOptions>>,
+) where
+    S: AsyncReadExt + AsyncWriteExt + CheckHost + Send + Unpin + 'static,
+    Accept: Future<Output = io::Result<(S, Peer)>>,
+    Handle: Future<Output = Result<RequestHandle<S>, String>> + Send + 'static,
+{
+    log::info!("Started listener on {addr}");
+
+    loop {
+        let (stream, _) = match accept().await {
+            Ok(connection) => connection,
+            Err(e)
+                if matches!(
+                    e.kind(),
+                    ErrorKind::ConnectionAborted | ErrorKind::Interrupted
+                ) =>
+            {
+                // These errors can be user-induced so we have to ignore them.
+                continue;
+            }
+            Err(e) => {
+                log::warn!(
+                    "could not accept new connection on {}: {}; retrying in {} second(s)",
+                    addr,
+                    e,
+                    ACCEPT_RETRY_DURATION.as_secs()
+                );
+                // We may have hit a transient error, such as file descriptor exhaustion.
+                // Wait to see if it recovers.
+                sleep(ACCEPT_RETRY_DURATION).await;
+                continue;
+            }
+        };
+        let handle = new_handle(stream, metadata.clone());
+        tokio::spawn(async move {
+            match handle.await {
+                Ok(handle) => match handle.handle().await {
+                    Ok(info) => log::info!("{info}"),
+                    Err(err) => log::warn!("{err}"),
+                },
+                Err(log_line) => log::warn!("{log_line}"),
+            }
+        });
     }
 }
 

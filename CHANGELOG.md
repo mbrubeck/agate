@@ -9,6 +9,7 @@ Updates to dependencies are not considered notable changes for the purpose of th
 This may lead to no listed changes for a version.
 
 ## [Unreleased]
+* Fixed server panics (visible on FreeBSD) on connection accept errors.
 
 ## [3.3.25] - 2026-10-23
 Thank you to @Euro20179 for contributing to this release.
