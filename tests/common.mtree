@@ -1,0 +1,14 @@
+. type=dir mode=0755
+./bin type=dir mode=0755
+./bin/agate type=file mode=0755
+./share type=dir mode=0755
+./share/doc type=dir mode=0755
+./share/doc/agate type=dir mode=0755
+./share/doc/agate/README.md type=file mode=0644
+./share/doc/agate/CHANGELOG.md type=file mode=0644
+./share/doc/agate/LICENSE-APACHE type=file mode=0644
+./share/doc/agate/LICENSE-MIT type=file mode=0644
+./share/examples type=dir mode=0755
+./share/examples/agate type=dir mode=0755
+./share/examples/agate/content type=dir mode=0755
+./share/examples/agate/content/index.gmi type=file mode=0644
