@@ -10,6 +10,10 @@ This may lead to no listed changes for a version.
 
 ## [Unreleased]
 
+### Fixed
+* Certificate suffix matching updated to respect label boundaries so that
+  a certificate for `example.org` wont be considered valid for `notexample.org`.
+
 ## [3.3.25] - 2026-10-23
 Thank you to @Euro20179 for contributing to this release.
 
