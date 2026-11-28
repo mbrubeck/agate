@@ -121,6 +121,27 @@ fn der_to_private_key(der: &[u8]) -> Result<Arc<dyn SigningKey>, rustls::Error> 
     Err(err.unwrap())
 }
 
+/// Check whether a certificate domain is valid for domain
+/// i.e. whether `cert_domain` is the same domain or a parent of it
+///
+/// Parents only match at label boundaries, so a certificate for
+/// `example.org` is not valid for `notexample.org`.
+fn covers(cert_domain: &str, domain: &str) -> bool {
+    // the fallback certificate has no domain name and applies to everything
+    if cert_domain.is_empty() {
+        return true;
+    }
+
+    match domain.strip_suffix(cert_domain) {
+        // the certificate is for exactly this domain
+        Some("") => true,
+        // the certificate appears to be for a parent
+        // only accept if there's at least one full label left
+        Some(rest) => rest.ends_with('.'),
+        None => false,
+    }
+}
+
 impl CertStore {
     /// Load certificates from a certificate directory.
     /// Certificates should be stored in a folder for each hostname, for example
@@ -204,7 +225,7 @@ impl CertStore {
     /// Checks if a certificate fitting a specific domain has been loaded.
     /// The same rules about using a certificate at the level above apply.
     pub fn has_domain(&self, domain: &str) -> bool {
-        self.certs.iter().any(|(s, _)| domain.ends_with(s))
+        self.certs.iter().any(|(s, _)| covers(s, domain))
     }
 }
 
@@ -217,7 +238,7 @@ impl ResolvesServerCert for CertStore {
             // domain or a parent domain of the current one.
             self.certs
                 .iter()
-                .find(|(s, _)| name.ends_with(s))
+                .find(|(s, _)| covers(s, name))
                 // only the key is interesting
                 .map(|(_, k)| k)
                 .cloned()
