@@ -644,6 +644,41 @@ mod multicert {
 
         server.stop().unwrap();
     }
+
+    #[test]
+    /// Check the suffix checks honour label depth on certs
+    // i.e. example.com should not be considered valid for notexample.com
+    // The fallback cert is available, so should be used instead
+    fn fallback_for_suffix_lookalike() {
+        let mut server = Server::new(&["--certs", "fallbackcert"]);
+
+        // only trust the fallback, if agate sends example.com's cert
+        // instead, the handshake will fail
+        let mut certs = RootCertStore::empty();
+        certs
+            .add(CertificateDer::from(
+                include_bytes!("data/fallbackcert/cert.der").as_slice(),
+            ))
+            .unwrap();
+        let config = rustls::ClientConfig::builder()
+            .with_root_certificates(certs)
+            .with_no_client_auth();
+
+        let mut session = ClientConnection::new(
+            std::sync::Arc::new(config),
+            "notexample.com".try_into().unwrap(),
+        )
+        .unwrap();
+        let mut tcp = TcpStream::connect(server.get_addr()).unwrap();
+        let mut tls = rustls::Stream::new(&mut session, &mut tcp);
+
+        write!(tls, "gemini://notexample.com/\r\n").unwrap();
+
+        let mut buf = [0; 10];
+        let _ = tls.read(&mut buf);
+
+        server.stop().unwrap();
+    }
 }
 
 mod directory_listing {
